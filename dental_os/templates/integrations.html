@@ -13,14 +13,17 @@
 
 <section class="card"><h2>API keys</h2>
   <div class="tbl-wrap"><table><tr><th>Name</th><th>Starts with</th><th>Can</th><th>Made</th><th>Last used</th><th></th></tr>
-  {% for k in keys %}<tr><td>{{ k.name }}</td><td><code>{{ k.key_prefix }}</code></td><td>{{ 'Read and write' if k.access == 'write' else 'Read only' }}</td>
+  {% for k in keys %}<tr><td>{{ k.name }}</td><td><code>{{ k.key_prefix }}</code></td><td>{{ 'Clinical records through FHIR, read only' if k.fhir else ('Read and write' if k.access == 'write' else 'Read only') }}</td>
     <td class="nw">{{ k.created_at[:10]|date }}</td><td class="nw">{{ k.last_used_at[:16] if k.last_used_at else 'Never' }}</td>
     <td>{% if k.revoked %}<span class="pill bad">switched off</span>{% else %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="key_revoke"><input type="hidden" name="key_id" value="{{ k.id }}"><button class="danger" type="submit">Switch off</button></form>{% endif %}</td></tr>
   {% else %}<tr><td colspan="6" class="muted">No keys yet.</td></tr>{% endfor %}</table></div>
   <form method="post" class="row" style="align-items:flex-end"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="key_create">
     <div><label for="kn">Name</label><input id="kn" name="name" maxlength="60" required placeholder="for example Accounts export"></div>
-    <div><label for="ka">Can</label><select id="ka" name="access"><option value="read">Read only</option><option value="write">Read and write</option></select></div>
+    <div><label for="ka">Can</label><select id="ka" name="access"><option value="read">Read only</option><option value="write">Read and write</option><option value="fhir">Clinical records through FHIR, read only</option></select></div>
     <button class="primary" type="submit">Make a key</button></form>
+  <p class="muted small">The ordinary API never returns clinical records. A FHIR key does: medical alerts, treatment, prescriptions and insurance, in the
+    international FHIR R4 format at <code>/api/fhir/R4</code>. Make one only for a hospital, health system or program the clinic has an agreement with,
+    and has a legal basis to share records with. Every record it reads is listed in that patient's "who looked" log.</p>
 </section>
 
 <section class="card"><h2>Webhooks</h2>

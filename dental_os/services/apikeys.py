@@ -20,11 +20,12 @@ def create(db, clinic, user_id, name, access):
     name = (name or "").strip()
     if not name or len(name) > 60:
         raise ApiKeyError("Give the key a name of up to 60 characters, for example 'Accounts export'.")
-    if access not in ("read", "write"):
+    if access not in ("read", "write", "fhir"):
         raise ApiKeyError("Pick read only or read and write.")
+    fhir = 1 if access == "fhir" else 0                  # 0.64: a FHIR key reads clinical records and can change nothing
     key = PREFIX + secrets.token_urlsafe(32)
-    cur = db.execute("INSERT INTO api_keys(clinic_id, name, key_prefix, key_hash, access, created_by) VALUES (?,?,?,?,?,?)",
-                     (clinic["id"], name, key[:10], _hash(key), access, user_id))
+    cur = db.execute("INSERT INTO api_keys(clinic_id, name, key_prefix, key_hash, access, fhir, created_by) VALUES (?,?,?,?,?,?,?)",
+                     (clinic["id"], name, key[:10], _hash(key), "read" if fhir else access, fhir, user_id))
     audit.log(db, clinic["id"], user_id, "apikey.create", "api_key", cur.lastrowid, access)
     return cur.lastrowid, key
 

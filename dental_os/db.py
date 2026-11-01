@@ -97,7 +97,8 @@ COLUMN_UPGRADES = [
     ("clinics", "voice_perio", "INTEGER NOT NULL DEFAULT 0"),            # 1: the gum chart screen offers hands-free entry by voice
     ("clinics", "voice_cloud", "INTEGER NOT NULL DEFAULT 0"),
     ("clinics", "voice_notes", "INTEGER NOT NULL DEFAULT 0"),
-    ("claims", "edi_ack", "TEXT"),                                       # 0.63: the latest acknowledgement from the clearinghouse or payer            # 0.61: dictation in clinical notes, on the device only            # 1: voice may use the browser maker's online speech service when the device cannot listen itself
+    ("claims", "edi_ack", "TEXT"),
+    ("api_keys", "fhir", "INTEGER NOT NULL DEFAULT 0"),                  # 0.64: 1 lets the key read clinical records through FHIR                                       # 0.63: the latest acknowledgement from the clearinghouse or payer            # 0.61: dictation in clinical notes, on the device only            # 1: voice may use the browser maker's online speech service when the device cannot listen itself
     ("clinics", "tooth_notation", "TEXT NOT NULL DEFAULT 'fdi'"),        # how teeth are shown and typed: fdi, universal or palmer. Stored as FDI
     ("appointments", "type_id", "INTEGER"),                              # the appointment type it was booked as, if any
     ("appointments", "arrived_at", "TEXT"),                              # checked in at the desk, clinic time

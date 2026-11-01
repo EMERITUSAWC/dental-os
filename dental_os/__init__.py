@@ -310,7 +310,7 @@ def create_app(test_config=None):
     def health():
         return "ok"
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -364,6 +364,7 @@ def create_app(test_config=None):
     app.register_blueprint(chairviews.bp)
     app.register_blueprint(rxviews.bp)
     app.register_blueprint(rxviews.pub)
+    app.register_blueprint(fhirapi.bp)
 
     # ---- command line
     @app.cli.command("create-clinic")

@@ -147,6 +147,7 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Prescriptions a pharmacy can check | Not in Open Dental or Dentrix | QR on every prescription; genuine, valid or already dispensed; works with any pharmacy, no account | 0.62 |
 | Electronic prescribing | Open Dental through DoseSpot (US, including controlled drugs) | FHIR R4 copy of every prescription; network connection built, an adapter per network once agreed | 0.62 |
 | Live clearinghouse connection | Both, through their own clearinghouse services | Claims, cover checks, acknowledgements and remittances with no file handling; a refused claim is never marked sent | 0.63 |
+| FHIR R4 interface | Open Dental's API is its own format; Dentrix through partner programs | The international health format, read-only; a separate key for clinical records; every read in the patient's access log | 0.64 |
 
 ## Waiting on an outside party (the code is built)
 

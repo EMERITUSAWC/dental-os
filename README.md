@@ -1,4 +1,4 @@
-# Dental OS, version 0.63
+# Dental OS, version 0.64
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,19 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.64
+
+- A FHIR R4 (4.0.1) read-only interface at `/api/fhir/R4`, the international format hospitals, national health systems and other
+  health software read. Patient, Practitioner, Organization, Appointment, Procedure (with the tooth as an FDI number and the CDT code
+  where the clinic has one), AllergyIntolerance, MedicationRequest and Coverage, searched by patient, name, birth date, phone and
+  date, in pages. `Patient/{id}/$everything` gives one patient's whole record. `metadata` describes what the server offers.
+- Clinical records need their own kind of key (Tools, API and webhooks: "Clinical records through FHIR, read only"). The ordinary
+  API still never returns clinical data. A FHIR key cannot change anything. Every record it reads is written in that patient's
+  "who looked" log with the key's name, so the clinic can see which program looked and when.
+- What it is not yet: a national link. Each national system (NHS England's, a future Ghana Health Service exchange, US networks)
+  has its own profiles, registration and assurance, and is connected when there is an agreement. Writing records in through FHIR
+  is not offered: moving in from another system stays on the Move in screen.
 
 ### Added in version 0.63
 
