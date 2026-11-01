@@ -155,7 +155,7 @@ def create_app(test_config=None):
                 "plan_banner": plan_banner, "support_on": g.get("support"),
                 "offline_since": offline, "backup_stale": backup_stale, "read_only": read_only,
                 "clocked_in": clocked, "task_due": task_due, "phone_on": phone_on, "nhs_on": nhs_on, "assistant_on": assistant_on, "team_unread": team_unread, "can": can, "kiosk_on": bool(session.get("kiosk")),
-                "lang": g.get("lang") or "en", "languages": i18n.LANGS}
+                "lang": g.get("lang") or "en", "languages": i18n.LANGS, "staff_languages": i18n.STAFF_LANGS}
 
     # ---- request lifecycle
     @app.before_request

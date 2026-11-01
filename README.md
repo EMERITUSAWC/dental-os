@@ -1,4 +1,4 @@
-# Dental OS, version 0.65
+# Dental OS, version 0.66
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,22 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.66
+
+- Spanish, Portuguese and Arabic for everything a patient or a visitor sees: online booking, the patient's private page, health
+  forms, paying online, the check-in kiosk, the pharmacy check, the printed documents (invoice, receipt, statement, quote, consent,
+  prescription, referral, aftercare, implant card) and the message wording. Dates and times are written the way each language writes
+  them. Arabic pages run right to left; the stylesheet now uses start and end instead of left and right, so it works both ways.
+- A patient's language, the clinic's language and the language links on public pages offer all five. Staff screens are fully written
+  in English and French only, so staff choose between those two, and a clinic set to Spanish, Portuguese or Arabic has its staff
+  screens in English.
+- `tools/patient_keys.py` lists every line patients can see; a test fails if a new one is added without all three translations, or if
+  a translation loses a field.
+- The Portuguese is the European and African form (Angola, Mozambique); a Brazilian clinic would change some words. The Arabic is
+  Modern Standard Arabic. All three were written for this version and need a native speaker's check before a clinic relies on them.
+- Canadian claims (CDAnet): only CDA-certified software may send them, and the standard is not published, so Dental OS must apply to
+  the Canadian Dental Association first. Listed under Waiting on an outside party.
 
 ### Added in version 0.65
 

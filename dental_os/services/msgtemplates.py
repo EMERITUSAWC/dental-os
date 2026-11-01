@@ -86,13 +86,16 @@ def ensure_templates(db, clinic_id):
 
 
 def body_for(db, clinic_id, kind, lang="en"):
-    """The clinic's wording for a kind of message. In French, a clinic that has not changed the starter wording sends the French starter.
+    """The clinic's wording for a kind of message. In another language, a clinic that has not changed the starter wording sends the
+    starter in the patient's language (French, Spanish, Portuguese or Arabic).
     A clinic that wrote its own wording sends its own wording to everyone."""
     row = db.execute("SELECT body FROM message_templates WHERE clinic_id = ? AND kind = ?", (clinic_id, kind)).fetchone()
     body = row["body"] if row else KINDS[kind][1]
-    if lang == "fr" and body == KINDS[kind][1]:
-        from .i18n_fr import STARTERS_FR
-        return STARTERS_FR[kind]
+    if body == KINDS[kind][1]:
+        from . import i18n
+        translated = i18n.starters(lang)
+        if translated and kind in translated:
+            return translated[kind]
     return body
 
 

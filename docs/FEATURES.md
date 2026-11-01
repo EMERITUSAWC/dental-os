@@ -149,8 +149,12 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Live clearinghouse connection | Both, through their own clearinghouse services | Claims, cover checks, acknowledgements and remittances with no file handling; a refused claim is never marked sent | 0.63 |
 | FHIR R4 interface | Open Dental's API is its own format; Dentrix through partner programs | The international health format, read-only; a separate key for clinical records; every read in the patient's access log | 0.64 |
 | AI assistant inside the app | Dentrix Ascend: AI agents through its MCP layer | Read-only, the person's own permissions, no patient names ever sent, every read in the patient's access log | 0.65 |
+| Patient side in Spanish, Portuguese and Arabic | Open Dental and Dentrix: English (Open Dental has community translations) | Booking, private page, forms, paying, check-in, documents and messages; Arabic right to left | 0.66 |
 
 ## Waiting on an outside party (the code is built)
+
+- Canadian claims (CDAnet): CDA vendor certification and the CDAnet specification, which is not published. Nothing is built until the CDA provides it.
+- A native speaker's check of the Spanish, Portuguese and Arabic.
 
 - Clearinghouse: a first run with Stedi's test key and test payer, then a clinic's live account. Other clearinghouses (DentalXChange, Availity, Claim.MD) as adapters when a clinic uses them.
 

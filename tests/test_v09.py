@@ -1550,7 +1550,8 @@ class FrenchFormatTests(unittest.TestCase):
         self.assertEqual(i18n.from_header("fr-CH, fr;q=0.9, en;q=0.8"), "fr")
         self.assertEqual(i18n.from_header("en-GB;q=0.5,en;q=0.4,fr;q=0.9"), "fr")
         self.assertEqual(i18n.from_header("en-GB,en;q=0.8,fr;q=0.9"), "en")
-        self.assertEqual(i18n.from_header("de, es;q=0.5"), None)
+        self.assertEqual(i18n.from_header("de, it;q=0.5"), None)
+        self.assertEqual(i18n.from_header("de, es;q=0.5"), "es")                        # 0.66: Spanish is offered now
         self.assertEqual(i18n.from_header("fr;q=0, en"), "en")
         self.assertIsNone(i18n.from_header(None))
         self.assertEqual(i18n.from_header("fr;q=abc,,,;;"), "fr")
@@ -1590,7 +1591,7 @@ class SignInAndMenuTests(French):
         fr = self.app.test_client().get("/login", headers={"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.5"}).get_data(as_text=True)
         self.assertIn("Se connecter", fr)
         self.assertIn("Nom d&#39;utilisateur", fr)
-        self.assertIn('<html lang="fr">', fr)
+        self.assertIn('<html lang="fr" dir="ltr">', fr)
         c = self.app.test_client()
         self.assertIn("Se connecter", self.text(c, "/login?lang=fr"))
         self.assertIn("Se connecter", self.text(c, "/login"))                  # kept for this browser

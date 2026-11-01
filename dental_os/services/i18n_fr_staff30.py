@@ -1,6 +1,8 @@
 """French for versions 0.60 onwards: the X-ray picture check and the X-ray AI connection."""
 
 STAFF30 = {
+    # 0.66
+    'Español, Português and العربية cover everything patients see: booking, their private page, forms, paying, check-in, the pharmacy check, printed documents and messages. Staff screens are in English or French.': 'Español, Português et العربية couvrent tout ce que voient les patients : réservation, page privée, formulaires, paiement, accueil, vérification en pharmacie, documents imprimés et messages. Les écrans du personnel sont en anglais ou en français.',
     # 0.65
     'Ask': 'Demander',
     'Ask about the clinic': 'Questions sur la clinique',

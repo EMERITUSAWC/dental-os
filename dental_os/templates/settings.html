@@ -35,6 +35,7 @@
     <label for="language">{{ _("Language") }}</label>
     <select id="language" name="language">{% for code, name in languages.items() %}<option value="{{ code }}" {{ 'selected' if code == clinic.language }}>{{ name }}</option>{% endfor %}</select>
     <p class="muted small">{{ _("Used for the menus and for patient messages and documents. A patient can have their own language on their record, and each member of staff can choose theirs under their name at the top. The developer pages (API and webhooks, the activity log and the WhatsApp set-up) stay in English.") }}</p>
+    <p class="muted small">{{ _("Español, Português and العربية cover everything patients see: booking, their private page, forms, paying, check-in, the pharmacy check, printed documents and messages. Staff screens are in English or French.") }}</p>
     <label for="tooth_notation">{{ _("Tooth numbering") }}</label>
     <select id="tooth_notation" name="tooth_notation">{% for k, v in notations.items() %}<option value="{{ k }}" {{ 'selected' if k == clinic.tooth_notation }}>{{ _(v) }}</option>{% endfor %}</select>
     <p class="muted small">{{ _("How teeth are shown and typed on every screen and document. Records are kept the same way underneath, so this can be changed at any time. The API always uses FDI.") }}</p>
