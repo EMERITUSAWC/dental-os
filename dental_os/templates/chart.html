@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% from "_tooth.html" import tooth %}
+{% block title %}Tooth chart, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: tooth chart</h1>
+  <div class="row">
+    <a class="btn {{ 'primary' if not child }}" href="{{ url_for('record.chart_view', pid=p.id) }}">Adult teeth</a>
+    <a class="btn {{ 'primary' if child }}" href="{{ url_for('record.chart_view', pid=p.id, dentition='child') }}">Child teeth</a>
+  </div>
+</div>
+{{ tabs(p, 'chart') }}
+<section class="card">
+  <p class="muted small legend"><span><i class="sw cond"></i> Already in the mouth</span><span><i class="sw planned"></i> Planned</span><span><i class="sw done"></i> Done</span><span>Cross: missing. Tap a tooth for details. The patient's right is on the left of the chart.</span></p>
+  <div class="arch-wrap">
+    <div class="arch">{% for t in upper %}{{ tooth(t, p.id, child, selected) }}{% endfor %}</div>
+    <div class="arch">{% for t in lower %}{{ tooth(t, p.id, child, selected) }}{% endfor %}</div>
+  </div>
+</section>
+
+{% if selected %}
+<section class="card" id="tooth">
+  <h2>Tooth {{ selected }}</h2>
+  <div class="grid two">
+    <div>
+      <h3>On the chart</h3>
+      {% for c in entry.conditions if entry %}
+      <div class="row spread" style="margin-bottom:6px">
+        <span>{{ conditions[c.condition] }}{% if c.surfaces %} ({{ c.surfaces }}){% endif %}{% if c.note %}, {{ c.note }}{% endif %} <span class="muted small">{{ c.recorded_on|date }}</span></span>
+        <form method="post" action="{{ url_for('record.condition_remove', cond_id=c.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="tooth" value="{{ selected }}">{% if child %}<input type="hidden" name="child" value="1">{% endif %}<button type="submit">Remove</button></form>
+      </div>
+      {% else %}<p class="muted">Nothing recorded.</p>{% endfor %}
+      <h3>Treatment</h3>
+      {% if entry and (entry.planned or entry.done) %}
+        {% for r in entry.planned %}<p><span class="pill warn">Planned</span> {{ r.code_name }}{% if r.surfaces %} ({{ r.surfaces }}){% endif %}</p>{% endfor %}
+        {% for r in entry.done %}<p><span class="pill ok">Done</span> {{ r.code_name }}{% if r.surfaces %} ({{ r.surfaces }}){% endif %}{% if r.done_on %}, {{ r.done_on|date }}{% endif %}</p>{% endfor %}
+      {% else %}<p class="muted">No planned or finished work on this tooth.</p>{% endif %}
+      <p class="row"><a class="btn" href="{{ url_for('clinical.treatment', pid=p.id) }}">Plan treatment</a>
+        <a class="btn" href="{{ url_for('record.note_new', pid=p.id, tooth=selected) }}">Write a note</a></p>
+    </div>
+    <div>
+      <h3>Add to the chart</h3>
+      <form method="post" action="{{ url_for('record.condition_add', pid=p.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="tooth" value="{{ selected }}">{% if child %}<input type="hidden" name="child" value="1">{% endif %}
+        <label for="condition">What is there</label>
+        <select id="condition" name="condition">{% for k, v in conditions.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+        <label>Surfaces (for decay, fillings, sealants, wear and failing restorations)</label>
+        <div class="row">{% for s in surfaces %}<label class="check" style="margin:0"><input type="checkbox" name="surfaces" value="{{ s }}"> {{ s }}</label>{% endfor %}</div>
+        <p class="muted small">M mesial, O occlusal, D distal, B buccal, L lingual, I incisal. Crowns, missing teeth, implants and the like apply to the whole tooth.</p>
+        <label for="note">Note</label><input id="note" name="note" maxlength="200">
+        <p><button class="primary" type="submit">Add</button></p>
+      </form>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

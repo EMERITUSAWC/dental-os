@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="{{ 'en-GB' if lang == 'en' else lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}{{ clinic.name if clinic else 'Dental OS' }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+{% if user %}
+<header class="top"><div class="bar">
+  <a class="brand" href="{{ url_for('views.dashboard') }}">{{ clinic.name }}</a>
+  <nav aria-label="{{ _('Main menu') }}">
+    {% set ep = request.endpoint or '' %}
+    <a href="{{ url_for('views.dashboard') }}" class="{{ 'on' if ep == 'views.dashboard' }}">{{ _("Today") }}</a>
+    <a href="{{ url_for('views.diary') }}" class="{{ 'on' if ep == 'views.diary' }}">{{ _("Diary") }}</a>
+    <a href="{{ url_for('views.patients') }}" class="{{ 'on' if (ep.startswith('views.patient') or ep in ('clinical.treatment','clinical.account') or ep.startswith('commercial.patient') or ep.startswith('commercial.plan_') or ep in ('finance.patient_insurance','finance.patient_invoices','finance.statement','comms.patient_messages','ops.patient_lab','privacy.patient_privacy','privacy.record_copy')) }}">{{ _("Patients") }}</a>
+    <a href="{{ url_for('clinical.recall_list') }}" class="{{ 'on' if ep == 'clinical.recall_list' }}">{{ _("Recalls") }}</a>
+    <a href="{{ url_for('comms.queue') }}" class="{{ 'on' if ep.startswith('comms.') and ep != 'comms.patient_messages' }}">{{ _("Messages") }}{% if attn_total %} <span class="badge">{{ attn_total }}</span>{% endif %}</a>
+    <a href="{{ url_for('ops.lab_board') }}" class="{{ 'on' if ep in ('ops.lab_board', 'ops.lab_case', 'ops.lab_new', 'ops.lab_sheet', 'ops.lab_labs') }}">{{ _("Lab") }}</a>
+    {% if user.role != 'front_desk' %}<a href="{{ url_for('ops.stock_list') }}" class="{{ 'on' if ep.startswith('ops.stock') }}">{{ _("Stock") }}</a>{% endif %}
+    <a href="{{ url_for('finance.claims_list') }}" class="{{ 'on' if ep.startswith('finance.claim') }}">{{ _("Claims") }}</a>
+    <a href="{{ url_for('commercial.plans_board') }}" class="{{ 'on' if ep == 'commercial.plans_board' }}">{{ _("Plans") }}</a>
+    <a href="{{ url_for('commercial.memberships_home') }}" class="{{ 'on' if ep == 'commercial.memberships_home' or ep == 'commercial.membership_plans' }}">{{ _("Memberships") }}</a>
+    {% if user.role == 'manager' %}
+    <a href="{{ url_for('clinical.report_view') }}" class="{{ 'on' if ep.startswith('clinical.report') or ep == 'clinical.takings' or ep in ('ops.kpi_view', 'ops.group_view') }}">{{ _("Reports") }}</a>
+    {% if group %}<a href="{{ url_for('ops.group_view') }}" class="{{ 'on' if ep == 'ops.group_view' }}">{{ _("All clinics") }}</a>{% endif %}
+    <a href="{{ url_for('views.staff') }}" class="{{ 'on' if ep == 'views.staff' }}">{{ _("Staff") }}</a>
+    <a href="{{ url_for('record.tools') }}" class="{{ 'on' if ep.startswith('record.tools') or ep.startswith('record.import') or ep == 'record.consent_forms' or ep.startswith('ops.integr') or ep == 'ops.api_docs' or (ep.startswith('privacy.') and ep not in ('privacy.patient_privacy', 'privacy.record_copy')) }}">{{ _("Tools") }}</a>
+    <a href="{{ url_for('views.settings') }}" class="{{ 'on' if ep == 'views.settings' }}">{{ _("Settings") }}</a>
+    <a href="{{ url_for('views.audit_view') }}" class="{{ 'on' if ep == 'views.audit_view' }}">{{ _("Activity") }}</a>
+    {% endif %}
+  </nav>
+  <form method="post" action="{{ url_for('auth.logout') }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <a class="small" href="{{ url_for('auth.security') }}">{{ user.display_name }}</a>
+    <button class="link small" type="submit">{{ _("Log out") }}</button>
+  </form>
+</div></header>
+{% endif %}
+<main>
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="flash {{ category }}" role="status">{{ message }}</div>
+  {% endfor %}
+  {% block body %}{% endblock %}
+</main>
+</body>
+</html>

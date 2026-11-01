@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_status.html" import conf, alert_mark %}
+{% block body %}
+<h1>Today, {{ today|day }}</h1>
+<div class="stats">
+  <div class="card"><div class="stat">{{ stats.booked }}</div><div class="muted">booked today</div></div>
+  <div class="card"><div class="stat">{{ stats.confirmed }}</div><div class="muted">confirmed</div></div>
+  <div class="card"><div class="stat">{{ stats.done }}</div><div class="muted">done so far</div></div>
+</div>
+
+{% if attn.total %}<section class="card"><div class="row spread"><h2>Needs attention</h2><a href="{{ url_for('comms.queue') }}">Open messages</a></div>
+  <p>{% if attn.queue %}<a href="{{ url_for('comms.queue') }}">{{ attn.queue }} message{{ '' if attn.queue == 1 else 's' }} to send</a>. {% endif %}
+  {% if attn.replies %}<a href="{{ url_for('comms.replies') }}">{{ attn.replies }} unread repl{{ 'y' if attn.replies == 1 else 'ies' }}</a>. {% endif %}
+  {% if attn.requests %}<a href="{{ url_for('comms.requests_list') }}">{{ attn.requests }} booking request{{ '' if attn.requests == 1 else 's' }}</a>. {% endif %}
+  {% if attn.intake %}<a href="{{ url_for('comms.forms') }}">{{ attn.intake }} health form{{ '' if attn.intake == 1 else 's' }} to check</a>.{% endif %}</p></section>{% endif %}
+
+{% if privacy and (privacy.requests_open or privacy.incidents_open) %}<section class="card"><h2>Privacy</h2>
+  <p>{% if privacy.requests_open %}<a href="{{ url_for('privacy.requests_list') }}">{{ privacy.requests_open }} data request{{ '' if privacy.requests_open == 1 else 's' }} open{% if privacy.requests_late %}, <strong>{{ privacy.requests_late }} late</strong>{% endif %}</a>. {% endif %}
+  {% if privacy.incidents_open %}<a href="{{ url_for('privacy.incidents_list') }}">{{ privacy.incidents_open }} incident{{ '' if privacy.incidents_open == 1 else 's' }} open{% if privacy.incidents_late %}, <strong>{{ privacy.incidents_late }} past the reporting clock</strong>{% endif %}</a>.{% endif %}</p>
+</section>{% endif %}
+{% if lab.late or lab.ready or (stock and (stock.low or stock.expired)) %}<section class="card"><h2>Lab and stock</h2>
+  <p>{% if lab.late %}<a href="{{ url_for('ops.lab_board') }}">{{ lab.late }} lab case{{ '' if lab.late == 1 else 's' }} late</a>. {% endif %}
+  {% if lab.ready %}<a href="{{ url_for('ops.lab_board') }}">{{ lab.ready }} lab case{{ '' if lab.ready == 1 else 's' }} back, ready to fit</a>. {% endif %}
+  {% if stock and stock.low %}<a href="{{ url_for('ops.stock_order') }}">{{ stock.low }} item{{ '' if stock.low == 1 else 's' }} to reorder</a>. {% endif %}
+  {% if stock and stock.expired %}<a href="{{ url_for('ops.stock_expiry') }}">{{ stock.expired }} item{{ '' if stock.expired == 1 else 's' }} with expired stock</a>.{% endif %}</p></section>{% endif %}
+
+<div class="grid two">
+  <section class="card">
+    <div class="row spread"><h2>Today's patients</h2><a href="{{ url_for('views.diary') }}">Open diary</a></div>
+    {% if todays %}
+    <div class="tbl-wrap"><table>
+      <tr><th>Time</th><th>Patient</th><th class="hide-sm">Dentist</th><th>Status</th></tr>
+      {% for a in todays %}
+      <tr>
+        <td class="nw">{{ a.start_at|time }}</td>
+        <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}</td>
+        <td class="muted hide-sm">{{ a.provider_name }}</td>
+        <td>{{ conf(a) }}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="muted">Nobody is booked today.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>To chase for tomorrow, {{ tomorrow|day }}</h2>
+    {% if to_chase %}
+    <div class="tbl-wrap"><table>
+      {% for a in to_chase %}
+      <tr>
+        <td class="nw">{{ a.start_at|time }}</td>
+        <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}<br>{{ conf(a) }}</td>
+        <td>
+          {% if a.reminders_ok %}
+          <form method="post" action="{{ url_for('views.appointment_whatsapp', aid=a.id) }}" target="_blank">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="reminder">
+            <button type="submit">WhatsApp</button>
+          </form>
+          {% else %}<span class="muted small">No consent</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="muted">Everyone for tomorrow is confirmed, or nobody is booked.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Waiting list</h2>
+    {% for a in waiting %}
+      <p><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}
+        {{ conf(a) }} <span class="muted small">{{ a.category }}</span></p>
+    {% else %}<p class="muted">Nobody is waiting for a slot.</p>{% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Birthdays in the next 7 days</h2>
+    <p class="muted small">Only patients who agreed to offers.</p>
+    {% for gap, when, p in birthdays %}
+      <p><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>
+        <span class="muted">{{ 'today' if gap == 0 else when|day }}</span></p>
+    {% else %}<p class="muted">None.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

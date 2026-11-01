@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Import patients{% endblock %}
+{% block body %}
+<h1>Import patients</h1>
+{% if not batch %}
+<section class="card">
+  <p>Save your spreadsheet as CSV. The first row must name the columns. Needed: <strong>first name, last name, phone</strong>. Optional: date of birth, gender, email, address, notes. Common alternative names such as surname or mobile are understood.</p>
+  <p class="muted">Dates like 23/04/2001 are read day first, except in the US and Canada, where they are read month first. A date written 2001-04-23 always works. Permission to send messages and offers is never imported: it has to come from the patient, so every imported patient starts with it off.</p>
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="file">CSV file (up to 1 MB and 5,000 rows)</label><input id="file" type="file" name="file" accept=".csv,text/csv" required>
+    <p><button class="primary" type="submit">Check the file</button></p>
+  </form>
+</section>
+{% else %}
+<section class="card">
+  <div class="stats"><div class="card"><div class="stat">{{ counts.ok }}</div><div class="muted">ready to add</div></div>
+    <div class="card"><div class="stat">{{ counts.errors }}</div><div class="muted">rows with problems</div></div>
+    <div class="card"><div class="stat">{{ counts.duplicates }}</div><div class="muted">already here or repeated</div></div></div>
+  <p class="muted small">Columns understood: {{ payload.columns|join(', ')|replace('_', ' ') }}. Dates read as {{ 'month first' if payload.order == 'MDY' else 'day first' }}.</p>
+  {% if batch.status == 'preview' %}
+  <div class="row">
+    <form method="post" action="{{ url_for('record.import_confirm', batch_id=batch.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit" {{ 'disabled' if not payload.rows }}>Add {{ payload.rows|length }} patients</button></form>
+    <form method="post" action="{{ url_for('record.import_cancel', batch_id=batch.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">Cancel</button></form>
+  </div>
+  {% else %}<p class="pill">This import is {{ batch.status }}.</p>{% endif %}
+</section>
+{% if payload.errors %}<section class="card"><h2>Rows that need fixing</h2>
+  {% for e in payload.errors[:50] %}<p class="small">Row {{ e.line }}: {% for k, v in e.problems.items() %}{{ k|replace('_', ' ') }}: {{ v }} {% endfor %}</p>{% endfor %}
+  {% if payload.errors|length > 50 %}<p class="muted small">And {{ payload.errors|length - 50 }} more.</p>{% endif %}
+  <p class="muted small">Fix these in the spreadsheet and import again. Rows that were fine are not added until you confirm.</p></section>{% endif %}
+{% if payload.duplicates %}<section class="card"><h2>Skipped as duplicates</h2>
+  {% for d in payload.duplicates[:30] %}<p class="small">Row {{ d.line }}: {{ d.name }}</p>{% endfor %}</section>{% endif %}
+<section class="card"><h2>First rows</h2><div class="tbl-wrap"><table>
+  <tr><th>Row</th><th>Name</th><th>Phone</th><th>Born</th><th>Email</th></tr>
+  {% for r in payload.rows[:20] %}<tr><td>{{ r.line }}</td><td>{{ r.data.first_name }} {{ r.data.last_name }}</td><td>{{ r.data.phone|phone }}</td><td>{{ r.data.dob|date if r.data.dob else '' }}</td><td>{{ r.data.email or '' }}</td></tr>{% endfor %}
+</table></div></section>
+{% endif %}
+{% endblock %}

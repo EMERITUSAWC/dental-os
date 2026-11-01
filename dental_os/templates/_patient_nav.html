@@ -1,0 +1,27 @@
+{% macro tabs(p, active) %}
+<nav class="tabs" aria-label="This patient">
+  <a href="{{ url_for('views.patient_view', pid=p.id) }}" class="{{ 'on' if active == 'overview' }}">Overview</a>
+  {% if user.role in ('manager', 'dentist', 'assistant') %}
+  <a href="{{ url_for('record.medical_view', pid=p.id) }}" class="{{ 'on' if active == 'medical' }}">Medical</a>
+  <a href="{{ url_for('record.chart_view', pid=p.id) }}" class="{{ 'on' if active == 'chart' }}">Tooth chart</a>
+  <a href="{{ url_for('record.perio_list', pid=p.id) }}" class="{{ 'on' if active == 'perio' }}">Gums</a>
+  <a href="{{ url_for('record.notes_list', pid=p.id) }}" class="{{ 'on' if active == 'notes' }}">Notes</a>
+  <a href="{{ url_for('record.consents_view', pid=p.id) }}" class="{{ 'on' if active == 'consents' }}">Consents</a>
+  <a href="{{ url_for('record.files_view', pid=p.id) }}" class="{{ 'on' if active == 'files' }}">Files</a>
+  {% endif %}
+  <a href="{{ url_for('commercial.patient_plans', pid=p.id) }}" class="{{ 'on' if active == 'plans' }}">Plans</a>
+  <a href="{{ url_for('clinical.treatment', pid=p.id) }}" class="{{ 'on' if active == 'treatment' }}">Treatment</a>
+  <a href="{{ url_for('clinical.account', pid=p.id) }}" class="{{ 'on' if active == 'account' }}">Account</a>
+  <a href="{{ url_for('finance.patient_invoices', pid=p.id) }}" class="{{ 'on' if active == 'invoices' }}">Invoices</a>
+  <a href="{{ url_for('finance.patient_insurance', pid=p.id) }}" class="{{ 'on' if active == 'insurance' }}">Insurance</a>
+  <a href="{{ url_for('commercial.patient_instalments', pid=p.id) }}" class="{{ 'on' if active == 'instalments' }}">Instalments</a>
+  <a href="{{ url_for('commercial.patient_membership', pid=p.id) }}" class="{{ 'on' if active == 'membership' }}">Membership</a>
+  <a href="{{ url_for('ops.patient_lab', pid=p.id) }}" class="{{ 'on' if active == 'lab' }}">Lab</a>
+  <a href="{{ url_for('comms.patient_messages', pid=p.id) }}" class="{{ 'on' if active == 'messages' }}">Messages</a>
+  {% if user.role == 'manager' %}<a href="{{ url_for('privacy.patient_privacy', pid=p.id) }}" class="{{ 'on' if active == 'privacy' }}">Privacy</a>{% endif %}
+</nav>
+{% set al = alerts_for(p.id) %}
+{% if al %}<div class="alertbar" role="note" aria-label="Alerts for this patient">
+  {% for a in al %}<span class="alert {{ a.severity }}"><strong>{{ {'allergy': 'Allergy', 'medical': 'Medical', 'medication': 'Medicine', 'behaviour': 'Behaviour', 'other': 'Note'}[a.kind] }}:</strong> {{ a.text }}</span>{% endfor %}
+</div>{% endif %}
+{% endmacro %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Lab case {{ c.id }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ c.kind }}{% if c.tooth %} ({{ c.tooth }}){% endif %} for {{ c.first_name }} {{ c.last_name }}</h1>
+  <span class="row"><a class="btn" href="{{ url_for('ops.lab_sheet', case_id=c.id) }}">Job sheet</a><a class="btn" href="{{ url_for('ops.patient_lab', pid=c.patient_id) }}">Patient's lab cases</a></span></div>
+<div class="grid two">
+<section class="card"><h2>Where it is</h2>
+  <p><span class="pill {{ 'ok' if c.status == 'received' else 'bad' if c.status == 'cancelled' else '' }}">{{ labels[c.status] }}</span>
+    {% if c.status == 'sent' and c.due_on and c.due_on < today.isoformat() %}<span class="pill bad">late</span>{% endif %}</p>
+  <dl class="facts"><dt>Lab</dt><dd>{{ c.lab_name }}{% if c.lab_phone %}, {{ c.lab_phone }}{% endif %}</dd>
+    <dt>Dentist</dt><dd>{{ c.provider_name or 'Not set' }}</dd><dt>Shade</dt><dd>{{ c.shade or 'Not set' }}</dd>
+    <dt>Lab's price</dt><dd>{{ c.cost_p|money }}</dd><dt>Sent</dt><dd>{{ c.sent_on|date if c.sent_on else 'Not yet' }}</dd>
+    <dt>Wanted back</dt><dd>{{ c.due_on|date if c.due_on else 'Not set' }}</dd><dt>Came back</dt><dd>{{ c.received_on|date if c.received_on else 'Not yet' }}</dd>
+    <dt>Fitted</dt><dd>{{ c.fitted_on|date if c.fitted_on else 'Not yet' }}</dd>
+    {% if c.remake_of %}<dt>Remake of</dt><dd><a href="{{ url_for('ops.lab_case', case_id=c.remake_of) }}">case {{ c.remake_of }}</a></dd>{% endif %}
+    {% for r in remade %}<dt>Remade as</dt><dd><a href="{{ url_for('ops.lab_case', case_id=r.id) }}">case {{ r.id }}</a></dd>{% endfor %}
+    {% if c.cancel_reason %}<dt>Cancelled because</dt><dd>{{ c.cancel_reason }}</dd>{% endif %}</dl>
+  {% if c.instructions %}<p><strong>Instructions</strong><br>{{ c.instructions }}</p>{% endif %}
+
+  {% if c.status == 'draft' %}
+  <form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='send') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div><label for="so">Sent on</label><input id="so" type="date" name="sent_on" value="{{ today }}"></div>
+    <div><label for="do">Due back</label><input id="do" type="date" name="due_on" value="{{ c.due_on or '' }}" required></div>
+    <button class="primary" type="submit">Mark as sent</button></form>
+  {% elif c.status == 'sent' %}
+  <form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='receive') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div><label for="ro">Came back on</label><input id="ro" type="date" name="received_on" value="{{ today }}"></div><button class="primary" type="submit">Mark as back</button></form>
+  {% elif c.status == 'received' %}
+  <form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='fit') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div><label for="fo">Fitted on</label><input id="fo" type="date" name="fitted_on" value="{{ today }}"></div><button class="primary" type="submit">Mark as fitted</button></form>
+  {% endif %}
+  {% if c.status in ('sent', 'received') %}
+  <form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='visit') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div><label for="ap">Visit booked to fit it</label><select id="ap" name="appointment_id"><option value="">None</option>{% for v in visits %}<option value="{{ v.id }}" {{ 'selected' if c.fit_appointment_id == v.id }}>{{ v.start_at[:10]|day }}, {{ v.start_at|time }}</option>{% endfor %}</select></div>
+    <button type="submit">Save</button></form>
+  {% endif %}
+</section>
+
+<section class="card"><h2>History</h2>
+  {% for e in events %}<p class="small"><strong>{{ e.kind }}</strong>{% if e.note %}: {{ e.note }}{% endif %}<br><span class="muted">{{ e.created_at }}{% if e.display_name %}, {{ e.display_name }}{% endif %}</span></p>{% endfor %}
+</section>
+</div>
+
+{% if c.status in ('draft', 'sent') %}
+<section class="card"><h2>Change the details</h2>
+<form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='edit') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid three">
+    <div><label for="e_lab">Lab</label><select id="e_lab" name="lab_id">{% for l in labs %}<option value="{{ l.id }}" {{ 'selected' if l.id == c.lab_id }}>{{ l.name }}</option>{% endfor %}</select></div>
+    <div><label for="e_kind">Job</label><input id="e_kind" name="kind" value="{{ c.kind }}" maxlength="60" list="kinds2"><datalist id="kinds2">{% for k in kinds %}<option value="{{ k }}">{% endfor %}</datalist></div>
+    <div><label for="e_tooth">Tooth</label><input id="e_tooth" name="tooth" value="{{ c.tooth or '' }}" maxlength="40"></div>
+    <div><label for="e_shade">Shade</label><input id="e_shade" name="shade" value="{{ c.shade or '' }}" maxlength="40"></div>
+    <div><label for="e_due">Wanted back by</label><input id="e_due" type="date" name="due_on" value="{{ c.due_on or '' }}"></div>
+    <div><label for="e_cost">Lab's price</label><input id="e_cost" name="cost" value="{{ c.cost_p|plain }}" inputmode="decimal"></div>
+  </div>
+  <div class="grid two"><div><label for="e_pr">Dentist</label><select id="e_pr" name="provider_id"><option value="">Not set</option>{% for pr in providers %}<option value="{{ pr.id }}" {{ 'selected' if pr.id == c.provider_id }}>{{ pr.name }}</option>{% endfor %}</select></div></div>
+  <label for="e_ins">Instructions</label><textarea id="e_ins" name="instructions" rows="3" maxlength="1000">{{ c.instructions or '' }}</textarea>
+  <p><button type="submit">Save changes</button></p></form></section>
+{% endif %}
+
+<div class="grid two">
+{% if c.status in ('received', 'fitted') %}
+<section class="card"><h2>Remake</h2><p class="muted small">Starts a new case from this one. This case stays as it is.</p>
+  <form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='remake') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="rm_r">Why</label><input id="rm_r" name="reason" maxlength="200" required><label for="rm_c">Lab's price for the remake</label><input id="rm_c" name="cost" inputmode="decimal" placeholder="0 if the lab remakes it free">
+    <p><button type="submit">Make a remake case</button></p></form></section>
+{% endif %}
+{% if c.status in ('draft', 'sent', 'received') %}
+<section class="card"><h2>Cancel</h2>
+  <form method="post" action="{{ url_for('ops.lab_action', case_id=c.id, action='cancel') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="cx">Reason</label><input id="cx" name="reason" maxlength="200" required><p><button class="danger" type="submit">Cancel this case</button></p></form></section>
+{% endif %}
+</div>
+{% endblock %}

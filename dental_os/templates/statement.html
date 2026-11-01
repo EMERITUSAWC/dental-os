@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Statement") }}, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('clinical.account', pid=p.id) }}">Back to the account</a></div>
+<section class="card receipt" style="max-width:760px; margin-top:12px">
+  <p class="muted">{{ clinic.name }}</p><h1>{{ _d("Statement") }}</h1>
+  <dl class="facts"><dt>{{ _d("Patient") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd><dt>{{ _d("Date") }}</dt><dd>{{ today|date }}</dd></dl>
+  <table style="margin-top:12px"><tr><th>{{ _d("Date") }}</th><th>{{ _d("What") }}</th><th style="text-align:right">{{ _d("Amount") }}</th><th style="text-align:right">{{ _d("Balance") }}</th></tr>
+    {% for e in events %}<tr><td class="nw">{{ e.day|date }}</td><td>{{ e.label }}{% if e.voided %} ({{ _d("voided") }}){% endif %}</td>
+      <td class="nw" style="text-align:right">{{ e.delta|money }}</td><td class="nw" style="text-align:right">{{ e.balance|money if e.counts else '' }}</td></tr>{% endfor %}
+  </table>
+  <p style="font-size:1.2rem; margin-top:12px"><strong>{{ _d('Amount due:') if t.balance > 0 else _d('Credit:') if t.balance < 0 else _d('Nothing to pay:') }} {{ (t.balance|abs)|money }}</strong></p>
+  {% if t.balance > 0 %}<p class="small">{{ _d("Of the amount due:") }} {% for k, v in ageing.items() if v %}{{ k }} {{ _d("days") }} {{ v|money }}; {% endfor %}{% if insurers %}{{ _d("the insurer is expected to pay") }} {{ insurers|money }}.{% endif %}</p>{% endif %}
+</section>
+{% endblock %}

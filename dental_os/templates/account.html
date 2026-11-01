@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Account, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: account</h1>
+  <a class="btn" href="{{ url_for('clinical.treatment', pid=p.id) }}">Treatment</a>
+</div>
+{{ tabs(p, 'account') }}
+
+<div class="stats" style="grid-template-columns: repeat(2, 1fr)">
+  <div class="card"><div class="stat">{{ t.balance|money }}</div>
+    <div class="muted">{{ 'owed' if t.balance > 0 else ('in credit' if t.balance < 0 else 'nothing owed') }}</div></div>
+  <div class="card"><div class="small muted">Work done <span class="nw">{{ t.charges|money }}</span><br>Adjustments <span class="nw">{{ t.adjustments|money }}</span><br>Paid <span class="nw">{{ t.paid|money }}</span></div></div>
+</div>
+{% if family %}<p class="muted">Family of {{ family.members }}: total {{ family.balance|money }}.</p>{% endif %}
+
+<div class="grid two">
+  <section class="card">
+    <h2>Take a payment</h2>
+    <form method="post" action="{{ url_for('clinical.payment_add', pid=p.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <label for="amount">Amount ({{ clinic.currency }})</label><input id="amount" name="amount" inputmode="decimal" required>
+      <label for="method">How they paid</label>
+      <select id="method" name="method">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+      <label for="reference">Transaction or reference number (needed except for cash)</label><input id="reference" name="reference" maxlength="60">
+      <label for="note">Note</label><input id="note" name="note" maxlength="120">
+      <p><button class="primary" type="submit">Save and show receipt</button></p>
+    </form>
+  </section>
+
+  {% if user.role == 'manager' %}
+  <section class="card">
+    <h2>Discount or adjustment</h2>
+    <form method="post" action="{{ url_for('clinical.adjustment_add', pid=p.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <label for="reason">Reason</label>
+      <select id="reason" name="reason">{% for k, v in reasons.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+      <div class="grid two">
+        <div><label for="adj_amount">Amount ({{ clinic.currency }})</label><input id="adj_amount" name="amount" inputmode="decimal" required></div>
+        <div><label for="direction">Effect</label>
+          <select id="direction" name="direction"><option value="discount">Takes off the bill</option><option value="charge">Adds to the bill</option></select></div>
+      </div>
+      <label for="adj_note">Note (needed for other discounts, write-offs and corrections)</label><input id="adj_note" name="note" maxlength="120">
+      <p class="muted small">
+        {% if p.offers_ok and p.dob and p.dob[5:10] == today.isoformat()[5:10] %}It is this patient's birthday, and they agreed to offers.
+        {% else %}The system does not apply offers by itself. The manager decides each time whether an offer applies.{% endif %}
+      </p>
+      <p><button type="submit">Save adjustment</button></p>
+    </form>
+  </section>
+  {% endif %}
+</div>
+
+<section class="card">
+  <h2>Statement</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>What</th><th>Amount</th><th>Balance</th></tr>
+    {% for e in events %}
+    <tr style="{{ 'opacity:.55;text-decoration:line-through' if e.voided }}">
+      <td>{{ e.label }}<div class="muted small">{{ e.day|date }}
+        {% if e.kind == 'payment' %} &middot; <a href="{{ url_for('clinical.receipt', pay_id=e.id) }}">Receipt R-{{ '%06d' % e.receipt_no }}</a>
+        {% if e.voided %}<span class="pill bad">Voided</span>{% endif %}{% endif %}</div></td>
+      <td class="nw">{{ e.delta|money }}</td><td class="nw">{{ e.balance|money }}</td>
+    </tr>
+    {% else %}<tr><td colspan="3" class="muted">No charges or payments yet.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

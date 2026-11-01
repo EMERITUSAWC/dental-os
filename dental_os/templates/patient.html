@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_status.html" import conf %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1>{{ p.first_name }} {{ p.last_name }} {% if p.status == 'archived' %}<span class="pill">Archived</span>{% endif %}</h1>
+  <div class="row">
+    {% if p.status == 'active' %}<a class="btn primary" href="{{ url_for('views.appointment_new', patient_id=p.id) }}">Book appointment</a>{% endif %}
+    <a class="btn" href="{{ url_for('clinical.account', pid=p.id) }}">Account{% if bal.balance != 0 %}: {{ bal.balance|money }}{% endif %}</a>
+    <a class="btn" href="{{ url_for('views.patient_edit', pid=p.id) }}">Edit</a>
+  </div>
+</div>
+{{ tabs(p, 'overview') }}
+
+<div class="grid two">
+  <section class="card">
+    <h2>Details</h2>
+    <dl class="facts">
+      <dt>Phone</dt><dd>{{ p.phone|phone }}</dd>
+      <dt>Email</dt><dd>{{ p.email or 'None' }}</dd>
+      <dt>Born</dt><dd>{{ p.dob|date if p.dob else 'Not given' }}</dd>
+      <dt>Address</dt><dd>{{ p.address or 'Not given' }}</dd>
+      <dt>Reach by</dt><dd>{{ p.preferred_contact|capitalize }}</dd>
+      <dt>Messages</dt><dd>{{ 'Agreed' if p.reminders_ok else 'Not agreed' }}</dd>
+      <dt>Offers</dt><dd>{{ 'Agreed' if p.offers_ok else 'Not agreed' }}</dd>
+      <dt>Notes</dt><dd>{{ p.notes or 'None' }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Family</h2>
+    {% if head %}<p>Family head: <a href="{{ url_for('views.patient_view', pid=head.id) }}">{{ head.first_name }} {{ head.last_name }}</a></p>{% endif %}
+    {% for d in dependants %}<p><a href="{{ url_for('views.patient_view', pid=d.id) }}">{{ d.first_name }} {{ d.last_name }}</a></p>{% endfor %}
+    {% if not head and not dependants %}<p class="muted">No family links.</p>{% endif %}
+    <form method="post" action="{{ url_for('views.patient_archive', pid=p.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      {% if p.status == 'active' %}<button class="danger" type="submit">Archive patient</button>
+        <span class="muted small">Hides them from searches. Nothing is deleted.</span>
+      {% else %}<input type="hidden" name="restore" value="1"><button type="submit">Restore patient</button>{% endif %}
+    </form>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Appointments</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>When</th><th>Dentist</th><th>Reason</th><th>Status</th></tr>
+    {% for a in appts %}
+    <tr>
+      <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{% if a.start_at %}{{ a.start_at[:10]|date }}, {{ a.start_at|time }}{% else %}No time yet{% endif %}</a></td>
+      <td>{{ a.provider_name or '' }}</td><td>{{ a.category }}</td><td>{{ conf(a) }}</td>
+    </tr>
+    {% else %}<tr><td colspan="4" class="muted">No appointments yet.</td></tr>{% endfor %}
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>WhatsApp messages</h2>
+  {% for m in msgs %}
+    <p class="small"><span class="muted">{{ m.created_at }} UTC, {{ m.user_name }}, {{ m.kind }}</span><br>{{ m.body }}</p>
+  {% else %}<p class="muted">None yet.</p>{% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Membership, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: membership</h1>
+{{ tabs(p, 'membership') }}
+{% if m %}
+<section class="card">
+  <div class="row spread"><h2>{{ m.plan_name }} <span class="pill {{ 'ok' if m.status == 'active' else 'warn' }}">{{ m.status|capitalize }}</span></h2>
+    <span>{{ m.fee_p|money }}, {{ cycles[m.cycle][0]|lower }}</span></div>
+  <dl class="facts"><dt>Joined</dt><dd>{{ m.started_on|date }}</dd><dt>Next fee</dt><dd>{{ m.next_due_on|date }}</dd>
+    <dt>Discount</dt><dd>{{ m.discount_pct }}% on other treatment</dd></dl>
+  {% if m.status == 'lapsed' %}<p class="pill warn">A fee is more than {{ grace }} days late, so benefits are paused until it is paid.</p>{% endif %}
+</section>
+<section class="card"><h2>Included this year ({{ benefits.year_start|date }} to {{ benefits.year_end|date }})</h2>
+  {% for i in benefits['items'] %}<p>{{ i.benefit.code_name }}: <strong>{{ i.left }} left</strong> of {{ i.benefit.qty_per_year }}</p>
+  {% else %}<p class="muted">No included services on this plan. The discount applies to everything.</p>{% endfor %}
+  <p class="muted small">When work is marked done on the treatment list, an included service is waived if one is left. Otherwise the discount is taken off. Both show on the account.</p>
+</section>
+<section class="card"><h2>Fees</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Due</th><th>Amount</th><th>Status</th><th></th></tr>
+    {% for c in charges %}
+    <tr><td class="nw">{{ c.due_on|date }}</td><td class="nw">{{ c.amount_p|money }}</td>
+      <td><span class="pill {{ 'ok' if c.status == 'paid' else 'bad' if c.status == 'failed' else 'warn' if c.status == 'due' else '' }}">{{ c.status|capitalize }}</span>{% if c.note %} <span class="muted small">{{ c.note }}</span>{% endif %}</td>
+      <td>{% if c.status in ('due', 'failed') %}
+        <form method="post" action="{{ url_for('commercial.membership_charge_pay', charge_id=c.id) }}" class="row">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+          <select name="method" aria-label="Paid by" style="width:auto">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+          <input name="reference" placeholder="Reference" aria-label="Reference" maxlength="80" style="width:110px"><button class="primary" type="submit">Paid</button></form>
+        <form method="post" action="{{ url_for('commercial.membership_charge_fail', charge_id=c.id) }}" class="row" style="margin-top:4px">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input name="note" placeholder="What went wrong" aria-label="What went wrong" maxlength="200" required style="width:170px"><button type="submit">Failed</button></form>
+        {% if user.role == 'manager' %}<form method="post" action="{{ url_for('commercial.membership_charge_waive', charge_id=c.id) }}" class="row" style="margin-top:4px">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input name="note" placeholder="Why waive it" aria-label="Why waive it" maxlength="200" required style="width:170px"><button type="submit">Waive</button></form>{% endif %}
+      {% elif c.payment_id %}<a href="{{ url_for('clinical.receipt', pay_id=c.payment_id) }}">Receipt</a>{% endif %}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% if uses %}<section class="card"><h2>Benefits used</h2>
+  {% for u in uses %}<p class="small">{{ u.used_on|date }}: {{ u.code_name }}, {{ 'included' if u.kind == 'included' else 'discount' }}, {{ u.amount_p|money }}{% if u.reversed %} <span class="pill">Reversed</span>{% endif %}</p>{% endfor %}</section>{% endif %}
+{% if user.role == 'manager' %}
+<section class="card"><details><summary>Cancel this membership</summary>
+  <form method="post" action="{{ url_for('commercial.membership_cancel', membership_id=m.id) }}" class="row" style="margin-top:8px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input name="reason" placeholder="Why" aria-label="Reason" maxlength="200" required style="flex:1; min-width:200px">
+    <button class="danger" type="submit">Cancel membership</button></form>
+  <p class="muted small">Fees already paid stay as they are. Unpaid fees are dropped. The record is kept.</p></details></section>
+{% endif %}
+{% else %}
+<section class="card"><h2>Join a membership plan</h2>
+  {% if plans %}
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="plan_id">Plan</label><select id="plan_id" name="plan_id" required>
+      {% for e in plans %}<option value="{{ e.plan.id }}">{{ e.plan.name }}: {{ e.plan.fee_p|money }}, {{ cycles[e.plan.cycle][0]|lower }}{% if e.plan.discount_pct %}, {{ e.plan.discount_pct }}% off other treatment{% endif %}</option>{% endfor %}</select>
+    <div class="grid three">
+      <div><label for="start_on">Starts</label><input id="start_on" type="date" name="start_on" value="{{ today.isoformat() }}"></div>
+      <div><label for="pm">First fee paid now by (optional)</label><select id="pm" name="pay_method"><option value="">Not paid yet</option>{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div><label for="pr">Reference (not for cash)</label><input id="pr" name="pay_reference" maxlength="80"></div>
+    </div>
+    <p><button class="primary" type="submit">Start membership</button></p>
+  </form>
+  {% else %}<p class="muted">There are no membership plans on sale. {% if user.role == 'manager' %}<a href="{{ url_for('commercial.membership_plans') }}">Create one</a>.{% else %}A manager needs to create one.{% endif %}</p>{% endif %}
+</section>
+{% endif %}
+{% if history|length > (1 if m else 0) %}<section class="card"><h2>Earlier memberships</h2>
+  {% for h in history if not m or h.id != m.id %}<p class="small">{{ h.plan_name }}, {{ h.started_on|date }}{% if h.cancelled_on %} to {{ h.cancelled_on|date }}: {{ h.cancel_reason }}{% endif %}</p>{% endfor %}</section>{% endif %}
+{% endblock %}

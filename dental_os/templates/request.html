@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Booking request{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ r.first_name }} {{ r.last_name }}</h1><a href="{{ url_for('comms.requests_list') }}">All requests</a></div>
+<section class="card"><dl class="facts">
+  <dt>Phone</dt><dd>{{ r.phone|phone }}</dd>{% if r.email %}<dt>Email</dt><dd>{{ r.email }}</dd>{% endif %}
+  <dt>Wants</dt><dd>{{ r.wanted_start[:10]|date }}, {{ r.wanted_start|time }}, {{ r.provider_name or 'first available dentist' }}</dd>
+  <dt>For</dt><dd>{{ r.reason }}</dd>{% if r.note %}<dt>Note</dt><dd>{{ r.note }}</dd>{% endif %}
+  <dt>Messages</dt><dd>{{ 'Agreed to appointment messages' if r.agrees_messages else 'Did not tick the box for messages' }}</dd>
+  <dt>Asked on</dt><dd>{{ r.created_at[:16] }}</dd>
+  {% if r.status != 'new' %}<dt>Status</dt><dd>{{ r.status|capitalize }}{% if r.decline_reason %}: {{ r.decline_reason }}{% endif %}</dd>{% endif %}
+</dl></section>
+{% if r.status == 'new' %}
+<section class="card"><h2>Accept</h2>
+  <form method="post" action="{{ url_for('comms.request_accept', rid=r.id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <fieldset><legend>Who is this?</legend>
+      {% for m in matches %}<label class="check"><input type="radio" name="patient" value="{{ m.id }}" {{ 'checked' if loop.first }}><span>{{ m.first_name }} {{ m.last_name }}, {{ m.phone|phone }}{% if m.dob %}, born {{ m.dob|date }}{% endif %}</span></label>{% endfor %}
+      <label class="check"><input type="radio" name="patient" value="new" {{ 'checked' if not matches }}><span>A new patient</span></label>
+    </fieldset>
+    <div class="grid three">
+      <div><label for="date">Date</label><input id="date" type="date" name="date" value="{{ start.strftime('%Y-%m-%d') }}" required></div>
+      <div><label for="time">Time</label><input id="time" type="time" name="time" value="{{ start.strftime('%H:%M') }}" required></div>
+      <div><label for="provider_id">Dentist</label><select id="provider_id" name="provider_id">{% if not r.provider_id %}<option value="">First available</option>{% endif %}{% for p in providers %}<option value="{{ p.id }}" {{ 'selected' if p.id == r.provider_id }}>{{ p.name }}</option>{% endfor %}</select></div>
+    </div>
+    <p class="muted small">The time must be one the diary still offers. If it was taken, change it here.</p>
+    <p><button class="primary" type="submit">Book it</button></p>
+  </form>
+</section>
+<section class="card"><details><summary>Decline</summary>
+  <form method="post" action="{{ url_for('comms.request_decline', rid=r.id) }}" class="row" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input name="reason" placeholder="Reason, for example: no dentist that day" aria-label="Reason" maxlength="200" required style="flex:1; min-width:220px"><button class="danger" type="submit">Decline</button></form>
+</details></section>
+{% elif r.appointment_id %}<p><a href="{{ url_for('views.appointment_view', aid=r.appointment_id) }}">Open the visit</a></p>{% endif %}
+{% endblock %}

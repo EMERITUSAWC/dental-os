@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Patients{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1>{{ 'Who is the appointment for?' if booking else 'Patients' }}</h1>
+  <a class="btn primary" href="{{ url_for('views.patient_new') }}">New patient</a>
+</div>
+<form method="get" class="card row">
+  {% if booking %}<input type="hidden" name="book" value="1">{% endif %}
+  <input name="q" value="{{ q }}" placeholder="Name or phone number" aria-label="Search patients" style="flex:1;min-width:200px" autofocus>
+  <label class="check" style="margin:0"><input type="checkbox" name="archived" value="1" {{ 'checked' if archived }}> Include archived</label>
+  <button type="submit">Search</button>
+</form>
+<div class="card">
+  <p class="muted small">{{ total }} found</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Name</th><th>Phone</th><th>Messages</th><th></th></tr>
+    {% for p in rows %}
+    <tr>
+      <td><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>
+        {% if p.status == 'archived' %}<span class="pill">Archived</span>{% endif %}</td>
+      <td>{{ p.phone|phone }}</td>
+      <td>{% if p.reminders_ok %}<span class="pill ok">Agreed</span>{% else %}<span class="pill">Not agreed</span>{% endif %}</td>
+      <td>{% if booking and p.status == 'active' %}<a class="btn primary" href="{{ url_for('views.appointment_new', patient_id=p.id) }}">Book</a>{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="4" class="muted">No patients match. <a href="{{ url_for('views.patient_new') }}">Add one</a>.</td></tr>
+    {% endfor %}
+  </table></div>
+  <div class="row" style="margin-top:12px">
+    {% if page > 1 %}<a class="btn" href="{{ url_for('views.patients', q=q, page=page-1, archived='1' if archived, book='1' if booking) }}">Previous</a>{% endif %}
+    {% if page * per_page < total %}<a class="btn" href="{{ url_for('views.patients', q=q, page=page+1, archived='1' if archived, book='1' if booking) }}">Next</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

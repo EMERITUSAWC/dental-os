@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_msg_tabs.html" import tabs with context %}
+{% block title %}Replies{% endblock %}
+{% block body %}
+<h1>Messages</h1>
+{{ tabs(active, attn) }}
+<p class="muted">WhatsApp replies cannot be read automatically yet. When a patient writes back, open their Messages tab and paste what they wrote. It will wait here until someone has read it. A plain YES can confirm their next visit.</p>
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>Patient</th><th>Last reply</th><th>When</th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('comms.patient_messages', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% if r.n > 1 %} <span class="pill">{{ r.n }} new</span>{% endif %}</td>
+    <td>{{ r.last_body }}</td><td class="nw muted">{{ r.last_at[:16] }}</td></tr>
+  {% else %}<tr><td colspan="3" class="muted">No unread replies.</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

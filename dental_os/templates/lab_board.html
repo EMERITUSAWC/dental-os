@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_lab_rows.html" import rows %}
+{% block title %}Lab cases{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Lab cases</h1>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('ops.lab_labs') }}">Labs and how they are doing</a>{% endif %}</div>
+<p class="muted">Jobs out at a dental laboratory. To start one, open the patient and use the Lab tab.</p>
+{% if b.late %}<section class="card lane late"><h2>Late from the lab ({{ b.late|length }})</h2>{{ rows(b.late, labels, b.today) }}</section>{% endif %}
+<section class="card lane ready"><h2>Back from the lab, ready to fit ({{ b.ready|length }})</h2>{{ rows(b.ready, labels, b.today) }}</section>
+<section class="card"><h2>At the lab ({{ b.out|length }})</h2>{{ rows(b.out, labels, b.today) }}</section>
+<section class="card"><h2>Not sent yet ({{ b.draft|length }})</h2>{{ rows(b.draft, labels, b.today) }}</section>
+<section class="card"><h2>Fitted in the last 30 days</h2>{{ rows(b.recent, labels, b.today) }}</section>
+{% endblock %}

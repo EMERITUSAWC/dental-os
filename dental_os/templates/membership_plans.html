@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Membership plans{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Membership plans</h1><a class="btn" href="{{ url_for('commercial.memberships_home') }}">Members</a></div>
+<p class="muted">A plan has a fee, how often it is paid, included services (a number each year), and a discount on everything else. Changing a plan changes it for new members only. Members keep the fee, cycle and discount they joined on. The included services follow the plan.</p>
+{% for e in plans %}{% set pl = e.plan %}
+<section class="card"><h2>{{ pl.name }} <span class="muted small">{{ e.members }} members</span></h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="plan_id" value="{{ pl.id }}">
+    <div class="grid three">
+      <div><label for="n{{ pl.id }}">Name</label><input id="n{{ pl.id }}" name="name" value="{{ pl.name }}" maxlength="60"></div>
+      <div><label for="f{{ pl.id }}">Fee</label><input id="f{{ pl.id }}" name="fee" value="{{ pl.fee_p|plain }}" inputmode="decimal"></div>
+      <div><label for="c{{ pl.id }}">Paid</label><select id="c{{ pl.id }}" name="cycle">{% for k, v in cycles.items() %}<option value="{{ k }}" {{ 'selected' if pl.cycle == k }}>{{ v[0] }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="grid two">
+      <div><label for="d{{ pl.id }}">Discount on other treatment (%)</label><input id="d{{ pl.id }}" name="discount_pct" type="number" min="0" max="100" value="{{ pl.discount_pct }}"></div>
+      <div><label for="x{{ pl.id }}">Short description</label><input id="x{{ pl.id }}" name="description" value="{{ pl.description or '' }}" maxlength="300"></div>
+    </div>
+    <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if pl.active }}><span>On sale to new members</span></label>
+    <p><button type="submit">Save plan</button></p>
+  </form>
+  <h2 style="margin-top:8px">Included each year</h2>
+  {% for b in e.benefits %}<form method="post" class="row" style="margin-bottom:4px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="benefit">
+    <input type="hidden" name="plan_id" value="{{ pl.id }}"><input type="hidden" name="code_id" value="{{ b.code_id }}">
+    <span style="min-width:200px">{{ b.code_name }}</span><input name="qty" type="number" min="0" max="99" value="{{ b.qty_per_year }}" aria-label="Times a year" style="width:70px"> a year
+    <button type="submit" class="small">Save</button><span class="muted small">0 removes it</span></form>
+  {% else %}<p class="muted small">Nothing included yet.</p>{% endfor %}
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="benefit"><input type="hidden" name="plan_id" value="{{ pl.id }}">
+    <select name="code_id" aria-label="Treatment" style="width:auto">{% for c in codes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+    <input name="qty" type="number" min="1" max="99" value="2" aria-label="Times a year" style="width:70px"> a year <button type="submit">Include it</button></form>
+</section>
+{% endfor %}
+<section class="card"><h2>New plan</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="grid three">
+      <div><label for="nn">Name</label><input id="nn" name="name" maxlength="60" required></div>
+      <div><label for="nf">Fee</label><input id="nf" name="fee" inputmode="decimal" required></div>
+      <div><label for="nc">Paid</label><select id="nc" name="cycle">{% for k, v in cycles.items() %}<option value="{{ k }}">{{ v[0] }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="grid two"><div><label for="nd">Discount on other treatment (%)</label><input id="nd" name="discount_pct" type="number" min="0" max="100" value="0"></div>
+      <div><label for="nx">Short description</label><input id="nx" name="description" maxlength="300"></div></div>
+    <input type="hidden" name="active" value="1">
+    <p><button class="primary" type="submit">Add plan</button></p></form>
+</section>
+{% endblock %}

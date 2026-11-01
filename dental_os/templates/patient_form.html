@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit patient' if patient else 'New patient' }}{% endblock %}
+{% macro field(name, label, type='text', required=False, hint='', autocomplete='off') %}
+  <label for="f-{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+  <input id="f-{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.get(name) or '' }}" autocomplete="{{ autocomplete }}" {{ 'required' if required }}>
+  {% if hint %}<div class="muted small">{{ hint }}</div>{% endif %}
+  {% if errors.get(name) %}<div class="err" role="alert">{{ errors[name] }}</div>{% endif %}
+{% endmacro %}
+{% block body %}
+<h1>{{ 'Edit ' ~ patient.first_name ~ ' ' ~ patient.last_name if patient else 'New patient' }}</h1>
+
+{% if dupes %}
+<div class="flash error" role="alert">
+  <strong>This may be someone already on the system:</strong>
+  {% for d in dupes %}<div><a href="{{ url_for('views.patient_view', pid=d.id) }}">{{ d.first_name }} {{ d.last_name }}</a>, {{ d.phone|phone }}</div>{% endfor %}
+  If this is a different person, tick the box at the bottom and save again.
+</div>
+{% endif %}
+
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid two">
+    <div>{{ field('first_name', 'First name', required=True, autocomplete='given-name') }}</div>
+    <div>{{ field('last_name', 'Last name', required=True, autocomplete='family-name') }}</div>
+    <div>{{ field('phone', 'Phone or WhatsApp number', 'tel', True, 'A local number, or an international one starting with +', 'tel') }}</div>
+    <div>{{ field('email', 'Email (optional)', 'email', autocomplete='email') }}</div>
+    <div>{{ field('dob', 'Date of birth', 'date', hint='Needed for the birthday offer.') }}</div>
+    <div>
+      <label for="f-gender">Gender (optional)</label>
+      <select id="f-gender" name="gender">
+        <option value="">Not stated</option>
+        {% for g in ('Female', 'Male') %}<option {{ 'selected' if form.get('gender') == g }}>{{ g }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  {{ field('address', 'Address', autocomplete='street-address') }}
+
+  <label for="f-language">Language for this patient's messages and documents</label>
+  <select id="f-language" name="language">
+    <option value="">Same as the clinic ({{ languages[clinic.language] or 'English' }})</option>
+    {% for code, name in languages.items() %}<option value="{{ code }}" {{ 'selected' if form.get('language') == code }}>{{ name }}</option>{% endfor %}
+  </select>
+
+  <label for="f-guarantor_id">Family head (who pays for this patient, if not themselves)</label>
+  <select id="f-guarantor_id" name="guarantor_id">
+    <option value="">Themselves</option>
+    {% for h in heads %}<option value="{{ h.id }}" {{ 'selected' if form.get('guarantor_id')|string == h.id|string }}>{{ h.first_name }} {{ h.last_name }}, {{ h.phone|phone }}</option>{% endfor %}
+  </select>
+  {% if errors.get('guarantor_id') %}<div class="err">{{ errors['guarantor_id'] }}</div>{% endif %}
+
+  <label for="f-preferred_contact">Best way to reach them</label>
+  <select id="f-preferred_contact" name="preferred_contact">
+    {% for v, t in (('whatsapp', 'WhatsApp'), ('call', 'Phone call'), ('email', 'Email')) %}
+      <option value="{{ v }}" {{ 'selected' if (form.get('preferred_contact') or 'whatsapp') == v }}>{{ t }}</option>{% endfor %}
+  </select>
+
+  <label for="f-notes">Notes for staff (no medical history here)</label>
+  <textarea id="f-notes" name="notes" rows="3">{{ form.get('notes') or '' }}</textarea>
+
+  <h2 style="margin-top:20px">Consent</h2>
+  <label class="check"><input type="checkbox" name="reminders_ok" value="1" {{ 'checked' if form.get('reminders_ok') in (1, '1', 'on', True) }}>
+    <span>The patient agreed to get appointment messages on WhatsApp. WhatsApp buttons stay off until this is ticked.</span></label>
+  <label class="check"><input type="checkbox" name="offers_ok" value="1" {{ 'checked' if form.get('offers_ok') in (1, '1', 'on', True) }}>
+    <span>The patient agreed to get birthday and seasonal offers.</span></label>
+
+  {% if dupes %}<label class="check"><input type="checkbox" name="allow_duplicate" value="1"> <span>This is a different person. Save anyway.</span></label>{% endif %}
+
+  <p class="row"><button class="primary" type="submit">Save patient</button>
+    <a class="btn" href="{{ url_for('views.patient_view', pid=patient.id) if patient else url_for('views.patients') }}">Cancel</a></p>
+</form>
+{% endblock %}

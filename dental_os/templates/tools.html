@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Tools{% endblock %}
+{% block body %}
+<h1>Tools</h1>
+<div class="grid two">
+  <section class="card"><h2>Export your data</h2>
+    <p class="muted">A zip of spreadsheet files with this clinic's patients, visits, treatment, payments, medical history, notes and consents. The files themselves (X-rays and so on) are listed but not included. Treat the zip as confidential patient data.</p>
+    <form method="post" action="{{ url_for('record.export_data') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">Download export</button></form>
+  </section>
+  <section class="card"><h2>Import patients</h2>
+    <p class="muted">Bring a patient list from another system or a spreadsheet. You see what was understood before anything is added.</p>
+    <a class="btn primary" href="{{ url_for('record.import_start') }}">Start an import</a>
+  </section>
+  <section class="card"><h2>Consent forms</h2>
+    <p class="muted">The wording patients read and agree to.</p>
+    <a class="btn" href="{{ url_for('record.consent_forms') }}">Edit consent forms</a>
+  </section>
+  <section class="card"><h2>Messages and online booking</h2>
+    <p class="muted">Reminder rules, message wording, campaigns, and the public booking page.</p>
+    <a class="btn" href="{{ url_for('comms.setup') }}">Set up messages</a>
+  </section>
+  <section class="card"><h2>Insurers and payers</h2>
+    <p class="muted">Who pays part of a bill, and their price lists.</p>
+    <a class="btn" href="{{ url_for('finance.payers') }}">Payers</a>
+  </section>
+  <section class="card"><h2>Key numbers</h2>
+    <p class="muted">Production, collections, no-shows, plan acceptance, chair time and who owes.</p>
+    <a class="btn" href="{{ url_for('ops.kpi_view') }}">Open key numbers</a>
+  </section>
+  <section class="card"><h2>Stock and suppliers</h2>
+    <p class="muted">Materials on the shelf, what to reorder, and what is about to expire.</p>
+    <a class="btn" href="{{ url_for('ops.stock_list') }}">Stock</a> <a class="btn" href="{{ url_for('ops.stock_suppliers') }}">Suppliers</a>
+  </section>
+  <section class="card"><h2>Labs</h2>
+    <p class="muted">The dental laboratories you use, and how quickly they return work.</p>
+    <a class="btn" href="{{ url_for('ops.lab_labs') }}">Labs</a>
+  </section>
+  <section class="card"><h2>API and webhooks</h2>
+    <p class="muted">Keys and addresses that let other programs read your data or hear about changes.</p>
+    <a class="btn" href="{{ url_for('ops.integrations') }}">API and webhooks</a>
+  </section>
+  <section class="card"><h2>Privacy and data rights</h2>
+    <p class="muted">Requests from people about their data, incidents, records kept too long, and a full copy of one patient's record.</p>
+    <a class="btn" href="{{ url_for('privacy.home') }}">Privacy</a>
+  </section>
+  <section class="card"><h2>Catalogue and settings</h2>
+    <p class="muted">Procedures and prices, opening hours, dentists and chairs.</p>
+    <a class="btn" href="{{ url_for('views.settings') }}">Settings</a>
+  </section>
+</div>
+{% endblock %}

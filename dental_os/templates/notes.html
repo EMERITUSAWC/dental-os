@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Notes, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: clinical notes</h1>
+{{ tabs(p, 'notes') }}
+<section class="card"><h2>Write a note</h2>
+  <p class="row">{% for k, t in templates.items() %}<a class="btn" href="{{ url_for('record.note_new', pid=p.id, template=k) }}">{{ t[0] }}</a>{% endfor %}</p>
+  <p class="muted small">A note stays a draft until a dentist signs it. A signed note is locked. Later changes are added underneath as dated addenda.</p>
+</section>
+{% for i in items %}{% set n = i.note %}
+<section class="card">
+  <div class="row spread">
+    <h2>{{ n.title }}{% if n.tooth %}, tooth {{ n.tooth }}{% endif %}
+      {% if n.status == 'draft' %}<span class="pill warn">Draft</span>{% else %}<span class="pill ok">Signed</span>{% endif %}</h2>
+    <span class="muted small">{{ n.created_at[:10]|date }}, {{ n.author_name or '' }}</span>
+  </div>
+  <p class="note-body">{{ n.body }}</p>
+  {% if n.status == 'signed' %}<p class="muted small">Signed by {{ n.signer_name }} on {{ n.signed_at[:10]|date }} at {{ n.signed_at[11:16] }}.</p>{% endif %}
+  {% for a in i.addenda %}<div class="addendum"><p class="note-body">{{ a.body }}</p><p class="muted small">Addendum by {{ a.signer_name }}, {{ a.signed_at[:10]|date }} at {{ a.signed_at[11:16] }}</p></div>{% endfor %}
+  {% if n.status == 'draft' %}
+  <div class="row">
+    <a class="btn" href="{{ url_for('record.note_edit', note_id=n.id) }}">Edit</a>
+    {% if can_sign %}<form method="post" action="{{ url_for('record.note_sign', note_id=n.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">Sign and lock</button></form>{% endif %}
+    <form method="post" action="{{ url_for('record.note_discard', note_id=n.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="danger" type="submit">Discard draft</button></form>
+  </div>
+  {% elif can_sign %}
+  <form method="post" action="{{ url_for('record.note_addendum', note_id=n.id) }}" class="addform">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="add{{ n.id }}">Add an addendum</label><textarea id="add{{ n.id }}" name="text" rows="2" maxlength="20000"></textarea>
+    <p><button type="submit">Add addendum</button></p>
+  </form>
+  {% endif %}
+</section>
+{% else %}<p class="card muted">No notes yet.</p>{% endfor %}
+{% endblock %}

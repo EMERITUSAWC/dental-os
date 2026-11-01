@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_kpi_bits.html" import rate, delta, range_form %}
+{% block title %}All clinics{% endblock %}
+{% block body %}
+<h1>{{ org.name }}: all clinics</h1>
+<p class="muted">Headline numbers side by side. This page is read only: it never opens another clinic's patients or records. Money is shown in each clinic's own currency, and totals are never added across currencies.</p>
+{{ range_form(d.start, d.end, presets, url_for('ops.group_view')) }}
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>Clinic</th><th>Net production</th><th>Collected</th><th>Visits</th><th>New patients</th><th>No-show rate</th><th>Plans accepted</th><th>Chair time</th><th>Recall on time</th><th>Owed</th></tr>
+  {% for r in d.rows %}{% set c = r.clinic %}
+  <tr><td><strong>{{ c.name }}</strong><br><span class="muted small">{{ c.country }}, {{ c.currency }}</span></td>
+    <td class="nw">{{ r.cur.net_p|money_in(c.currency) }}<br>{{ delta(r.gross_change) }}</td><td class="nw">{{ r.cur.collected_p|money_in(c.currency) }}</td>
+    <td>{{ r.cur.visits.done }}</td><td>{{ r.cur.new_patients }}</td><td>{{ rate(r.cur.visits.no_show_rate) }}</td>
+    <td>{{ rate(r.cur.plans.value_rate) }}</td><td>{{ rate(r.cur.chairs.rate) }}</td><td>{{ rate(r.recall.on_time_rate) }}</td><td class="nw">{{ r.owed_p|money_in(c.currency) }}</td></tr>
+  {% endfor %}
+</table></div></section>
+<section class="card"><h2>Totals</h2>
+  <p>{{ d.visits }} visits and {{ d.patients_new }} new patients across all clinics.</p>
+  <div class="tbl-wrap"><table><tr><th>Currency</th><th>Clinics</th><th>Net production</th><th>Collected</th><th>Owed</th></tr>
+    {% for cur, t in d.totals.items() %}<tr><td>{{ cur }}</td><td>{{ t.clinics }}</td><td class="nw">{{ t.net_p|money_in(cur) }}</td><td class="nw">{{ t.collected_p|money_in(cur) }}</td><td class="nw">{{ t.owed_p|money_in(cur) }}</td></tr>{% endfor %}
+  </table></div>
+  <p class="small muted">The "change" under net production is gross production against the period before. Each clinic's own full page is under Reports, Key numbers, when signed in at that clinic.</p>
+</section>
+{% endblock %}

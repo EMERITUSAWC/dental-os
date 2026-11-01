@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Receipt") }} R-{{ '%06d' % pay.receipt_no }}{% endblock %}
+{% block body %}
+<div class="receipt card">
+  <h1>{{ clinic.name }}</h1>
+  <p class="muted">{{ clinic.phone|phone if clinic.phone }}</p>
+  <h2>{{ _d("Receipt") }} R-{{ '%06d' % pay.receipt_no }} {% if pay.voided %}<span class="pill bad">{{ _d("VOIDED") }}</span>{% endif %}</h2>
+  <dl class="facts">
+    <dt>{{ _d("Date") }}</dt><dd>{{ pay.received_on|date }}</dd>
+    <dt>{{ _d("Received from") }}</dt><dd>{{ pay.first_name }} {{ pay.last_name }}</dd>
+    <dt>{{ _d("Amount") }}</dt><dd><strong>{{ pay.amount_p|money }}</strong></dd>
+    <dt>{{ _d("Paid by") }}</dt><dd>{{ _d(methods[pay.method]) }}{% if pay.reference %}, {{ _d("ref") }} {{ pay.reference }}{% endif %}</dd>
+    {% if pay.note %}<dt>{{ _d("Note") }}</dt><dd>{{ pay.note }}</dd>{% endif %}
+    <dt>{{ _d('Credit on account') if t.balance < 0 else _d('Balance now') }}</dt><dd>{{ (-t.balance if t.balance < 0 else t.balance)|money }}</dd>
+    <dt>{{ _d("Received by") }}</dt><dd>{{ pay.received_by_name }}</dd>
+  </dl>
+  {% if pay.voided %}<p class="muted">{{ _d("Voided:") }} {{ pay.void_reason }}</p>{% endif %}
+  <p class="muted small">{{ _d("Thank you. This is a payment receipt.") }}</p>
+</div>
+<div class="row no-print">
+  <button class="primary" data-print>Print</button>
+  <a class="btn" href="{{ url_for('clinical.account', pid=pay.patient_id) }}">Back to account</a>
+  {% if user.role == 'manager' and not pay.voided %}
+  <form method="post" action="{{ url_for('clinical.payment_void', pay_id=pay.id) }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input name="reason" placeholder="Why void this payment?" required style="width:240px" aria-label="Reason">
+    <button class="danger" type="submit">Void payment</button>
+  </form>{% endif %}
+</div>
+{% endblock %}

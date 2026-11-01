@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}API and webhooks{% endblock %}
+{% block body %}
+<div class="row spread"><h1>API and webhooks</h1><a class="btn" href="{{ url_for('ops.api_docs') }}">How to use them</a></div>
+<p class="muted">These let other programs work with this clinic's data: your accounts software, a website, a reminder service. Every key and every address belongs to this clinic only. Share a key only with a person or program you trust, and switch it off the moment it is lost.</p>
+
+{% if new_key %}<section class="card" style="border-color: var(--brand)"><h2>Your new key</h2>
+  <p>Copy it now. It is shown once and cannot be looked up again. If you lose it, make a new one.</p>
+  <p class="keybox">{{ new_key }}</p></section>{% endif %}
+{% if new_secret %}<section class="card" style="border-color: var(--brand)"><h2>Your signing secret</h2>
+  <p>The receiving program uses this to check that a message really came from here. Copy it now. It is shown once.</p>
+  <p class="keybox">{{ new_secret }}</p></section>{% endif %}
+
+<section class="card"><h2>API keys</h2>
+  <div class="tbl-wrap"><table><tr><th>Name</th><th>Starts with</th><th>Can</th><th>Made</th><th>Last used</th><th></th></tr>
+  {% for k in keys %}<tr><td>{{ k.name }}</td><td><code>{{ k.key_prefix }}</code></td><td>{{ 'Read and write' if k.access == 'write' else 'Read only' }}</td>
+    <td class="nw">{{ k.created_at[:10]|date }}</td><td class="nw">{{ k.last_used_at[:16] if k.last_used_at else 'Never' }}</td>
+    <td>{% if k.revoked %}<span class="pill bad">switched off</span>{% else %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="key_revoke"><input type="hidden" name="key_id" value="{{ k.id }}"><button class="danger" type="submit">Switch off</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No keys yet.</td></tr>{% endfor %}</table></div>
+  <form method="post" class="row" style="align-items:flex-end"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="key_create">
+    <div><label for="kn">Name</label><input id="kn" name="name" maxlength="60" required placeholder="for example Accounts export"></div>
+    <div><label for="ka">Can</label><select id="ka" name="access"><option value="read">Read only</option><option value="write">Read and write</option></select></div>
+    <button class="primary" type="submit">Make a key</button></form>
+</section>
+
+<section class="card"><h2>Webhooks</h2>
+  <p class="muted">An address that we tell when something happens, for example when a patient is added. It must start with https:// and be on the public internet.</p>
+  {% for h in hooks %}
+  <div class="card" style="margin-bottom:12px">
+    <p><strong>{{ h.url }}</strong> {% if not h.active %}<span class="pill">switched off</span>{% endif %}<br>
+      <span class="muted small">{{ 'All events' if h.events == '*' else h.events.replace(',', ', ') }}{% if h.note %}. {{ h.note }}{% endif %}</span></p>
+    <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="hook_id" value="{{ h.id }}">
+      {% if h.active %}<button name="action" value="hook_test" type="submit">Send a test</button><button name="action" value="hook_off" type="submit">Switch off</button>
+      {% else %}<button name="action" value="hook_on" type="submit">Switch on</button>{% endif %}
+      <button name="action" value="hook_secret" type="submit">New signing secret</button></form>
+  </div>
+  {% else %}<p class="muted">No webhooks yet.</p>{% endfor %}
+  <h2 style="margin-top:16px">Add a webhook</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="hook_add">
+    <div class="grid two"><div><label for="hu">Address</label><input id="hu" name="url" maxlength="300" required placeholder="https://example.com/hooks/dental"></div>
+      <div><label for="hn">Note</label><input id="hn" name="note" maxlength="100" placeholder="what it is for"></div></div>
+    <fieldset><legend>Tell it about</legend>
+      {% for k, v in events.items() %}<label class="check"><input type="checkbox" name="events" value="{{ k }}"><span>{{ v }} <code class="small">{{ k }}</code></span></label>{% endfor %}
+      <p class="small muted">Tick none to get every event.</p></fieldset>
+    <p><button class="primary" type="submit">Add webhook</button></p></form>
+</section>
+
+<section class="card"><h2>Recent messages sent to webhooks</h2>
+  <div class="tbl-wrap"><table><tr><th>When</th><th>Event</th><th>To</th><th>Result</th><th></th></tr>
+  {% for d in log %}<tr><td class="nw">{{ d.created_at[:16] }}</td><td><code>{{ d.event }}</code></td><td class="small">{{ d.url }}</td>
+    <td><span class="pill {{ 'ok' if d.status == 'sent' else 'bad' if d.status == 'dead' else 'warn' }}">{{ {'sent': 'Delivered', 'pending': 'Waiting' if d.attempts == 0 else 'Will retry', 'dead': 'Gave up'}[d.status] }}</span>
+      {% if d.error %}<span class="muted small">{{ d.error }}</span>{% endif %}</td>
+    <td>{% if d.status == 'dead' %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="hook_retry"><input type="hidden" name="delivery_id" value="{{ d.id }}"><button type="submit">Try again</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Nothing sent yet.</td></tr>{% endfor %}</table></div>
+  <p class="small muted">Messages are sent by a command that runs every minute or two (<code>flask deliver-webhooks</code>). If nothing ever leaves "Waiting", that command is not scheduled yet.</p>
+</section>
+{% endblock %}

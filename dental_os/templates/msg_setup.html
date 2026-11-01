@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_msg_tabs.html" import tabs with context %}
+{% block title %}Message set-up{% endblock %}
+{% block body %}
+<h1>Messages</h1>
+{{ tabs(active, attn) }}
+
+<section class="card"><h2>Visit reminders</h2>
+  <p class="muted small">A reminder is added to the send list this many days before a visit. It is skipped if the visit was booked inside that time, and (if you choose) if the patient already confirmed.</p>
+  {% for r in rules %}<form method="post" class="row" style="margin-bottom:6px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="rule"><input type="hidden" name="days_before" value="{{ r.days_before }}">
+    <strong style="min-width:130px">{{ r.days_before }} day{{ '' if r.days_before == 1 else 's' }} before</strong>
+    <label class="check" style="margin:0"><input type="checkbox" name="skip_confirmed" value="1" {{ 'checked' if r.skip_confirmed }}><span>Skip if confirmed</span></label>
+    <label class="check" style="margin:0"><input type="checkbox" name="active" value="1" {{ 'checked' if r.active }}><span>On</span></label><button type="submit">Save</button></form>{% endfor %}
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="rule"><input type="hidden" name="skip_confirmed" value="1"><input type="hidden" name="active" value="1">
+    <label for="nd" style="margin:0">Add a reminder</label><input id="nd" name="days_before" type="number" min="0" max="14" value="1" style="width:80px"><span>days before</span><button type="submit">Add</button></form>
+</section>
+
+<section class="card"><h2>Other automatic messages</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="auto">
+    <label class="check"><input type="checkbox" name="auto_recall" value="1" {{ 'checked' if c.auto_recall }}><span>Check-up due: add to the send list when a recall falls due</span></label>
+    <label class="check"><input type="checkbox" name="auto_review" value="1" {{ 'checked' if c.auto_review }}><span>Review request: after a finished visit, once every 90 days per patient</span></label>
+    <label class="check"><input type="checkbox" name="auto_birthday" value="1" {{ 'checked' if c.auto_birthday }}><span>Birthday greeting: only for patients who agreed to offers</span></label>
+    <label class="check"><input type="checkbox" name="auto_plan" value="1" {{ 'checked' if c.auto_plan }}><span>Quote follow-up: when a quote's follow-up date arrives, up to 3 times</span></label>
+    <label for="review_link">Review page link (for example your Google review link)</label><input id="review_link" name="review_link" value="{{ c.review_link or '' }}" maxlength="300" placeholder="https://">
+    <p><button class="primary" type="submit">Save</button></p></form>
+  <p class="muted small">Every message needs a person to open it. Patients who have not agreed are never queued.</p>
+</section>
+
+<section class="card"><h2>Online booking page</h2>
+  <p class="muted small">A page anyone can open to ask for a visit. It shows real free times, but each request waits on the Booking requests tab until staff accept it.</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="booking">
+    <label class="check"><input type="checkbox" name="booking_on" value="1" {{ 'checked' if c.booking_on }}><span>The page is open</span></label>
+    <div class="grid three">
+      <div><label for="days_ahead">Show days ahead</label><input id="days_ahead" name="days_ahead" type="number" min="1" max="60" value="{{ c.booking_days_ahead }}"></div>
+      <div><label for="notice_hours">Notice needed (hours)</label><input id="notice_hours" name="notice_hours" type="number" min="0" max="168" value="{{ c.booking_notice_hours }}"></div>
+      <div><label for="minutes">Visit length</label><select id="minutes" name="minutes">{% for d in durations %}<option value="{{ d }}" {{ 'selected' if d == c.booking_minutes }}>{{ d }} minutes</option>{% endfor %}</select></div>
+    </div>
+    <label for="note">Note shown on the page (for example: for emergencies, call us)</label><input id="note" name="note" value="{{ c.booking_note or '' }}" maxlength="300">
+    {% if booking_link %}<label for="bl">Page address</label><input id="bl" value="{{ booking_link }}" readonly>{% endif %}
+    <label class="check"><input type="checkbox" name="regenerate" value="1"><span>Make a new address (the old one stops working)</span></label>
+    <p><button class="primary" type="submit">Save</button></p></form>
+</section>
+
+<section class="card"><h2>Wording</h2>
+  <p class="muted small">You can use: {% for f, d in fields.items() %}<code>{{ '{' + f + '}' }}</code>{{ ', ' if not loop.last }}{% endfor %}. Keep treatment details and money out of messages.</p>
+  {% for t in templates %}
+  <form method="post" style="margin-bottom:14px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="{{ t.kind }}">
+    <label for="t_{{ t.kind }}">{{ t.label }}</label><textarea id="t_{{ t.kind }}" name="body" rows="3" maxlength="600">{{ t.body }}</textarea>
+    <p class="row"><button type="submit" name="action" value="template">Save</button>{% if t.body != t.starter %}<button type="submit" name="action" value="template_reset">Go back to the starter wording</button>{% endif %}</p></form>
+  {% endfor %}
+</section>
+{% endblock %}

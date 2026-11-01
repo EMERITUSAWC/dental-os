@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Privacy: {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }} {% if p.anonymised_on %}<span class="pill">Anonymised</span>{% elif p.status == 'archived' %}<span class="pill">Archived</span>{% endif %}</h1>
+{{ tabs(p, 'privacy') }}
+{% if requests %}<div class="flash" role="status">There {{ 'is' if requests|length == 1 else 'are' }} {{ requests|length }} open request{{ '' if requests|length == 1 else 's' }} about this person:
+  {% for r in requests %}<a href="{{ url_for('privacy.request_view', rid=r.id) }}">{{ r.kind }}, reply by {{ r.due_on|date }}</a>{{ ', ' if not loop.last }}{% endfor %}.</div>{% endif %}
+<div class="grid two">
+  <section class="card">
+    <h2>A copy of their record</h2>
+    <p class="muted">Everything the system holds about this person: details, medical history, visits, treatment, notes, payments, messages and the list of files. Check who is asking before you give it out.</p>
+    <p><a class="btn primary" href="{{ url_for('privacy.record_copy', pid=p.id) }}">Open the printable copy</a></p>
+    <form method="post" action="{{ url_for('privacy.record_copy_zip', pid=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <button type="submit">Download everything as a zip</button>
+      <span class="muted small">Includes a data file and their uploaded files.</span></form>
+    <p style="margin-top:12px"><a href="{{ url_for('privacy.requests_list', patient_id=p.id) }}">Record a request from this person</a></p>
+  </section>
+  <section class="card">
+    <h2>Remove their identity</h2>
+    {% if p.anonymised_on %}
+      <p class="muted">Identity details were removed on {{ p.anonymised_on|date }}.</p>
+    {% else %}
+    <p class="muted">Their name, phone, email, address, notes and message text are replaced, and their files are hidden. The year of birth stays. Treatment, notes and money records are kept, because clinics normally have to keep them for years. <strong>This cannot be undone.</strong> Notes you wrote by hand may still mention the person.</p>
+    {% if why %}<div class="flash error" role="alert">Not yet possible:<br>{% for w in why %}{{ w }}{{ '<br>'|safe if not loop.last }}{% endfor %}</div>
+    {% else %}
+    <form method="post" action="{{ url_for('privacy.patient_anonymise', pid=p.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      {% if requests %}<label for="request_id">Because of request</label>
+      <select id="request_id" name="request_id"><option value="">None</option>{% for r in requests %}<option value="{{ r.id }}">{{ r.kind }}, reply by {{ r.due_on|date }}</option>{% endfor %}</select>{% endif %}
+      <label for="reason">Why (no names)</label><input id="reason" name="reason" maxlength="200" required>
+      <label for="confirm">Type {{ word }} to confirm</label><input id="confirm" name="confirm" autocomplete="off" required>
+      <p><button class="danger" type="submit">Remove their identity</button></p>
+    </form>{% endif %}{% endif %}
+  </section>
+</div>
+<section class="card">
+  <h2>Who has looked at this record</h2>
+  <p class="muted small">Opening a patient, the account, medical history, chart, notes and files is logged. The most recent {{ log|length }} entries.</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>When (UTC)</th><th>Who</th><th>What</th></tr>
+    {% for a in log %}<tr><td class="nw">{{ a.created_at }}</td><td>{{ a.user_name or 'System' }}</td><td>{{ a.action }}{% if a.detail %} <span class="muted">{{ a.detail }}</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="3" class="muted">Nothing logged.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

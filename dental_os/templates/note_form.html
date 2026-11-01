@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ templates[key][0] }} note{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ templates[key][0] }}{% if note %} (editing draft){% endif %}</h1>
+{{ tabs(p, 'notes') }}
+{% if not note %}<p class="row">{% for k, t in templates.items() %}<a class="btn {{ 'primary' if k == key }}" href="{{ url_for('record.note_new', pid=p.id, template=k, tooth=tooth or None) }}">{{ t[0] }}</a>{% endfor %}</p>{% endif %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="template" value="{{ key }}">
+  <div class="grid two">
+    <div><label for="tooth">Tooth (FDI number, if the note is about one tooth)</label><input id="tooth" name="tooth" inputmode="numeric" value="{{ tooth }}" maxlength="2"></div>
+    {% if visits %}<div><label for="appointment_id">Visit</label><select id="appointment_id" name="appointment_id"><option value="">Not linked to a visit</option>
+      {% for v in visits %}<option value="{{ v.id }}">{{ v.start_at[:10]|date }}, {{ v.category }}</option>{% endfor %}</select></div>{% endif %}
+  </div>
+  {% for h in templates[key][1] %}
+  <label for="f{{ loop.index0 }}">{{ h }}</label><textarea id="f{{ loop.index0 }}" name="f{{ loop.index0 }}" rows="{{ 5 if key == 'free' else 2 }}" maxlength="4000">{{ values.get('f%d' % loop.index0, '') }}</textarea>
+  {% endfor %}
+  <p><button class="primary" type="submit">Save draft</button> <a class="btn" href="{{ url_for('record.notes_list', pid=p.id) }}">Cancel</a></p>
+</form>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Claim {{ c.claim_no }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ 'Pre-authorisation' if c.kind == 'preauth' else 'Claim' }} {{ c.claim_no }}: {{ c.first_name }} {{ c.last_name }}</h1>
+  <span class="pill {{ 'ok' if c.status in ('paid', 'approved') else 'bad' if c.status == 'rejected' else 'warn' if c.status in ('submitted', 'partly_paid') else '' }}">{{ statuses[c.status] }}</span></div>
+<section class="card">
+  <dl class="facts"><dt>Payer</dt><dd>{{ c.payer_name }}</dd>{% if c.member_no %}<dt>Member number</dt><dd>{{ c.member_no }}</dd>{% endif %}
+    {% if c.submitted_on %}<dt>Sent</dt><dd>{{ c.submitted_on|date }}</dd>{% endif %}{% if c.payer_ref %}<dt>Payer reference</dt><dd>{{ c.payer_ref }}</dd>{% endif %}
+    <dt>Total fees</dt><dd>{{ c.total_fee_p|money }}</dd><dt>{{ 'Approved' if c.kind == 'preauth' and c.status == 'approved' else 'Expected from payer' }}</dt><dd>{{ c.estimate_p|money }}</dd>
+    {% if c.kind == 'claim' %}<dt>Paid so far</dt><dd>{{ c.paid_p|money }}</dd>{% if c.writeoff_p %}<dt>Written off</dt><dd>{{ c.writeoff_p|money }}</dd>{% endif %}{% endif %}
+    {% if c.note %}<dt>Note</dt><dd>{{ c.note }}</dd>{% endif %}</dl>
+  <div class="tbl-wrap"><table><tr><th>Treatment</th><th>Date</th><th>Fee</th><th>Allowed</th><th>Expected</th></tr>
+    {% for i in items %}<tr><td>{{ i.code_name }}{% if i.tooth %}, tooth {{ i.tooth }}{% endif %}</td><td>{{ i.done_on|date if i.done_on else '' }}</td><td class="nw">{{ i.fee_p|money }}</td><td class="nw">{{ i.allowed_p|money }}</td><td class="nw">{{ i.estimate_p|money }}</td></tr>{% endfor %}
+  </table></div>
+  <p class="muted small">Sending the claim to the payer happens outside this system for now (post, email or the payer's portal). Here you record that it was sent and what came back. <a href="{{ url_for('finance.patient_insurance', pid=c.patient_id) }}">Back to the patient's insurance</a></p>
+</section>
+{% if c.status in ('draft', 'rejected') %}
+<section class="card"><h2>Mark as sent</h2><form method="post" action="{{ url_for('finance.claim_submit', claim_id=c.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="sent_on" style="margin:0">Sent on</label><input id="sent_on" type="date" name="sent_on" value="{{ today.isoformat() }}" style="width:auto">
+  <input name="payer_ref" placeholder="Payer reference (optional)" aria-label="Payer reference" maxlength="80"><button class="primary" type="submit">Sent</button></form></section>{% endif %}
+{% if c.status in ('submitted', 'partly_paid') and c.kind == 'claim' %}
+<section class="card"><h2>The payer has paid</h2>
+  <form method="post" action="{{ url_for('finance.claim_payment', claim_id=c.id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="grid three"><div><label for="amount">Amount received</label><input id="amount" name="amount" inputmode="decimal" required></div>
+      <div><label for="reference">Payment reference</label><input id="reference" name="reference" maxlength="80" required></div>
+      <div><label for="writeoff">Write off the rest (optional)</label><input id="writeoff" name="writeoff" inputmode="decimal"></div></div>
+    <label for="writeoff_note">Why written off</label><input id="writeoff_note" name="writeoff_note" maxlength="150" placeholder="Contract price difference">
+    <label class="check"><input type="checkbox" name="final" value="1"><span>This closes the claim, even if less than expected was paid</span></label>
+    <p><button class="primary" type="submit">Record payment</button></p>
+  </form>
+  <p class="muted small">This adds an ordinary payment by insurance to the patient's account, with a receipt, and matches it to this claim.</p>
+</section>{% endif %}
+{% if c.status == 'submitted' and c.kind == 'preauth' %}
+<section class="card"><h2>The payer has answered</h2>
+  <form method="post" action="{{ url_for('finance.claim_approve', claim_id=c.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input name="approved" placeholder="Amount approved" aria-label="Amount approved" inputmode="decimal" required><input name="payer_ref" placeholder="Approval reference" aria-label="Approval reference" maxlength="80"><button class="primary" type="submit">Approved</button></form>
+</section>{% endif %}
+{% if c.status in ('submitted', 'partly_paid') %}
+<section class="card"><details><summary>Rejected by the payer</summary><form method="post" action="{{ url_for('finance.claim_reject', claim_id=c.id) }}" class="row" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <input name="reason" placeholder="Reason given" aria-label="Reason" maxlength="300" required style="flex:1; min-width:220px"><button class="danger" type="submit">Mark as rejected</button></form></details></section>{% endif %}
+{% if payments %}<section class="card"><h2>Payments from the payer</h2>{% for pay in payments %}<p><a href="{{ url_for('clinical.receipt', pay_id=pay.id) }}">Receipt {{ pay.receipt_no }}</a>, {{ pay.amount_p|money }} on {{ pay.received_on|date }}, ref {{ pay.reference }}{% if pay.voided %} <span class="pill bad">Voided</span>{% endif %}</p>{% endfor %}</section>{% endif %}
+{% if c.status in ('draft', 'submitted', 'approved', 'rejected') and not c.paid_p %}
+<form method="post" action="{{ url_for('finance.claim_cancel', claim_id=c.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="danger">Cancel this claim</button> <span class="muted small">The treatment becomes claimable again.</span></form>{% endif %}
+{% endblock %}

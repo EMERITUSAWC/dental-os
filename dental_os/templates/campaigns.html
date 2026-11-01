@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_msg_tabs.html" import tabs with context %}
+{% block title %}Campaigns{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Messages</h1></div>
+{{ tabs(active, attn) }}
+<p class="muted">A campaign finds patients by a rule and adds a message for each to the send list. A person still opens each one. Patients who have not agreed are left out, and so is anyone messaged recently.</p>
+<p class="row">{% for k, v in kinds.items() %}<a class="btn" href="{{ url_for('comms.campaign_new', kind=k) }}">New: {{ v[0] }}</a>{% endfor %}</p>
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>Campaign</th><th>For</th><th>Status</th></tr>
+  {% for c in rows %}<tr><td><a href="{{ url_for('comms.campaign_show', cid_=c.id) }}">{{ c.name }}</a></td><td>{{ kinds[c.kind][0] }}, {{ c.param_days }} days</td><td><span class="pill {{ 'ok' if c.status == 'active' else '' }}">{{ c.status|capitalize }}</span></td></tr>
+  {% else %}<tr><td colspan="3" class="muted">No campaigns yet.</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

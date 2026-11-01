@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ i.title }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ i.title }}</h1><a class="btn" href="{{ url_for('privacy.incidents_list') }}">All incidents</a></div>
+{% if i.clock_late %}<div class="flash error" role="alert">More than {{ hours }} hours have passed since you found out, and the regulator is not marked as told. If your law uses this clock, report now and write down why it is late.</div>
+{% elif i.clock_running %}<div class="flash" role="status">About {{ i.hours_left }} hours left on a {{ hours }}-hour clock (ends {{ i.clock_ends }}), if your law uses one. The risk is above low and the regulator is not marked as told.</div>{% endif %}
+<div class="grid two">
+  <section class="card">
+    <dl class="facts">
+      <dt>Status</dt><dd>{{ i.status|capitalize }}{% if i.closed_on %} on {{ i.closed_on|date }}{% endif %}</dd>
+      <dt>Happened</dt><dd>{{ i.occurred_on|date if i.occurred_on else 'Not known' }}</dd>
+      <dt>Found out</dt><dd>{{ i.found_at }}</dd>
+      <dt>What happened</dt><dd>{{ i.what_happened }}</dd>
+      <dt>Information</dt><dd>{{ i.data_involved or 'Not said' }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Handling it</h2>
+    {% if i.status == 'open' %}
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="update">
+      <div class="grid two">
+        <div><label for="risk">Risk</label><select id="risk" name="risk">{% for k in ('low', 'medium', 'high') %}<option value="{{ k }}" {{ 'selected' if i.risk == k }}>{{ k }}</option>{% endfor %}</select></div>
+        <div><label for="people_affected">People affected</label><input id="people_affected" name="people_affected" inputmode="numeric" value="{{ i.people_affected if i.people_affected is not none else '' }}"></div>
+      </div>
+      <label class="check"><input type="checkbox" name="regulator_told" value="1" {{ 'checked' if i.regulator_told }}> The regulator has been told</label>
+      <label for="regulator_on">On</label><input id="regulator_on" name="regulator_on" type="date" value="{{ i.regulator_on or '' }}">
+      <label class="check"><input type="checkbox" name="patients_told" value="1" {{ 'checked' if i.patients_told }}> The people affected have been told</label>
+      <label for="patients_on">On</label><input id="patients_on" name="patients_on" type="date" value="{{ i.patients_on or '' }}">
+      <label for="actions">What has been done about it</label><textarea id="actions" name="actions" rows="4" maxlength="2000">{{ i.actions or '' }}</textarea>
+      <p><button class="primary" type="submit">Save</button></p>
+    </form>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="close"><button type="submit">Close the incident</button></form>
+    {% else %}
+    <dl class="facts"><dt>Risk</dt><dd>{{ i.risk }}</dd><dt>Regulator told</dt><dd>{{ ('Yes, ' ~ (i.regulator_on or '')) if i.regulator_told else 'No' }}</dd>
+      <dt>People told</dt><dd>{{ ('Yes, ' ~ (i.patients_on or '')) if i.patients_told else 'No' }}</dd><dt>Done about it</dt><dd>{{ i.actions }}</dd></dl>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="reopen"><button type="submit">Reopen</button></form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

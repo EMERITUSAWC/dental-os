@@ -1,0 +1,177 @@
+"""Charges, payments, adjustments and receipts. Balance = work done + adjustments - payments.
+A positive balance means the patient owes. Nothing is deleted: payments are voided with a reason."""
+from . import audit, serialize, webhooks
+from .timeutil import now_local
+
+METHODS = {"cash": "Cash", "mobile_money": "Mobile money", "card": "Card", "bank_transfer": "Bank transfer",
+           "insurance": "Insurance"}
+NEEDS_REFERENCE = {"mobile_money", "bank_transfer", "card", "insurance"}
+ADJUSTMENT_REASONS = {"birthday_offer": "Birthday offer", "seasonal_offer": "Seasonal offer",
+                      "discount": "Other discount", "write_off": "Write-off", "correction": "Correction"}
+NEEDS_NOTE = {"discount", "write_off", "correction"}
+
+
+class BillingError(Exception):
+    pass
+
+
+def enabled_methods(clinic):
+    """The ways of paying this clinic has switched on, in a fixed order."""
+    on = {m.strip() for m in (clinic["payment_methods"] or "").split(",")}
+    return {k: v for k, v in METHODS.items() if k in on}
+
+
+def methods_in_use(db, clinic):
+    """Enabled methods plus any that already have payments, so old payments never vanish from reports."""
+    shown = dict(enabled_methods(clinic))
+    for r in db.execute("SELECT DISTINCT method FROM payments WHERE clinic_id = ?", (clinic["id"],)):
+        shown[r["method"]] = METHODS[r["method"]]
+    return {k: v for k, v in METHODS.items() if k in shown}
+
+
+def totals(db, clinic_id, patient_id):
+    charges = db.execute("SELECT COALESCE(SUM(fee_p),0) FROM procedures WHERE clinic_id=? AND patient_id=? AND status='done'",
+                         (clinic_id, patient_id)).fetchone()[0]
+    adjust = db.execute("SELECT COALESCE(SUM(amount_p),0) FROM adjustments WHERE clinic_id=? AND patient_id=?",
+                        (clinic_id, patient_id)).fetchone()[0]
+    paid = db.execute("SELECT COALESCE(SUM(amount_p),0) FROM payments WHERE clinic_id=? AND patient_id=? AND voided=0 "
+                      "AND purpose='treatment'",
+                      (clinic_id, patient_id)).fetchone()[0]
+    return {"charges": charges, "adjustments": adjust, "paid": paid, "balance": charges + adjust - paid}
+
+
+def family_balance(db, clinic_id, patient_id):
+    """Total for the family head and everyone who lists them as family head. None if there is no family."""
+    row = db.execute("SELECT guarantor_id FROM patients WHERE id=? AND clinic_id=?", (patient_id, clinic_id)).fetchone()
+    if not row:
+        return None
+    root = row["guarantor_id"] or patient_id
+    members = [r["id"] for r in db.execute(
+        "SELECT id FROM patients WHERE clinic_id=? AND (id=? OR guarantor_id=?) AND status='active'",
+        (clinic_id, root, root))]
+    if len(members) < 2:
+        return None
+    total = sum(totals(db, clinic_id, m)["balance"] for m in members)
+    return {"members": len(members), "balance": total}
+
+
+def _begin(db):
+    if not db.in_transaction:
+        db.execute("BEGIN IMMEDIATE")
+
+
+def record_payment(db, clinic, user_id, patient_id, amount_p, method, reference=None, note=None, purpose="treatment", plan_id=None, claim_id=None):
+    cid = clinic["id"]
+    if method not in enabled_methods(clinic):
+        raise BillingError("Pick how the patient paid.")
+    if amount_p <= 0:
+        raise BillingError("The amount must be more than zero.")
+    reference = (reference or "").strip() or None
+    if method in NEEDS_REFERENCE and not reference:
+        raise BillingError("Enter the transaction or reference number for this kind of payment.")
+    if purpose not in ("treatment", "membership"):
+        raise BillingError("Unknown kind of payment.")
+    _begin(db)
+    if not db.execute("SELECT 1 FROM patients WHERE id=? AND clinic_id=?", (patient_id, cid)).fetchone():
+        raise BillingError("That patient was not found.")
+    receipt_no = db.execute("SELECT COALESCE(MAX(receipt_no),0)+1 FROM payments WHERE clinic_id=?", (cid,)).fetchone()[0]
+    cur = db.execute(
+        """INSERT INTO payments(clinic_id, patient_id, amount_p, method, reference, note, receipt_no, received_on, received_by,
+                                purpose, plan_id, claim_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (cid, patient_id, amount_p, method, reference, (note or "").strip() or None, receipt_no,
+         now_local(clinic["timezone"]).date().isoformat(), user_id, purpose, plan_id, claim_id))
+    audit.log(db, cid, user_id, "payment.record", "payment", cur.lastrowid, method)
+    webhooks.emit(db, cid, "payment.received", serialize.payment(db.execute("SELECT * FROM payments WHERE id = ?", (cur.lastrowid,)).fetchone()))
+    return cur.lastrowid
+
+
+def void_payment(db, clinic_id, user_id, payment_id, reason):
+    pay = db.execute("SELECT * FROM payments WHERE id=? AND clinic_id=?", (payment_id, clinic_id)).fetchone()
+    if not pay:
+        raise LookupError("payment")
+    if pay["voided"]:
+        raise BillingError("That payment is already voided.")
+    reason = (reason or "").strip()
+    if len(reason) < 3:
+        raise BillingError("Say why the payment is being voided.")
+    db.execute("UPDATE payments SET voided=1, void_reason=?, voided_by=? WHERE id=? AND clinic_id=?",
+               (reason, user_id, payment_id, clinic_id))
+    audit.log(db, clinic_id, user_id, "payment.void", "payment", payment_id, reason[:80])
+
+
+def add_adjustment(db, clinic, user_id, patient_id, amount_p, reason, note=None):
+    cid = clinic["id"]
+    if reason not in ADJUSTMENT_REASONS:
+        raise BillingError("Pick a reason.")
+    if amount_p == 0:
+        raise BillingError("The amount cannot be zero.")
+    note = (note or "").strip() or None
+    if reason in NEEDS_NOTE and not note:
+        raise BillingError("Add a short note saying why.")
+    if not db.execute("SELECT 1 FROM patients WHERE id=? AND clinic_id=?", (patient_id, cid)).fetchone():
+        raise BillingError("That patient was not found.")
+    cur = db.execute(
+        "INSERT INTO adjustments(clinic_id, patient_id, amount_p, reason, note, adjusted_on, created_by) VALUES (?,?,?,?,?,?,?)",
+        (cid, patient_id, amount_p, reason, note, now_local(clinic["timezone"]).date().isoformat(), user_id))
+    audit.log(db, cid, user_id, "adjustment.add", "adjustment", cur.lastrowid, reason)
+    return cur.lastrowid
+
+
+def statement(db, clinic_id, patient_id, lang="en"):
+    """Every money event for one patient, oldest first, with a running balance. The wording is in the given language."""
+    from .i18n import t
+    events = []
+    for r in db.execute("""SELECT pr.id, pr.done_on AS day, pr.fee_p, pr.tooth, c.name FROM procedures pr
+                           JOIN procedure_codes c ON c.id = pr.code_id
+                           WHERE pr.clinic_id=? AND pr.patient_id=? AND pr.status='done'""", (clinic_id, patient_id)):
+        label = r["name"] + (f", {t(lang, 'tooth')} {r['tooth']}" if r["tooth"] else "")
+        events.append({"day": r["day"], "order": 0, "id": r["id"], "kind": "charge", "label": label,
+                       "delta": r["fee_p"], "counts": True})
+    for r in db.execute("SELECT * FROM adjustments WHERE clinic_id=? AND patient_id=?", (clinic_id, patient_id)):
+        label = t(lang, ADJUSTMENT_REASONS[r["reason"]]) + (f": {r['note']}" if r["note"] else "")
+        events.append({"day": r["adjusted_on"], "order": 1, "id": r["id"], "kind": "adjustment", "label": label,
+                       "delta": r["amount_p"], "counts": True})
+    for r in db.execute("SELECT * FROM payments WHERE clinic_id=? AND patient_id=?", (clinic_id, patient_id)):
+        what = t(lang, "Membership fee") if r["purpose"] == "membership" else t(lang, "Payment")
+        label = f"{what}, {t(lang, METHODS[r['method']])}" + (f" ({r['reference']})" if r["reference"] else "")
+        # A membership fee is income for the clinic but does not pay for treatment, so it is listed without moving the balance.
+        events.append({"day": r["received_on"], "order": 2, "id": r["id"], "kind": "payment", "label": label,
+                       "delta": -r["amount_p"], "counts": not r["voided"] and r["purpose"] == "treatment",
+                       "voided": bool(r["voided"]), "receipt_no": r["receipt_no"]})
+    events.sort(key=lambda e: (e["day"], e["order"], e["id"]))
+    running = 0
+    for e in events:
+        if e["counts"]:
+            running += e["delta"]
+        e["balance"] = running
+    return events
+
+
+def get_receipt(db, clinic_id, payment_id):
+    return db.execute(
+        """SELECT pay.*, p.first_name, p.last_name, p.phone, u.display_name AS received_by_name
+           FROM payments pay JOIN patients p ON p.id = pay.patient_id
+           LEFT JOIN users u ON u.id = pay.received_by
+           WHERE pay.id=? AND pay.clinic_id=?""", (payment_id, clinic_id)).fetchone()
+
+
+def daily_takings(db, clinic_id, day):
+    rows = db.execute(
+        """SELECT pay.*, p.first_name, p.last_name FROM payments pay JOIN patients p ON p.id = pay.patient_id
+           WHERE pay.clinic_id=? AND pay.received_on=? ORDER BY pay.receipt_no""", (clinic_id, day)).fetchall()
+    by_method = {m: 0 for m in METHODS}
+    for r in rows:
+        if not r["voided"]:
+            by_method[r["method"]] += r["amount_p"]
+    return {"rows": rows, "by_method": by_method, "total": sum(by_method.values())}
+
+
+def outstanding(db, clinic_id, limit=50):
+    """Patients who owe money, biggest first."""
+    out = []
+    for r in db.execute("SELECT id, first_name, last_name FROM patients WHERE clinic_id=? AND status='active'", (clinic_id,)):
+        bal = totals(db, clinic_id, r["id"])["balance"]
+        if bal > 0:
+            out.append((bal, r))
+    out.sort(key=lambda t: -t[0])
+    return out[:limit]

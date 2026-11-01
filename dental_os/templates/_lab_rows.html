@@ -1,0 +1,12 @@
+{% macro rows(list, labels, today) %}
+<div class="tbl-wrap"><table>
+  <tr><th>Patient</th><th>Job</th><th>Lab</th><th>Due</th><th>Status</th></tr>
+  {% for k in list %}
+  <tr><td><a href="{{ url_for('ops.lab_case', case_id=k.id) }}">{{ k.first_name }} {{ k.last_name }}</a></td>
+    <td>{{ k.kind }}{% if k.tooth %} ({{ k.tooth }}){% endif %}{% if k.remake_of %} <span class="pill warn">remake</span>{% endif %}</td>
+    <td>{{ k.lab_name }}</td>
+    <td class="nw">{% if k.due_on %}{{ k.due_on|date }}{% if k.status == 'sent' and k.due_on < today %} <span class="pill bad">late</span>{% endif %}{% else %}<span class="muted">not set</span>{% endif %}</td>
+    <td class="nw"><span class="pill {{ 'ok' if k.status == 'received' else 'bad' if k.status == 'cancelled' else '' }}">{{ labels[k.status] }}</span>{% if k.fit_at %} <span class="muted small">fit {{ k.fit_at[:10]|day }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Nothing here.</td></tr>{% endfor %}
+</table></div>
+{% endmacro %}

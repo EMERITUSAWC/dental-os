@@ -1,0 +1,16 @@
+{% macro conf(a) -%}
+  {%- if a.status == 'complete' -%}<span class="pill ok">Done</span>
+  {%- elif a.status == 'broken' -%}<span class="pill bad">{{ 'Missed' if a.break_reason == 'missed' else 'Cancelled' }}</span>
+  {%- elif a.status == 'asap' -%}<span class="pill warn">ASAP</span>
+  {%- elif a.status in ('unscheduled','planned') -%}<span class="pill">Waiting</span>
+  {%- elif a.confirmation == 'confirmed' -%}<span class="pill ok">Confirmed</span>
+  {%- elif a.confirmation == 'sent' -%}<span class="pill warn">Asked, no reply</span>
+  {%- elif a.confirmation == 'declined' -%}<span class="pill bad">Declined</span>
+  {%- elif a.confirmation == 'failed' -%}<span class="pill bad">Message failed</span>
+  {%- else -%}<span class="pill">Not asked yet</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro alert_mark(pid) -%}
+  {%- set lv = alert_level(pid) -%}
+  {%- if lv %} <span class="pill {{ 'bad' if lv == 'critical' else 'warn' if lv == 'warning' else '' }}" title="This patient has an alert. Open the record to read it.">Alert</span>{% endif -%}
+{%- endmacro %}

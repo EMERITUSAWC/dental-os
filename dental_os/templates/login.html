@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_lang.html" import switch with context %}
+{% block title %}{{ _("Log in") }}{% endblock %}
+{% block body %}
+<div class="login card">
+  <h1>{{ _("Log in") }}</h1>
+  {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" autocomplete="on">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="username">{{ _("Username") }}</label>
+    <input id="username" name="username" autocomplete="username" autofocus required>
+    <label for="password">{{ _("Password") }}</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <p><button class="primary" type="submit">{{ _("Log in") }}</button></p>
+  </form>
+  {{ switch() }}
+</div>
+{% endblock %}

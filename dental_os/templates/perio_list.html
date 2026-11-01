@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Gum charts, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: gum charts</h1>
+  <a class="btn primary" href="{{ url_for('record.perio_new', pid=p.id) }}">New gum chart</a>
+</div>
+{{ tabs(p, 'perio') }}
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>Date</th><th>Bleeding</th><th>Sites 4 mm+</th><th>Sites 6 mm+</th><th>Average pocket</th><th>By</th></tr>
+  {% for i in items %}
+  <tr><td><a href="{{ url_for('record.perio_show', chart_id=i.chart.id) }}">{{ i.chart.charted_on|date }}</a></td>
+    <td>{{ i.sum.bleeding_pct }}%</td><td>{{ i.sum.sites_4plus }}</td><td>{{ i.sum.sites_6plus }}</td>
+    <td>{{ i.sum.mean if i.sum.mean is not none else 'n/a' }}{% if i.sum.mean is not none %} mm{% endif %}</td><td>{{ i.chart.by_name or '' }}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No gum charts yet.</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

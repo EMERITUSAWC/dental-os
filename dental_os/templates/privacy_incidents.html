@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Incidents{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Incidents and breaches</h1><a class="btn" href="{{ url_for('privacy.home') }}">Privacy home</a></div>
+<p class="muted">An incident is any time patient information was lost, sent to the wrong person, or seen by someone who should not have seen it. Write it down the day you find out, even if it seems small.</p>
+<div class="grid two">
+  <section class="card">
+    <div class="tbl-wrap"><table>
+      <tr><th>Found</th><th>What</th><th>Risk</th><th>Status</th></tr>
+      {% for i in rows %}
+      <tr><td class="nw">{{ i.found_at[:10]|date }}</td><td><a href="{{ url_for('privacy.incident_view', iid=i.id) }}">{{ i.title }}</a></td>
+        <td><span class="pill {{ {'low': 'ok', 'medium': 'warn', 'high': 'bad'}[i.risk] }}">{{ i.risk }}</span></td>
+        <td>{% if i.status == 'closed' %}Closed{% elif i.clock_late %}<span class="pill bad">Past the {{ hours }} hours</span>{% elif i.clock_running %}<span class="pill warn">{{ i.hours_left }} hours left</span>{% else %}Open{% endif %}</td></tr>
+      {% else %}<tr><td colspan="4" class="muted">None recorded.</td></tr>{% endfor %}
+    </table></div>
+  </section>
+  <section class="card">
+    <h2>Record an incident</h2>
+    <form method="post">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <label for="title">Short title</label><input id="title" name="title" maxlength="120" required placeholder="Phone with patient list lost">
+      <label for="what_happened">What happened (no patient names here)</label><textarea id="what_happened" name="what_happened" rows="3" maxlength="2000" required></textarea>
+      <label for="data_involved">What information was involved</label><input id="data_involved" name="data_involved" maxlength="500" placeholder="Names and phone numbers; no medical notes">
+      <div class="grid two">
+        <div><label for="occurred_on">It happened on</label><input id="occurred_on" name="occurred_on" type="date"></div>
+        <div><label for="found_at">You found out (blank: now)</label><input id="found_at" name="found_at" type="datetime-local" max="{{ now|replace(' ', 'T') }}"></div>
+      </div>
+      <div class="grid two">
+        <div><label for="people_affected">People affected (blank if unknown)</label><input id="people_affected" name="people_affected" inputmode="numeric"></div>
+        <div><label for="risk">Risk to the people</label><select id="risk" name="risk"><option value="low">Low: unlikely to harm anyone</option><option value="medium">Medium</option><option value="high">High: likely to harm someone</option></select></div>
+      </div>
+      <p><button class="primary" type="submit">Record</button></p>
+    </form>
+    <p class="muted small">Many laws, for example the EU and UK rules, expect a report to the regulator within {{ hours }} hours of finding out when people could be harmed. Other countries differ. The clock here starts when you found out. Confirm what applies to you with your lawyer.</p>
+  </section>
+</div>
+{% endblock %}

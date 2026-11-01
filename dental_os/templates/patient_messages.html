@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Messages, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: messages</h1>
+{{ tabs(p, 'messages') }}
+<p class="small muted">Appointment messages: {{ 'agreed' if p.reminders_ok else 'not agreed' }}. Offers: {{ 'agreed' if p.offers_ok else 'not agreed' }}.</p>
+
+<div class="grid two">
+<section class="card"><h2>Send a message</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="send">
+    <label for="text">Message</label><textarea id="text" name="text" rows="3" maxlength="1000" required></textarea>
+    <p class="small muted">Opens WhatsApp with the words ready. Allowed if they agreed to messages, or wrote to us in the last 7 days. Keep treatment details and money out of WhatsApp.</p>
+    <p><button class="primary" type="submit" formtarget="_blank">Open WhatsApp</button></p></form>
+</section>
+<section class="card"><h2>They replied</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="log_reply">
+    <label for="body">What they wrote</label><textarea id="body" name="body" rows="3" maxlength="1000" required></textarea>
+    <label class="check"><input type="checkbox" name="confirms" value="1"><span>This confirms their next visit</span></label>
+    <p><button type="submit">Save reply</button></p></form>
+</section>
+</div>
+
+<section class="card"><h2>Their private link</h2>
+  {% if new_link %}
+    <p>Here is the link. It is shown only now, so copy it or send it straight away.</p>
+    <p><input value="{{ new_link }}" readonly aria-label="Private link"></p>
+    {% if p.reminders_ok %}
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="link_send"><input type="hidden" name="token" value="{{ token }}">
+      <button class="primary" type="submit" formtarget="_blank">Send by WhatsApp</button></form>
+    {% else %}<p class="small muted">They have not agreed to messages, so give them the link in person.</p>{% endif %}
+  {% else %}
+    {% if link %}<p>A link is active until {{ link.expires_on|date }}{% if link.last_used_at %}, last opened {{ link.last_used_at[:16] }}{% endif %}. The link itself cannot be shown again. Making a new one cancels this one.</p>
+    {% else %}<p class="muted">No active link. The link opens a private page with their visits and quotes, where they can confirm a visit, accept a quote and fill in their health form. It lasts 30 days.</p>{% endif %}
+    <div class="row">
+      <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="link_create"><button type="submit">{{ 'Make a new link' if link else 'Make a link' }}</button></form>
+      {% if link %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="link_revoke"><button class="danger" type="submit">Cancel the link</button></form>{% endif %}
+    </div>
+  {% endif %}
+</section>
+
+<section class="card"><h2>History</h2>
+  {% for m in thread %}
+  <div class="msg {{ 'in' if m.direction == 'in' else 'out' }}"><div class="small muted">{{ 'Patient' if m.direction == 'in' else (m.user_name or 'Clinic') }}, {{ m.created_at[:16] }}{% if m.direction == 'out' %}, {{ m.kind.replace('_', ' ') }}{% endif %}</div>{{ m.body }}</div>
+  {% else %}<p class="muted">Nothing yet.</p>{% endfor %}
+</section>
+{% endblock %}

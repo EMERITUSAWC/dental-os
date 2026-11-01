@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Treatment, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: treatment</h1>
+  <a class="btn" href="{{ url_for('clinical.account', pid=p.id) }}">Account</a>
+</div>
+{{ tabs(p, 'treatment') }}
+
+<div class="stats">
+  <div class="card"><div class="stat">{{ sums.planned_p|money }}</div><div class="muted">planned ({{ sums.planned_n }})</div></div>
+  <div class="card"><div class="stat">{{ sums.done_p|money }}</div><div class="muted">done</div></div>
+</div>
+
+<section class="card">
+  <h2>Add to the plan</h2>
+  {% if not codes %}<p class="muted">The procedure list is empty. A manager can add the starter list under Catalogue.</p>{% else %}
+  <form method="post" action="{{ url_for('clinical.treatment_add', pid=p.id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="grid three">
+      <div><label for="code_id">Procedure</label>
+        <select id="code_id" name="code_id" required>
+          {% for c in codes %}<option value="{{ c.id }}">{{ c.name }}{% if c.fee_p %} ({{ c.fee_p|money }}){% else %} (fee not set){% endif %}</option>{% endfor %}
+        </select></div>
+      <div><label for="tooth">Tooth (optional)</label>
+        <input id="tooth" name="tooth" list="teeth" inputmode="numeric" placeholder="e.g. 36" autocomplete="off">
+        <datalist id="teeth">{% for t in teeth %}<option value="{{ t }}">{% endfor %}</datalist></div>
+      <div><label for="provider_id">Dentist</label>
+        <select id="provider_id" name="provider_id"><option value="">Not decided</option>
+          {% for d in providers %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select></div>
+    </div>
+    <label>Surfaces (optional)</label>
+    <div class="row">{% for s in surfaces %}<label class="check" style="margin:0"><input type="checkbox" name="surfaces" value="{{ s }}"> {{ s }}</label>{% endfor %}</div>
+    <p class="muted small">M mesial, O occlusal, D distal, B buccal, L lingual, I incisal. Teeth use the FDI numbers (11 to 48, and 51 to 85 for milk teeth).</p>
+    <div class="grid two">
+      <div><label for="fee">Fee for this patient (leave empty to use the list price)</label><input id="fee" name="fee" inputmode="decimal" placeholder="{{ clinic.currency }}"></div>
+      <div><label for="notes">Note</label><input id="notes" name="notes" maxlength="200"></div>
+    </div>
+    <p><button class="primary" type="submit">Add</button></p>
+  </form>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Plan and history</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Status</th><th>Work</th><th>Tooth</th><th>Dentist</th><th>Fee</th><th></th></tr>
+    {% for r in rows %}
+    <tr>
+      <td><span class="pill {{ 'ok' if r.status == 'done' else ('warn' if r.status == 'planned' else 'bad') }}">{{ r.status|capitalize }}</span>
+        <div class="muted small">{{ (r.done_on or r.planned_on)|date }}</div></td>
+      <td>{{ r.code_name }}{% if r.notes %}<div class="muted small">{{ r.notes }}</div>{% endif %}
+        {% if r.void_reason %}<div class="muted small">Voided: {{ r.void_reason }}</div>{% endif %}</td>
+      <td>{{ r.tooth or '' }} {{ r.surfaces or '' }}</td>
+      <td class="muted">{{ r.provider_name or '' }}</td>
+      <td class="nw">{{ r.fee_p|money }}</td>
+      <td>
+        {% if r.status == 'planned' %}
+        <form method="post" action="{{ url_for('clinical.procedure_action', proc_id=r.id, action='done') }}" class="row">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+          <select name="appointment_id" aria-label="Which visit" style="width:auto">
+            <option value="">Today</option>
+            {% for v in visits %}<option value="{{ v.id }}">{{ v.start_at[:10]|date }}, {{ v.category }}</option>{% endfor %}
+          </select>
+          <button class="primary" type="submit">Done</button>
+        </form>
+        <div class="row" style="margin-top:6px">
+          <form method="post" action="{{ url_for('clinical.procedure_action', proc_id=r.id, action='fee') }}" class="row">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <input name="fee" value="{{ r.fee_p|plain }}" inputmode="decimal" aria-label="Fee" style="width:90px"><button type="submit">Set fee</button>
+          </form>
+          <form method="post" action="{{ url_for('clinical.procedure_action', proc_id=r.id, action='cancel') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">Drop</button></form>
+        </div>
+        {% elif r.status == 'done' and user.role == 'manager' %}
+        <form method="post" action="{{ url_for('clinical.procedure_action', proc_id=r.id, action='void') }}" class="row">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+          <input name="reason" placeholder="Why void?" aria-label="Reason" style="width:140px" required>
+          <button class="danger" type="submit">Void</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="muted">Nothing planned yet.</td></tr>{% endfor %}
+  </table></div>
+  <p class="muted small">Finished work is locked. If something was entered in error, a manager voids it with a reason, and it stays on record.</p>
+</section>
+{% endblock %}

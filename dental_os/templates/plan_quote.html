@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Quote") }}, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('commercial.plan_show', plan_id=plan.id) }}">Back to the plan</a></div>
+<section class="card receipt" style="max-width:720px; margin-top:12px">
+  <p class="muted">{{ clinic.name }}</p>
+  <h1>{{ _d("Treatment quote") }}</h1>
+  <dl class="facts">
+    <dt>{{ _d("Patient") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd>
+    <dt>{{ _d("Plan") }}</dt><dd>{{ plan.title }}</dd>
+    <dt>{{ _d("Date") }}</dt><dd>{{ today|date }}</dd>
+  </dl>
+  {% for n, lines, sub in phases %}
+  <h2 style="margin-top:16px">{{ _d("Phase %(n)s", n=n) }}</h2>
+  <table>{% for r in lines %}<tr><td>{{ r.code_name }}{% if r.tooth %}, {{ _d("tooth") }} {{ r.tooth }}{% endif %}{% if r.surfaces %} ({{ r.surfaces }}){% endif %}</td><td class="nw" style="text-align:right">{{ r.fee_p|money }}</td></tr>{% endfor %}
+    <tr><th>{{ _d("Phase %(n)s total", n=n) }}</th><th style="text-align:right">{{ sub|money }}</th></tr></table>
+  {% endfor %}
+  <p style="margin-top:16px; font-size:1.2rem"><strong>{{ _d("Total:") }} {{ total|money }}</strong></p>
+  {% if deposit %}<p>{{ _d("Deposit paid:") }} {{ deposit|money }}</p>{% endif %}
+  <p class="muted small">{{ _d("This is an estimate, not a fixed price. The cost may change if the dentist finds that more treatment is needed once work begins. You will be told before any change. You can say no to any part of this plan.") }}</p>
+</section>
+{% endblock %}

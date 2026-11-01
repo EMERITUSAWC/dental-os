@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Privacy and data rights{% endblock %}
+{% block body %}
+<h1>Privacy and data rights</h1>
+<p class="muted">Patients have rights over their own records in most countries: to see them, to have mistakes fixed, and sometimes to have them erased. Clinics must also report some data breaches quickly. These tools help you handle each of those and keep a record that you did. They are not legal advice. The deadlines shown here are common starting points. Ask your lawyer what applies in your country.</p>
+<div class="grid two">
+  <section class="card"><h2>Requests from people</h2>
+    <p class="muted">Someone asks for a copy of their record, a correction, or erasure. Log it, check who is asking, and close it with what you did before the deadline.</p>
+    <p>{% if counts.requests_open %}<span class="pill {{ 'bad' if counts.requests_late else 'warn' }}">{{ counts.requests_open }} open{% if counts.requests_late %}, {{ counts.requests_late }} late{% endif %}</span>{% else %}<span class="pill ok">None open</span>{% endif %}</p>
+    <a class="btn primary" href="{{ url_for('privacy.requests_list') }}">Requests</a>
+  </section>
+  <section class="card"><h2>Incidents and breaches</h2>
+    <p class="muted">A lost phone, a message sent to the wrong person, a record seen by someone who should not have seen it. Record it the day you find out, and watch the reporting clock.</p>
+    <p>{% if counts.incidents_open %}<span class="pill {{ 'bad' if counts.incidents_late else 'warn' }}">{{ counts.incidents_open }} open{% if counts.incidents_late %}, {{ counts.incidents_late }} past the clock{% endif %}</span>{% else %}<span class="pill ok">None open</span>{% endif %}</p>
+    <a class="btn primary" href="{{ url_for('privacy.incidents_list') }}">Incidents</a>
+  </section>
+  <section class="card"><h2>Records kept a long time</h2>
+    <p class="muted">Clinics should not keep personal details for longer than they need to. This lists people who have not been seen for longer than the period you set, so you can review them.</p>
+    <a class="btn" href="{{ url_for('privacy.retention') }}">Retention review</a>
+  </section>
+  <section class="card"><h2>For one patient</h2>
+    <p class="muted">Open a patient and choose <strong>Privacy</strong> to get a full copy of their record, to remove their identity from the record, or to see who has looked at it.</p>
+    <a class="btn" href="{{ url_for('views.patients') }}">Find a patient</a>
+  </section>
+</div>
+{% endblock %}

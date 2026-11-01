@@ -1,0 +1,8 @@
+{% macro tabs(active) %}
+<nav class="tabs" aria-label="Stock">
+  <a href="{{ url_for('ops.stock_list') }}" class="{{ 'on' if active == 'list' }}">Stock</a>
+  <a href="{{ url_for('ops.stock_order') }}" class="{{ 'on' if active == 'order' }}">To order</a>
+  <a href="{{ url_for('ops.stock_expiry') }}" class="{{ 'on' if active == 'expiry' }}">Expiry</a>
+  {% if user.role == 'manager' %}<a href="{{ url_for('ops.stock_suppliers') }}" class="{{ 'on' if active == 'suppliers' }}">Suppliers</a>{% endif %}
+</nav>
+{% endmacro %}

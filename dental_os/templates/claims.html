@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Claims{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Claims</h1>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('finance.payers') }}">Payers</a>{% endif %}</div>
+<div class="stats" style="grid-template-columns: repeat(2, 1fr)"><div class="card"><div class="stat">{{ awaiting|money }}</div><div class="muted">still owed by payers on sent claims</div></div>
+  <div class="card"><div class="stat">{{ rows|length }}</div><div class="muted">claims in this list</div></div></div>
+<p class="row">{% for k, label in (('open', 'Open'), ('draft', 'Not sent'), ('submitted', 'Sent, waiting'), ('partly_paid', 'Part paid'), ('rejected', 'Rejected'), ('paid', 'Paid'), ('all', 'All')) %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('finance.claims_list', status=k) }}">{{ label }}</a>{% endfor %}</p>
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>No.</th><th>Patient</th><th>Payer</th><th>Total</th><th>Expected</th><th>Paid</th><th>Status</th><th>Waiting</th></tr>
+  {% for r in rows %}{% set c = r.claim %}
+  <tr><td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a></td><td>{{ c.first_name }} {{ c.last_name }}</td><td>{{ c.payer_name }}</td>
+    <td class="nw">{{ c.total_fee_p|money }}</td><td class="nw">{{ c.estimate_p|money }}</td><td class="nw">{{ c.paid_p|money }}</td>
+    <td><span class="pill {{ 'ok' if c.status in ('paid', 'approved') else 'bad' if c.status == 'rejected' else 'warn' if c.status in ('submitted', 'partly_paid') else '' }}">{{ statuses[c.status] }}</span>{% if c.kind == 'preauth' %} <span class="muted small">pre-auth</span>{% endif %}</td>
+    <td class="nw">{% if r.age is not none %}{{ r.age }} days{% endif %}</td></tr>
+  {% else %}<tr><td colspan="8" class="muted">Nothing here.</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

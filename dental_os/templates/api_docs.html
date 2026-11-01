@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Using the API{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Using the API and webhooks</h1><a class="btn" href="{{ url_for('ops.integrations') }}">Back to keys</a></div>
+<section class="card"><h2>The basics</h2>
+  <p>The API lives at <code>{{ base }}</code>. Send your key in a header on every request. Send and receive JSON. A key sees only its own clinic.</p>
+<pre class="code">curl {{ base }}/patients?limit=10 \
+  -H "Authorization: Bearer YOUR_KEY"</pre>
+  <ul class="small">
+    <li>Lists return <code>{"data": [...], "next_after": 123}</code>. To get the next page, send <code>?after=123</code>. <code>next_after</code> is null on the last page. <code>limit</code> is up to 200.</li>
+    <li>Errors return <code>{"error": {"code": "...", "message": "..."}}</code> with the usual status: 400 bad request, 401 no or wrong key, 403 read-only key, 404 not found, 409 cannot be done as asked, 422 details need fixing, 429 too many requests.</li>
+    <li>Each key may make 300 requests a minute.</li>
+    <li>Money is in the smallest unit of the clinic's currency (pesewas, cents, pence), in fields ending <code>_p</code>. Appointment times are the clinic's own local time. <code>created_at</code> and <code>updated_at</code> are UTC.</li>
+    <li>Medical history, clinical notes, files and message text are never available through the API or webhooks.</li>
+  </ul></section>
+<section class="card"><h2>Reading</h2>
+<div class="tbl-wrap"><table>
+  <tr><td><code>GET /clinic</code></td><td>This clinic's name, country, currency, time zone and hours.</td></tr>
+  <tr><td><code>GET /providers</code>, <code>GET /chairs</code></td><td>Dentists and chairs in use.</td></tr>
+  <tr><td><code>GET /patients</code></td><td>Optional <code>q</code> (name, phone or email), <code>updated_since</code> (UTC, like 2026-11-30 14:05), <code>include_archived=1</code>.</td></tr>
+  <tr><td><code>GET /patients/{id}</code></td><td>One patient.</td></tr>
+  <tr><td><code>GET /patients/{id}/balance</code></td><td>Charges, adjustments, payments and what is owed.</td></tr>
+  <tr><td><code>GET /appointments</code></td><td>Optional <code>from</code>, <code>to</code> (dates), <code>patient_id</code>, <code>status</code>.</td></tr>
+  <tr><td><code>GET /appointments/{id}</code></td><td>One appointment.</td></tr>
+  <tr><td><code>GET /free-slots</code></td><td><code>provider_id</code>, <code>date</code>, optional <code>duration</code> (minutes). Open times, with the chair that would be used.</td></tr>
+</table></div></section>
+<section class="card"><h2>Writing (read and write keys only)</h2>
+<div class="tbl-wrap"><table>
+  <tr><td><code>POST /patients</code></td><td><code>first_name</code>, <code>last_name</code>, <code>phone</code> are needed. Also <code>dob</code>, <code>gender</code>, <code>email</code>, <code>address</code>, <code>preferred_contact</code>, <code>agreed_to_appointment_messages</code>, <code>agreed_to_offers</code>, <code>notes</code>. A likely duplicate returns 409 unless you send <code>"allow_duplicate": true</code>.</td></tr>
+  <tr><td><code>PATCH /patients/{id}</code></td><td>Send only the fields to change.</td></tr>
+  <tr><td><code>POST /appointments</code></td><td><code>patient_id</code>, <code>provider_id</code>, <code>start_at</code> ("2026-11-30 14:30"). Optional <code>chair_id</code>, <code>duration_min</code> (15, 30, 45, 60, 90, 120), <code>category</code>, <code>notes</code>. The diary's rules apply: opening hours, no double booking.</td></tr>
+  <tr><td><code>POST /appointments/{id}/status</code></td><td><code>{"status": "complete"}</code> or <code>{"status": "broken", "break_reason": "missed"}</code> (or "cancelled").</td></tr>
+</table></div>
+<p class="small">Visit reasons for <code>category</code>: {{ categories|join(', ') }}.</p>
+<pre class="code">curl -X POST {{ base }}/appointments \
+  -H "Authorization: Bearer YOUR_KEY" -H "Content-Type: application/json" \
+  -d '{"patient_id": 12, "provider_id": 1, "start_at": "2026-12-01 10:00", "duration_min": 30}'</pre></section>
+<section class="card"><h2>Webhooks</h2>
+  <p>Add an https address under API and webhooks. When a chosen event happens we send it a POST with a JSON body:</p>
+<pre class="code">{"id": "evt_...", "event": "patient.created", "clinic_id": 1, "created": "2026-11-30T14:05:00Z", "data": { ... }}</pre>
+  <p>The <code>data</code> has the same shape as the API returns for that thing. Events:</p>
+  <ul class="small">{% for k, v in events.items() %}<li><code>{{ k }}</code>: {{ v }}</li>{% endfor %}</ul>
+  <p><strong>Check the signature.</strong> Each request has <code>X-DentalOS-Signature: t=TIMESTAMP,v1=HEX</code>. Compute HMAC-SHA256 of <code>TIMESTAMP + "." + raw body</code> with your signing secret, compare to <code>v1</code>, and reject requests whose timestamp is more than 5 minutes old.</p>
+<pre class="code">import hmac, hashlib, time
+
+def is_genuine(secret, header, raw_body):
+    parts = dict(p.split("=", 1) for p in header.split(","))
+    if abs(time.time() - int(parts["t"])) > 300:
+        return False
+    expected = hmac.new(secret.encode(), parts["t"].encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, parts["v1"])</pre>
+  <ul class="small">
+    <li>Answer with any 2xx status within 6 seconds. Anything else counts as a failure.</li>
+    <li>Failures are retried after 1 minute, 5 minutes, 30 minutes, 2 hours and 12 hours. Then it gives up, and you can press "Try again" on the page.</li>
+    <li>A message can arrive more than once. Use the <code>id</code> to ignore ones you have already handled.</li>
+    <li>Redirects are not followed, and addresses on private networks are refused.</li>
+  </ul></section>
+{% endblock %}

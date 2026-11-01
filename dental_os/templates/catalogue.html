@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Catalogue{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1>Procedures and prices</h1>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="starter">
+    <button type="submit">Add starter list</button></form>
+</div>
+<p class="muted">These codes are our own, not the American CDT codes, which are licensed. Prices start at zero. Enter your clinic's real prices, in {{ clinic.currency }}, before using billing.</p>
+<section class="card">
+  <h2>Ready-made packs</h2>
+  <p class="muted">Add the codes for the work your clinic does. Codes you already have are never changed. New ones come in switched off with no price, so set a price and tick In use before you use them.</p>
+  <div class="tbl-wrap"><table>
+    {% for k in packs %}<tr><td><strong>{{ k.label }}</strong><div class="muted small">{{ k.about }}</div></td>
+      <td class="nw">{{ k.present }} of {{ k.total }} added</td>
+      <td>{% if k.missing %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="pack"><input type="hidden" name="pack" value="{{ k.key }}"><button type="submit" aria-label="Add the {{ k.label }} pack">Add {{ k.missing }}</button></form>{% else %}<span class="pill ok">All added</span>{% endif %}</td></tr>{% endfor %}
+  </table></div>
+</section>
+<section class="card">
+  <h2>Price list in a spreadsheet</h2>
+  <p class="muted">Download it, change prices in Excel or Google Sheets, then upload it again. Check the file first: if any row has a mistake, nothing is changed and you are told which rows to fix. Keep the column names in the first row. Prices are in {{ clinic.currency }}; in use is yes or no.</p>
+  <p><a class="btn" href="{{ url_for('clinical.catalogue_csv') }}">Download the price list</a></p>
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="pl-file">Price list file (CSV)</label><input id="pl-file" type="file" name="file" accept=".csv,text/csv" required>
+    <label class="check"><input type="checkbox" name="update_existing" value="1"><span>Also change codes I already have (name, group, price, in use, tax). If this is off, only new codes are added.</span></label>
+    <p class="row"><button type="submit" name="action" value="pricelist_check">Check the file</button> <button class="primary" type="submit" name="action" value="pricelist_apply">Check and apply</button></p>
+  </form>
+  {% if price_errors %}<div class="alert critical" role="alert"><strong>Fix these rows and upload again:</strong>
+    <ul>{% for n, m in price_errors %}<li>Row {{ n }}: {{ m }}</li>{% endfor %}</ul></div>{% endif %}
+</section>
+<div class="card">
+  <div class="tbl-wrap"><table>
+    <tr><th>Code</th><th>Procedure</th><th>Group</th><th>Price ({{ clinic.currency }})</th>{% if tax_rates %}<th>Tax</th>{% endif %}<th>In use</th><th></th></tr>
+    {% for r in rows %}
+    <tr>
+      <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ r.id }}">
+      <td>{{ r.code }}</td><td>{{ r.name }}</td><td class="muted">{{ r.category }}</td>
+      <td><input name="fee" value="{{ r.fee_p|plain }}" inputmode="decimal" aria-label="Price for {{ r.name }}" style="width:110px"></td>
+      {% if tax_rates %}<td><select name="tax_rate_id" aria-label="Tax for {{ r.name }}"><option value="0">Clinic default</option>{% for t in tax_rates %}{% if t.active or r.tax_rate_id == t.id %}<option value="{{ t.id }}" {{ 'selected' if r.tax_rate_id == t.id }}>{{ t.name }}{{ ' (off)' if not t.active }}</option>{% endif %}{% endfor %}</select></td>{% endif %}
+      <td><input type="checkbox" name="active" value="1" {{ 'checked' if r.active }} aria-label="In use"></td>
+      <td><button type="submit">Save</button></td>
+      </form>
+    </tr>
+    {% else %}<tr><td colspan="7" class="muted">Empty. Add a pack above, or press "Add starter list".</td></tr>{% endfor %}
+  </table></div>
+</div>
+<section class="card">
+  <h2>Add a procedure</h2>
+  <form method="post" class="grid three">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="add">
+    <div><label for="code">Short code</label><input id="code" name="code" maxlength="16" required></div>
+    <div><label for="name">Name</label><input id="name" name="name" maxlength="80" required></div>
+    <div><label for="category">Group</label><input id="category" name="category" value="General" maxlength="40"></div>
+    <div><label for="fee">Price ({{ clinic.currency }})</label><input id="fee" name="fee" inputmode="decimal" value="0"></div>
+    <div style="align-self:end"><button class="primary" type="submit">Add</button></div>
+  </form>
+</section>
+{% endblock %}

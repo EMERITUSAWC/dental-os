@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Health form") }}{% endblock %}
+{% block body %}
+<div class="pub">
+<h1>{{ _("Your health form") }}</h1>
+<p>{{ _("Please answer as well as you can. A member of the clinical team will read it. If something is urgent, call the clinic.") }}</p>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="conditions">{{ _("Health conditions (for example diabetes, asthma, heart problems). Write none if there are none.") }}</label><textarea id="conditions" name="conditions" rows="3" maxlength="1500">{{ form.get('conditions', '') }}</textarea>
+  <label for="medications">{{ _("Medicines you take") }}</label><textarea id="medications" name="medications" rows="2" maxlength="1500">{{ form.get('medications', '') }}</textarea>
+  <label for="allergies">{{ _("Allergies (medicines, latex, anything else)") }}</label><textarea id="allergies" name="allergies" rows="2" maxlength="1500">{{ form.get('allergies', '') }}</textarea>
+  <label class="check"><input type="checkbox" name="blood_thinners" value="1" {{ 'checked' if form.get('blood_thinners') }}><span>{{ _("I take blood thinners (for example warfarin or aspirin every day)") }}</span></label>
+  <div class="grid two">
+    <div><label for="pregnant">{{ _("Are you pregnant?") }}</label><select id="pregnant" name="pregnant"><option value="">{{ _("Not applicable") }}</option><option value="no">{{ _("No") }}</option><option value="yes">{{ _("Yes") }}</option></select></div>
+    <div><label for="smoker">{{ _("Do you smoke?") }}</label><select id="smoker" name="smoker"><option value="">{{ _("Prefer not to say") }}</option><option value="never">{{ _("Never") }}</option><option value="former">{{ _("I used to") }}</option><option value="current">{{ _("Yes") }}</option></select></div>
+  </div>
+  <label for="notes">{{ _("Anything else we should know?") }}</label><textarea id="notes" name="notes" rows="2" maxlength="1500">{{ form.get('notes', '') }}</textarea>
+  <label class="check"><input type="checkbox" name="agrees_messages" value="1"><span>{{ _("It is fine to send me appointment messages on WhatsApp") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Send to the clinic") }}</button> <a href="{{ url_for('public.portal', token=token) }}">{{ _("Back") }}</a></p>
+</form></div>
+{% endblock %}

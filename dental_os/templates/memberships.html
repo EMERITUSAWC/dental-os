@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Memberships{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Memberships</h1>
+  {% if user.role == 'manager' %}<a class="btn" href="{{ url_for('commercial.membership_plans') }}">Membership plans</a>{% endif %}</div>
+<div class="stats" style="grid-template-columns: repeat(3, 1fr)">
+  <div class="card"><div class="stat">{{ rows|length }}</div><div class="muted">members</div></div>
+  <div class="card"><div class="stat">{{ monthly|money }}</div><div class="muted">a month, from members paid up</div></div>
+  <div class="card"><div class="stat">{{ attention|length }}</div><div class="muted">fees to chase</div></div>
+</div>
+{% if attention %}
+<section class="card"><h2>Fees to chase</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Member</th><th>Fee</th><th>Due</th><th>Record it</th></tr>
+    {% for a in attention %}{% set r = a.row %}
+    <tr><td><a href="{{ url_for('commercial.patient_membership', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a><br><span class="muted small">{{ r.plan_name }}, {{ r.phone|phone }}</span></td>
+      <td class="nw">{{ r.amount_p|money }}</td>
+      <td class="nw">{{ r.due_on|date }}{% if a.days_late %}<br><span class="small muted">{{ a.days_late }} days late</span>{% endif %}{% if r.status == 'failed' %} <span class="pill bad">Failed</span>{% endif %}{% if r.membership_status == 'lapsed' %} <span class="pill warn">Lapsed</span>{% endif %}</td>
+      <td>
+        <form method="post" action="{{ url_for('commercial.membership_charge_pay', charge_id=r.id) }}" class="row">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="back" value="{{ url_for('commercial.memberships_home') }}">
+          <select name="method" aria-label="Paid by" style="width:auto">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+          <input name="reference" placeholder="Reference" aria-label="Reference" maxlength="80" style="width:110px"><button class="primary" type="submit">Paid</button>
+        </form>
+      </td></tr>
+    {% endfor %}
+  </table></div>
+</section>{% endif %}
+<section class="card"><h2>Members</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Member</th><th>Plan</th><th>Fee</th><th>Next fee</th><th>Status</th></tr>
+    {% for m in rows %}<tr><td><a href="{{ url_for('commercial.patient_membership', pid=m.patient_id) }}">{{ m.first_name }} {{ m.last_name }}</a></td>
+      <td>{{ m.plan_name }}</td><td class="nw">{{ m.fee_p|money }} {{ cycles[m.cycle][0]|lower }}</td><td class="nw">{{ m.next_due_on|date }}</td>
+      <td><span class="pill {{ 'ok' if m.status == 'active' else 'warn' }}">{{ m.status|capitalize }}</span></td></tr>
+    {% else %}<tr><td colspan="5" class="muted">No members yet. Enrol a patient from their Membership tab.{% if not plans %} {% if user.role == 'manager' %}First <a href="{{ url_for('commercial.membership_plans') }}">create a membership plan</a>.{% else %}A manager needs to create a membership plan first.{% endif %}{% endif %}</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

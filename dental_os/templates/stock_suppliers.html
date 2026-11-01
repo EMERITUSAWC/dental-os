@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_stock_tabs.html" import tabs with context %}
+{% block title %}Suppliers{% endblock %}
+{% block body %}
+<h1>Suppliers</h1>
+{{ tabs('suppliers') }}
+{% for s in rows %}
+<section class="card"><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="supplier_id" value="{{ s.id }}">
+  <div class="grid three"><div><label for="n{{ s.id }}">Name</label><input id="n{{ s.id }}" name="name" value="{{ s.name }}" maxlength="80"></div>
+    <div><label for="p{{ s.id }}">Phone</label><input id="p{{ s.id }}" name="phone" value="{{ s.phone or '' }}" maxlength="40"></div>
+    <div><label for="e{{ s.id }}">Email</label><input id="e{{ s.id }}" name="email" value="{{ s.email or '' }}" maxlength="120"></div></div>
+  <label for="o{{ s.id }}">Notes</label><input id="o{{ s.id }}" name="notes" value="{{ s.notes or '' }}" maxlength="500">
+  <p class="row"><label class="check" style="margin:0"><input type="checkbox" name="active" value="1" {{ 'checked' if s.active }}><span>In use</span></label><button type="submit">Save</button></p></form></section>
+{% endfor %}
+<section class="card"><h2>New supplier</h2><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="active" value="1">
+  <div class="grid three"><div><label for="nn">Name</label><input id="nn" name="name" maxlength="80" required></div><div><label for="np">Phone</label><input id="np" name="phone" maxlength="40"></div><div><label for="ne">Email</label><input id="ne" name="email" maxlength="120"></div></div>
+  <label for="no">Notes</label><input id="no" name="notes" maxlength="500"><p><button class="primary" type="submit">Add supplier</button></p></form></section>
+{% endblock %}

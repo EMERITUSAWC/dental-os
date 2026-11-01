@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Invoice") }} {{ inv.invoice_no }}{% endblock %}
+{% block body %}
+<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('finance.patient_invoices', pid=inv.patient_id) }}">Back to invoices</a></div>
+<section class="card receipt" style="max-width:720px; margin-top:12px">
+  <div class="row spread"><div><strong>{{ clinic.name }}</strong>{% if inv.tax_number %}<br><span class="muted small">{{ clinic.tax_name or _d('Tax') }} {{ _d('number') }} {{ inv.tax_number }}</span>{% endif %}</div>
+    <div style="text-align:right"><h1 style="margin:0">{{ _d("Invoice") }} {{ inv.invoice_no }}</h1>{% if inv.status == 'void' %}<span class="pill bad">{{ _d("VOID") }}</span>{% endif %}</div></div>
+  <dl class="facts" style="margin-top:12px"><dt>{{ _d("Billed to") }}</dt><dd>{{ inv.first_name }} {{ inv.last_name }}{% if inv.address %}<br>{{ inv.address }}{% endif %}</dd>
+    <dt>{{ _d("Issued") }}</dt><dd>{{ inv.issued_on|date }}</dd><dt>{{ _d("Pay by") }}</dt><dd>{{ inv.due_on|date }}</dd></dl>
+  <table style="margin-top:12px"><tr><th>{{ _d("Description") }}</th><th>{{ _d("Date") }}</th><th style="text-align:right">{{ _d("Amount") }}</th></tr>
+    {% for l in lines %}<tr><td>{{ l.description }}</td><td class="nw">{{ l.service_date|date if l.service_date else '' }}</td><td class="nw" style="text-align:right">{{ l.amount_p|money }}</td></tr>{% endfor %}
+    {% if tax_rows %}<tr><td colspan="2">{{ _d("Subtotal") }}</td><td class="nw" style="text-align:right">{{ inv.subtotal_p|money }}</td></tr>
+    {% for t in tax_rows %}<tr><td colspan="2">{{ t.name }}{% if t.kind == 'rate' %} {{ '%g'|format(t.rate_bp / 100) }}%{% endif %} {{ _d('on') }} {{ t.net_p|money }}{% if t.kind == 'rate' and inv.tax_inclusive %} {{ _d('(included in the prices)') }}{% endif %}</td><td class="nw" style="text-align:right">{{ t.tax_p|money }}</td></tr>{% endfor %}
+    {% elif inv.tax_rate_bp %}<tr><td colspan="2">{{ _d("Subtotal") }}</td><td class="nw" style="text-align:right">{{ inv.subtotal_p|money }}</td></tr>
+    <tr><td colspan="2">{{ inv.tax_name }} {{ '%g'|format(inv.tax_rate_bp / 100) }}%{% if inv.tax_inclusive %} {{ _d('(included in the prices)') }}{% endif %}</td><td class="nw" style="text-align:right">{{ inv.tax_p|money }}</td></tr>{% endif %}
+    <tr><th colspan="2">{{ _d("Total") }}</th><th class="nw" style="text-align:right">{{ inv.total_p|money }}</th></tr></table>
+  {% if inv.note %}<p>{{ inv.note }}</p>{% endif %}
+  <p class="muted small">{{ _d("Payments, discounts and insurance are shown on the patient's statement.") }}</p>
+  {% if inv.void_reason %}<p class="small">{{ _d("Voided:") }} {{ inv.void_reason }}</p>{% endif %}
+  {% if clinic.invoice_footer %}<p class="small" style="white-space:pre-wrap">{{ clinic.invoice_footer }}</p>{% endif %}
+</section>
+{% if user.role == 'manager' and inv.status == 'issued' %}
+<form method="post" action="{{ url_for('finance.invoice_void', invoice_id=inv.id) }}" class="row no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <input name="reason" placeholder="Why void this invoice?" aria-label="Reason" maxlength="200" required style="width:260px"><button class="danger" type="submit">Void invoice</button></form>{% endif %}
+{% endblock %}

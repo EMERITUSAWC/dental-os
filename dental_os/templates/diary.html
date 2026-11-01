@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_status.html" import alert_mark %}
+{% block title %}Diary{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1>{{ day|day }}</h1>
+  <div class="row">
+    <a class="btn" href="{{ url_for('views.diary', date=prev) }}" aria-label="Previous day">&larr;</a>
+    <a class="btn" href="{{ url_for('views.diary', date=today) }}">Today</a>
+    <a class="btn" href="{{ url_for('views.diary', date=next) }}" aria-label="Next day">&rarr;</a>
+    <form method="get" class="row"><input type="date" name="date" value="{{ day }}" aria-label="Pick a date" style="width:auto">
+      <button type="submit">Go</button></form>
+    <a class="btn primary" href="{{ url_for('views.patients', book=1) }}">New appointment</a>
+  </div>
+</div>
+
+{% if view.providers %}
+<div class="diary">
+  <div class="dgrid" style="grid-template-columns: 70px repeat({{ view.providers|length }}, minmax(170px, 1fr)); grid-template-rows: auto repeat({{ view.row_count }}, 44px);">
+    <div class="hd" style="grid-row:1;grid-column:1"></div>
+    {% for p in view.providers %}<div class="hd" style="grid-row:1;grid-column:{{ loop.index + 1 }}">{{ p.name }}</div>{% endfor %}
+    {% for l in view.labels %}<div class="tm" style="grid-row:{{ l.grid_row }};grid-column:1">{{ l.label }}</div>
+      {% for p in view.providers %}<div style="grid-row:{{ l.grid_row }};grid-column:{{ loop.index + 1 }}"></div>{% endfor %}
+    {% endfor %}
+    {% for c in view.cells %}
+      <a class="appt {{ 'confirmed' if c.row.confirmation == 'confirmed' }} {{ c.row.status if c.row.status == 'complete' }}"
+         style="grid-row:{{ c.grid_row }} / span {{ c.span }};grid-column:{{ c.col }}"
+         href="{{ url_for('views.appointment_view', aid=c.row.id) }}">
+        <strong>{{ c.time }}</strong> {{ c.row.first_name }} {{ c.row.last_name }}{{ alert_mark(c.row.patient_id) }}<br>
+        <span class="muted">{{ c.row.chair_name }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% else %}<div class="card"><p>Add a dentist under Settings first.</p></div>{% endif %}
+
+{% if view.broken %}
+<div class="card" style="margin-top:16px"><h2>Missed or cancelled</h2>
+  {% for b in view.broken %}<p><a href="{{ url_for('views.appointment_view', aid=b.id) }}">{{ b.start_at|time }} {{ b.first_name }} {{ b.last_name }}</a>
+    <span class="pill bad">{{ b.break_reason }}</span></p>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

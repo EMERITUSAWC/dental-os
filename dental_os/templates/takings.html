@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Daily takings{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1>Takings, {{ day|day }}</h1>
+  <div class="row">
+    <a class="btn" href="{{ url_for('clinical.takings', date=prev) }}" aria-label="Previous day">&larr;</a>
+    <a class="btn" href="{{ url_for('clinical.takings', date=next) }}" aria-label="Next day">&rarr;</a>
+    <button data-print>Print</button>
+  </div>
+</div>
+<div class="grid two">
+  <section class="card">
+    <h2>Total {{ data.total|money }}</h2>
+    <dl class="facts">{% for k, v in methods.items() %}<dt>{{ v }}</dt><dd>{{ data.by_method[k]|money }}</dd>{% endfor %}</dl>
+    <p class="muted small">Count the cash in the till against the cash line. Voided payments are not counted.</p>
+  </section>
+  <section class="card">
+    <h2>Payments</h2>
+    <div class="tbl-wrap"><table>
+      {% for r in data.rows %}
+      <tr style="{{ 'opacity:.55;text-decoration:line-through' if r.voided }}">
+        <td><a href="{{ url_for('clinical.receipt', pay_id=r.id) }}">R-{{ '%06d' % r.receipt_no }}</a></td>
+        <td>{{ r.first_name }} {{ r.last_name }}</td><td>{{ methods[r.method] }}</td><td class="nw">{{ r.amount_p|money }}</td></tr>
+      {% else %}<tr><td class="muted">No payments that day.</td></tr>{% endfor %}
+    </table></div>
+  </section>
+</div>
+{% endblock %}

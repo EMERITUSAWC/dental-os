@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}Plans, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: treatment plans</h1>
+{{ tabs(p, 'plans') }}
+<section class="card"><h2>Start a plan</h2>
+  <p class="muted small">A plan is one option for the patient. Make a second plan for a different option, for example a crown or a bridge. Nothing is charged or booked until the patient accepts.</p>
+  <form method="post" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input name="title" placeholder="Option A: crown on tooth 16" aria-label="Plan name" maxlength="80" required style="flex:1; min-width:220px">
+    <button class="primary" type="submit">Start plan</button>
+  </form>
+</section>
+<section class="card">
+  <div class="tbl-wrap"><table>
+    <tr><th>Plan</th><th>Status</th><th>Lines</th><th>Total</th></tr>
+    {% for r in rows %}
+    <tr><td><a href="{{ url_for('commercial.plan_show', plan_id=r.plan.id) }}">{{ r.plan.title }}</a></td>
+      <td><span class="pill {{ 'ok' if r.plan.status == 'accepted' else 'warn' if r.plan.status == 'presented' else 'bad' if r.plan.status == 'declined' else '' }}">{{ statuses[r.plan.status] }}</span></td>
+      <td>{{ r.lines }}</td><td class="nw">{{ r.total|money }}</td></tr>
+    {% else %}<tr><td colspan="4" class="muted">No plans yet.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

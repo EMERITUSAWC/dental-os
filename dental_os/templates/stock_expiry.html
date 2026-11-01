@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_stock_tabs.html" import tabs with context %}
+{% block title %}Expiry{% endblock %}
+{% block body %}
+<h1>Expired and expiring stock</h1>
+{{ tabs('expiry') }}
+<p class="muted">Anything that has expired, or will in the next 90 days. Record expired stock as "Wasted or broken" on the item so the count stays right.</p>
+<section class="card"><div class="tbl-wrap"><table><tr><th>Item</th><th>Left</th><th>Expires</th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('ops.stock_item', item_id=r.item.id) }}">{{ r.item.name }}</a></td><td>{{ r.qty }} {{ r.item.unit }}</td>
+    <td class="nw">{{ r.expires_on|date }} {% if r.expired %}<span class="pill bad">expired</span>{% else %}<span class="pill warn">soon</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="3" class="muted">Nothing has expired or is about to.</td></tr>{% endfor %}</table></div></section>
+{% endblock %}

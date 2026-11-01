@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_lang.html" import switch with context %}
+{% block title %}{{ clinic.name }}{% endblock %}
+{% block body %}
+<div class="pub">
+<h1>{{ clinic.name }}</h1>
+<p>{{ _("Hello %(name)s. This page is only for you. Please do not share its address.", name=p.first_name) }}</p>
+
+<section class="card"><h2>{{ _("Your visits") }}</h2>
+  {% for v in d.visits %}
+  <div style="margin-bottom:10px"><strong>{{ v.day }}, {{ v.time }}</strong> {{ _("with") }} {{ v.dentist }}
+    {% if v.confirmation == 'confirmed' %}<span class="pill ok">{{ _("You confirmed") }}</span>{% elif v.confirmation == 'declined' %}<span class="pill bad">{{ _("You said you cannot come") }}</span>{% endif %}
+    <div class="row">
+      <form method="post" action="{{ url_for('public.portal_visit', token=token, appt_id=v.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="answer" value="confirmed"><button class="primary" type="submit">{{ _("I will be there") }}</button></form>
+      <form method="post" action="{{ url_for('public.portal_visit', token=token, appt_id=v.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="answer" value="declined"><button type="submit">{{ _("I cannot come") }}</button></form>
+    </div></div>
+  {% else %}<p class="muted">{{ _("You have no visits booked.") }}</p>{% endfor %}
+</section>
+
+{% for q in d.quotes %}
+<section class="card"><h2>{{ _("Your quote: %(title)s", title=q.plan.title) }}</h2>
+  <table>{% for l in q.lines %}<tr><td>{{ l.code_name }}{% if l.tooth %}, {{ _("tooth") }} {{ l.tooth }}{% endif %}</td><td class="nw" style="text-align:right">{{ l.fee_p|money }}</td></tr>{% endfor %}
+    <tr><th>{{ _("Total") }}</th><th class="nw" style="text-align:right">{{ q.total|money }}</th></tr></table>
+  <form method="post" action="{{ url_for('public.portal_quote', token=token, plan_id=q.plan.id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="signer{{ q.plan.id }}">{{ _("Type your full name to accept") }}</label><input id="signer{{ q.plan.id }}" name="signer_name" maxlength="120" required>
+    <label for="rel{{ q.plan.id }}">{{ _("I am") }}</label><select id="rel{{ q.plan.id }}" name="relation"><option value="self">{{ _("the patient") }}</option><option value="parent">{{ _("the patient's parent") }}</option><option value="guardian">{{ _("the patient's guardian") }}</option></select>
+    <label class="check"><input type="checkbox" name="agreed" value="1"><span>{{ _("I have read the costs above and I agree to this treatment plan") }}</span></label>
+    <p class="muted small">{{ _("Accepting does not book anything. The clinic will contact you to arrange the visits.") }}</p>
+    <p><button class="primary" type="submit">{{ _("Accept this quote") }}</button></p></form>
+</section>{% endfor %}
+
+<section class="card"><h2>{{ _("Your account") }}</h2>
+  {% if d.balance > 0 %}<p>{{ _("Amount due:") }} <strong>{{ d.balance|money }}</strong>. {{ _("Please ask the clinic how to pay.") }}</p>{% elif d.balance < 0 %}<p>{{ _("You have a credit of %(amount)s.", amount=(d.balance|abs)|money) }}</p>{% else %}<p>{{ _("Nothing is due.") }}</p>{% endif %}
+</section>
+
+<section class="card"><h2>{{ _("Your health form") }}</h2>
+  {% if d.form_pending %}<p>{{ _("Thank you. The clinic is checking the form you sent.") }}</p>
+  {% else %}<p>{{ _("Please tell us about your health before your visit. It takes about two minutes.") }}</p><p><a class="btn primary" href="{{ url_for('public.portal_health', token=token) }}">{{ _("Update my health form") if d.history_on_file else _("Fill in my health form") }}</a></p>{% endif %}
+</section>
+{{ switch() }}
+</div>
+{% endblock %}

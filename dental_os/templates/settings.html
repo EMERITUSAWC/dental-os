@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+<div class="row spread"><h1>Settings</h1><a class="btn" href="{{ url_for('clinical.catalogue') }}">Procedures and prices</a></div>
+<section class="card">
+  <h2>Clinic</h2>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="clinic">
+    <label for="name">Clinic name</label><input id="name" name="name" value="{{ clinic.name }}">
+    <div class="grid three">
+      <div><label for="open_time">Opens</label><input id="open_time" type="time" name="open_time" value="{{ clinic.open_time }}"></div>
+      <div><label for="close_time">Closes</label><input id="close_time" type="time" name="close_time" value="{{ clinic.close_time }}"></div>
+      <div><label for="slot_minutes">Diary step</label>
+        <select id="slot_minutes" name="slot_minutes">{% for m in (10, 15, 20, 30, 60) %}<option value="{{ m }}" {{ 'selected' if m == clinic.slot_minutes }}>{{ m }} minutes</option>{% endfor %}</select></div>
+    </div>
+    <p class="muted small">Opening hours start as a guess. Put in the real ones.</p>
+    <label>Working days</label>
+    <div class="row">
+      {% for n, d in ((1, 'Mon'), (2, 'Tue'), (3, 'Wed'), (4, 'Thu'), (5, 'Fri'), (6, 'Sat'), (7, 'Sun')) %}
+      <label class="check" style="margin:0"><input type="checkbox" name="days" value="{{ n }}" {{ 'checked' if n in days }}> {{ d }}</label>{% endfor %}
+    </div>
+    <div class="grid three">
+      <div><label for="country">Country</label>
+        <select id="country" name="country">{% for code, cname in countries %}<option value="{{ code }}" {{ 'selected' if code == clinic.country }}>{{ cname }}</option>{% endfor %}</select></div>
+      <div><label for="currency">Currency</label>
+        <select id="currency" name="currency">{% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == clinic.currency }}>{{ c }}</option>{% endfor %}</select></div>
+      <div><label for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ clinic.timezone }}" placeholder="Continent/City"></div>
+    </div>
+    <p class="muted small">Country decides how phone numbers are read. Currency decides how prices are shown. Changing the currency does not convert old amounts, so set it before you enter prices.</p>
+    <label for="language">Language</label>
+    <select id="language" name="language">{% for code, name in languages.items() %}<option value="{{ code }}" {{ 'selected' if code == clinic.language }}>{{ name }}</option>{% endfor %}</select>
+    <p class="muted small">Used for the menus and for patient messages and documents. A patient can have their own language on their record, and each member of staff can choose theirs under their name at the top. Only the menus, the sign-in page, the online booking page, the patient's private page and the printed documents are in French so far. The other screens stay in English.</p>
+    <label for="whatsapp">Clinic WhatsApp number (the one patients message)</label>
+    <input id="whatsapp" name="whatsapp" value="{{ clinic.whatsapp|phone }}">
+    <label>Ways patients pay (cash is always on)</label>
+    <div class="row">
+      {% for k, v in methods.items() %}
+      <label class="check" style="margin:0"><input type="checkbox" name="pay_{{ k }}" {{ 'checked' if k in enabled or k == 'cash' }}> {{ v }}</label>{% endfor %}
+    </div>
+    <p><button class="primary" type="submit">Save</button></p>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Tax on invoices</h2>
+  <p class="muted small">Leave the rate at 0 if your treatment is not taxed. Many countries tax some dental work and not other work. Ask your accountant what applies before you set a rate. This only changes new invoices.</p>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="tax">
+    <div class="grid three">
+      <div><label for="tax_name">Tax name</label><input id="tax_name" name="tax_name" value="{{ clinic.tax_name or '' }}" maxlength="20" placeholder="VAT"></div>
+      <div><label for="tax_rate">Rate (%)</label><input id="tax_rate" name="tax_rate" value="{{ '%g'|format(clinic.tax_rate_bp / 100) }}" inputmode="decimal"></div>
+      <div><label for="tax_inclusive">Prices</label><select id="tax_inclusive" name="tax_inclusive"><option value="1" {{ 'selected' if clinic.tax_inclusive }}>Already include tax</option><option value="0" {{ 'selected' if not clinic.tax_inclusive }}>Tax is added on top</option></select></div>
+    </div>
+    <div class="grid two">
+      <div><label for="tax_number">Tax registration number</label><input id="tax_number" name="tax_number" value="{{ clinic.tax_number or '' }}" maxlength="40"></div>
+      <div><label for="invoice_footer">Footer on invoices (for example bank details)</label><input id="invoice_footer" name="invoice_footer" value="{{ clinic.invoice_footer or '' }}" maxlength="300"></div>
+    </div>
+    <p><button class="primary" type="submit">Save</button></p>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Other tax rates</h2>
+  <p class="muted small">Some treatment is taxed at a different rate, or not taxed at all. Add the rates here, then pick one for each treatment under Procedures and prices. Treatment with no rate of its own uses the default rate above. A rate is never deleted, only switched off. Ask your accountant which rate applies to what.</p>
+  {% if tax_rates %}<div class="tbl-wrap"><table>
+    <tr><th>Name</th><th>Kind</th><th>Rate</th><th></th></tr>
+    {% for r in tax_rates %}<tr><td>{{ r.name }}</td><td class="muted">{{ tax_kinds[r.kind] }}</td><td>{{ '%g'|format(r.rate_bp / 100) }}%</td>
+      <td><form method="post" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="taxrate_toggle"><input type="hidden" name="id" value="{{ r.id }}">
+        <button type="submit">{{ 'Switch off' if r.active else 'Switch on' }}</button></form></td></tr>{% endfor %}
+  </table></div>{% endif %}
+  <form method="post" class="grid three" style="margin-top:8px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="taxrate_add">
+    <div><label for="rate_name">Name</label><input id="rate_name" name="rate_name" maxlength="30" placeholder="Reduced" required></div>
+    <div><label for="rate_kind">Kind</label><select id="rate_kind" name="rate_kind">{% for k, v in tax_kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div><label for="rate_pct">Rate (%)</label><input id="rate_pct" name="rate_pct" inputmode="decimal" placeholder="5"></div>
+    <div style="align-self:end"><button class="primary" type="submit">Add rate</button></div>
+  </form>
+</section>
+
+<div class="grid two">
+{% for kind, title, rows in (('provider', 'Dentists', providers), ('chair', 'Chairs', chairs)) %}
+  <section class="card">
+    <h2>{{ title }}</h2>
+    {% for r in rows %}
+    <form method="post" class="row spread" style="margin-bottom:6px">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ kind }}_toggle"><input type="hidden" name="id" value="{{ r.id }}">
+      <span>{{ r.name }} {% if not r.active %}<span class="pill">Off</span>{% endif %}</span>
+      <button type="submit">{{ 'Switch off' if r.active else 'Switch on' }}</button>
+    </form>{% endfor %}
+    <form method="post" class="row" style="margin-top:12px">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ kind }}">
+      <input name="name" placeholder="Add new" aria-label="Add {{ kind }}" style="flex:1"><button type="submit">Add</button>
+    </form>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}New campaign{% endblock %}
+{% block body %}
+<h1>New campaign: {{ kinds[kind][0] }}</h1>
+<p class="muted">{{ kinds[kind][1] }}</p>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="{{ kind }}">
+  <div class="grid three">
+    <div><label for="name">Name</label><input id="name" name="name" value="{{ form.get('name', kinds[kind][0]) }}" maxlength="80" required></div>
+    <div><label for="param_days">Days</label><input id="param_days" name="param_days" type="number" min="1" max="1500" value="{{ form.get('param_days', 60 if kind != 'unaccepted_plans' else 14) }}"></div>
+    <div><label for="min_gap_days">Skip anyone messaged in the last (days)</label><input id="min_gap_days" name="min_gap_days" type="number" min="0" max="365" value="{{ form.get('min_gap_days', 14) }}"></div>
+  </div>
+  <label for="purpose">What kind of message is it?</label>
+  <select id="purpose" name="purpose">{% for k, v in purposes.items() %}<option value="{{ k }}" {{ 'selected' if form.get('purpose', 'care') == k }}>{{ v }}</option>{% endfor %}</select>
+  <label for="body">Message</label>
+  <textarea id="body" name="body" rows="4" maxlength="600" required>{{ form.get('body', kinds[kind][2]) }}</textarea>
+  <p class="small muted">You can use {first_name} and {clinic}. If the message offers a discount or promotes a service, choose Offer, so only patients who agreed to offers receive it.</p>
+  <p><button class="primary" type="submit">Save campaign</button> <a href="{{ url_for('comms.campaigns') }}">Cancel</a></p>
+</form>
+{% endblock %}

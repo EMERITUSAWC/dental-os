@@ -1,0 +1,5 @@
+{% macro switch() -%}
+  {%- if languages|length > 1 -%}
+  <p class="small no-print" lang="en">{% for code, name in languages.items() if code != lang %}<a href="{{ request.path }}?lang={{ code }}" hreflang="{{ code }}" lang="{{ code }}">{{ name }}</a>{% endfor %}</p>
+  {%- endif -%}
+{%- endmacro %}

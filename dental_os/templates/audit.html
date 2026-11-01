@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Activity{% endblock %}
+{% block body %}
+<h1>Who did what</h1>
+<p class="muted">The last 200 actions. Times are in UTC.</p>
+<div class="card tbl-wrap"><table>
+  <tr><th>When</th><th>Who</th><th>Action</th><th>Record</th></tr>
+  {% for r in rows %}
+  <tr><td>{{ r.at }}</td><td>{{ r.user_name or 'Unknown' }}</td><td>{{ r.action }}</td>
+    <td>{% if r.object_type == 'patient' %}<a href="{{ url_for('views.patient_view', pid=r.object_id) }}">patient {{ r.object_id }}</a>
+      {% elif r.object_type == 'appointment' %}<a href="{{ url_for('views.appointment_view', aid=r.object_id) }}">appointment {{ r.object_id }}</a>
+      {% elif r.object_type %}{{ r.object_type }} {{ r.object_id }}{% endif %}</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

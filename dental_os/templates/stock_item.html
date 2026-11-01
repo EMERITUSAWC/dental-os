@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_stock_tabs.html" import tabs with context %}
+{% block title %}{{ i.name }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ i.name }}</h1>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('ops.stock_edit', item_id=i.id) }}">Edit item</a>{% endif %}</div>
+{{ tabs('list') }}
+<div class="grid two">
+<section class="card"><h2>{{ level }} {{ i.unit }} in stock {% if not i.active %}<span class="pill">switched off</span>{% endif %}</h2>
+  <dl class="facts"><dt>Category</dt><dd>{{ i.category }}</dd><dt>Code</dt><dd>{{ i.sku or '' }}</dd><dt>Where it is kept</dt><dd>{{ i.location or '' }}</dd>
+    <dt>Supplier</dt><dd>{{ i.supplier_name or 'None set' }}</dd><dt>Reorder when at or below</dt><dd>{{ i.reorder_level }}</dd><dt>Usual order</dt><dd>{{ i.reorder_qty }}</dd>
+    <dt>Last cost of one</dt><dd>{{ i.cost_p|money }}</dd></dl>
+  {% if batches %}<h2 style="margin-top:16px">What is left, by expiry</h2>
+  <div class="tbl-wrap"><table><tr><th>Left</th><th>Expires</th><th>Cost each</th></tr>
+    {% for b in batches %}<tr><td>{{ b.qty }}</td><td>{{ b.expires_on|date if b.expires_on else 'No date' }}{% if b.expires_on and b.expires_on < today %} <span class="pill bad">expired</span>{% endif %}</td><td>{{ b.cost_p|money }}</td></tr>{% endfor %}</table></div>
+  <p class="small muted">Stock that expires first is counted as used first.</p>{% endif %}
+</section>
+{% if i.active %}
+<section class="card"><h2>Record a change</h2>
+  <form method="post" action="{{ url_for('ops.stock_move', item_id=i.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="kind">What happened</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}{% if k == 'adjust' %} (add or take away, say why){% elif k == 'count' %} (enter what you counted){% endif %}</option>{% endfor %}</select>
+    <div class="grid two"><div><label for="qty">Number</label><input id="qty" name="qty" inputmode="numeric" required></div>
+      <div><label for="moved_on">Date</label><input id="moved_on" type="date" name="moved_on" value="{{ today }}" max="{{ today }}"></div></div>
+    <div class="grid two"><div><label for="uc">Cost of one (when received)</label><input id="uc" name="unit_cost" inputmode="decimal" placeholder="{{ i.cost_p|plain }}"></div>
+      <div><label for="ex">Expiry date (when received)</label><input id="ex" type="date" name="expires_on"></div></div>
+    <label for="note">Note</label><input id="note" name="note" maxlength="200">
+    <p><button class="primary" type="submit">Save</button></p></form></section>
+{% endif %}
+</div>
+<section class="card"><h2>History</h2><div class="tbl-wrap"><table><tr><th>Date</th><th>What</th><th>Change</th><th>Note</th><th>By</th></tr>
+  {% for m in history %}<tr><td class="nw">{{ m.moved_on|date }}</td><td>{{ kinds[m.kind] }}</td><td class="nw">{{ '+' if m.qty > 0 }}{{ m.qty }}</td><td>{{ m.note or '' }}{% if m.expires_on %} <span class="muted small">expires {{ m.expires_on|date }}</span>{% endif %}</td><td>{{ m.display_name or '' }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Nothing recorded yet.</td></tr>{% endfor %}</table></div></section>
+{% endblock %}

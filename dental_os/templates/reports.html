@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% macro rate(v) %}{{ (v|string ~ '%') if v is not none else 'No data' }}{% endmacro %}
+{% block body %}
+<div class="row spread">
+  <h1>Reports</h1>
+  <form method="get" class="row">
+    <input type="date" name="start" value="{{ start }}" aria-label="From" style="width:auto">
+    <input type="date" name="end" value="{{ end }}" aria-label="To" style="width:auto">
+    <button type="submit">Show</button>
+  </form>
+</div>
+
+<section class="card">
+  <h2>Appointment confirmations</h2>
+  <p class="muted small">Visits that were due between {{ start|date }} and {{ end|date }} and are now closed. A "no-show" is a visit marked as missed.</p>
+  <div class="stats">
+    <div class="card"><div class="stat">{{ rate(pilot.all.rate) }}</div><div class="muted">no-show rate, everyone ({{ pilot.closed }} visits)</div></div>
+    <div class="card"><div class="stat">{{ rate(pilot.confirmed.rate) }}</div><div class="muted">no-shows, confirmed visits ({{ pilot.confirmed.n }})</div></div>
+    <div class="card"><div class="stat">{{ rate(pilot.not_confirmed.rate) }}</div><div class="muted">no-shows, not confirmed ({{ pilot.not_confirmed.n }})</div></div>
+  </div>
+  <p>{% if pilot.confirmed_share is not none %}{{ pilot.confirmed_share }}% of closed visits were confirmed. {% else %}No visits have closed in this range yet. {% endif %}{{ pilot.messages }} confirmation messages were prepared, {{ pilot.cancelled }} visits were cancelled and {{ pilot.still_booked }} are still booked in this range.</p>
+  <p class="muted small">Careful: confirmed patients may simply be the ones who were always going to come. These numbers show a link, not proof that the messages caused it. To measure the effect properly, compare a period before you started sending confirmations with a period after, with a similar number of visits.</p>
+</section>
+
+<div class="grid two">
+  <section class="card">
+    <h2>Money</h2>
+    <dl class="facts">
+      <dt>Work done</dt><dd>{{ mny.charges|money }}</dd>
+      <dt>Adjustments</dt><dd>{{ mny.adjustments|money }}</dd>
+      {% for k, v in methods.items() %}<dt>Paid, {{ v }}</dt><dd>{{ mny.by_method[k]|money }}</dd>{% endfor %}
+      <dt><strong>Collected</strong></dt><dd><strong>{{ mny.collected|money }}</strong></dd>
+      <dt>New patients</dt><dd>{{ mny.new_patients }}</dd>
+    </dl>
+    <p><a href="{{ url_for('ops.kpi_view') }}">Key numbers</a> | <a href="{{ url_for('clinical.takings') }}">Daily takings</a> | <a href="{{ url_for('finance.ageing_report') }}">Who owes, by age</a></p>
+  </section>
+  <section class="card">
+    <h2>Who owes the most</h2>
+    {% for bal, r in owing %}<p><a href="{{ url_for('clinical.account', pid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a> {{ bal|money }}</p>
+    {% else %}<p class="muted">Nobody owes anything.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}
