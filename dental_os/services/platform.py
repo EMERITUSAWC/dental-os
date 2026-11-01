@@ -164,8 +164,20 @@ def add_operator(conn, username, display_name, password):
                         (username, (display_name or username).strip()[:80], generate_password_hash(password))).lastrowid
 
 
-def operator_login(conn, username, password, ip_key):
-    from . import throttle
+OPERATOR_NEEDS_2FA = "Operators must use two-step login. On the server, run: flask operator-2fa --username YOUR-USERNAME, then sign in with the code."
+OPERATOR_BAD_CODE = "That username, password and code do not match."
+
+
+def set_operator_2fa(conn, operator_id, secret_key, secret, step):
+    from . import twofactor
+    conn.execute("UPDATE operators SET totp_secret = ?, totp_last_step = ? WHERE id = ?",
+                 (twofactor._fernet(secret_key).encrypt(secret.encode()).decode(), step, operator_id))
+    conn.execute("INSERT INTO operator_log(operator_id, action) VALUES (?, '2fa.on')", (operator_id,))
+
+
+def operator_login(conn, username, password, ip_key, code=None, secret_key=None, require_2fa=False):
+    """0.68: with a code from the authenticator app as well, when the operator has two-step login (and it is required)."""
+    from . import throttle, twofactor
     bucket = "oplogin:" + ip_key
     if throttle.count(conn, bucket, 15) >= 5:
         raise PlatformError("Too many tries. Wait 15 minutes.")
@@ -174,6 +186,18 @@ def operator_login(conn, username, password, ip_key):
     if not ok:
         throttle.record(conn, bucket)
         raise PlatformError("That username and password do not match.")
+    if row["totp_secret"]:
+        try:
+            secret = twofactor._fernet(secret_key).decrypt(row["totp_secret"].encode()).decode()
+        except Exception:                                            # noqa: BLE001 - SECRET_KEY changed: treat as a wrong code
+            secret = None
+        step = twofactor.check(secret, code, row["totp_last_step"]) if secret else None
+        if step is None:
+            throttle.record(conn, bucket)
+            raise PlatformError(OPERATOR_BAD_CODE)
+        conn.execute("UPDATE operators SET totp_last_step = ? WHERE id = ?", (step, row["id"]))
+    elif require_2fa:
+        raise PlatformError(OPERATOR_NEEDS_2FA)
     conn.execute("INSERT INTO operator_log(operator_id, action) VALUES (?, 'login')", (row["id"],))
     return row
 

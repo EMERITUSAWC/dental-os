@@ -16,6 +16,7 @@ lose data. No web framework here."""
 import base64
 import datetime
 import hashlib
+import hmac
 import io
 import json
 import os
@@ -121,7 +122,9 @@ def check(zip_bytes):
 def _target(cfg):
     t = (cfg.get("OFFSITE_TARGET") or "").strip()
     if not t:
-        raise OffsiteError("No off-site place is set. Set OFFSITE_TARGET to a folder or a WebDAV address.")
+        raise OffsiteError("No off-site place is set. Set OFFSITE_TARGET to a folder, a WebDAV address or s3://bucket/folder.")
+    if t.startswith("s3://"):
+        return "s3", t
     if t.startswith("https://"):
         return "webdav", t.rstrip("/") + "/"
     if t.startswith("http://"):
@@ -145,8 +148,67 @@ def _http(method, url, headers, body=None, timeout=120):
         raise OffsiteError("Could not reach the off-site place: %s" % (getattr(exc, "reason", None) or exc.__class__.__name__))
 
 
+# ------------------------------------------------------------------------------------------------- Amazon S3 (0.68)
+# s3://bucket/folder: Amazon S3, Lightsail object storage, or any store that speaks the S3 API (OFFSITE_S3_ENDPOINT for those).
+# OFFSITE_USER is the access key id and OFFSITE_PASSWORD the secret. Requests are signed with AWS Signature Version 4, written
+# out here so no extra library is needed. Keep at most 14 copies with a lifecycle rule on the bucket (see deploy/README.md).
+def _s3_url(cfg, name):
+    rest = (cfg.get("OFFSITE_TARGET") or "")[5:].strip("/")
+    bucket, _, folder = rest.partition("/")
+    if not bucket:
+        raise OffsiteError("Write the S3 place as s3://bucket or s3://bucket/folder.")
+    key = "/".join(x for x in (folder, name) if x)
+    endpoint = (cfg.get("OFFSITE_S3_ENDPOINT") or "").rstrip("/")
+    region = cfg.get("OFFSITE_S3_REGION") or "us-east-1"
+    if endpoint:
+        if not endpoint.startswith("https://"):
+            raise OffsiteError("Use an https address for OFFSITE_S3_ENDPOINT.")
+        return f"{endpoint}/{bucket}/{urllib.parse.quote(key, safe='/~')}", region
+    return f"https://{bucket}.s3.{region}.amazonaws.com/{urllib.parse.quote(key, safe='/~')}", region
+
+
+def s3_sign(method, url, region, access_key, secret_key, body=b"", headers=None, now=None):
+    """AWS Signature Version 4 for one S3 request. Returns the headers to send."""
+    u = urllib.parse.urlsplit(url)
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    amz = now.strftime("%Y%m%dT%H%M%SZ")
+    day = amz[:8]
+    payload = hashlib.sha256(body or b"").hexdigest()
+    h = {"host": u.netloc, "x-amz-content-sha256": payload, "x-amz-date": amz}
+    h.update({k.lower(): str(v).strip() for k, v in (headers or {}).items()})
+    names = sorted(h)
+    query = "&".join(sorted("=".join(urllib.parse.quote(x, safe="-_.~") for x in (pair.split("=", 1) + [""])[:2])
+                            for pair in u.query.split("&") if pair))
+    canonical = "\n".join([method, u.path or "/", query, "".join(f"{n}:{h[n]}\n" for n in names), ";".join(names), payload])
+    scope = f"{day}/{region}/s3/aws4_request"
+    to_sign = "\n".join(["AWS4-HMAC-SHA256", amz, scope, hashlib.sha256(canonical.encode()).hexdigest()])
+    k = ("AWS4" + secret_key).encode()
+    for part in (day, region, "s3", "aws4_request"):
+        k = hmac.new(k, part.encode(), hashlib.sha256).digest()
+    sig = hmac.new(k, to_sign.encode(), hashlib.sha256).hexdigest()
+    out = {n: v for n, v in h.items() if n != "host"}
+    out["Authorization"] = f"AWS4-HMAC-SHA256 Credential={access_key}/{scope}, SignedHeaders={';'.join(names)}, Signature={sig}"
+    return out
+
+
+def _s3(cfg, method, name, body=None, headers=None, transport=None):
+    url, region = _s3_url(cfg, name)
+    if not (cfg.get("OFFSITE_USER") and cfg.get("OFFSITE_PASSWORD")):
+        raise OffsiteError("Set OFFSITE_USER to the access key id and OFFSITE_PASSWORD to the secret for the S3 place.")
+    signed = s3_sign(method, url, region, cfg["OFFSITE_USER"], cfg["OFFSITE_PASSWORD"], body or b"", headers)
+    return (transport or _http)(method, url, signed, body)
+
+
 def send(cfg, blob, name, transport=None):
     kind, where = _target(cfg)
+    if kind == "s3":
+        status, _ = _s3(cfg, "PUT", name, blob, {"Content-Type": "application/octet-stream"}, transport)
+        if status not in (200, 201, 204):
+            raise OffsiteError(f"The S3 place refused the copy (HTTP {status}). Check the bucket, the region and the keys.")
+        status, head = _s3(cfg, "GET", name, None, {"Range": f"bytes=0-{len(MAGIC) - 1}"}, transport)
+        if status not in (200, 206) or not head.startswith(MAGIC):
+            raise OffsiteError("The copy could not be read back from the S3 place.")
+        return where.rstrip("/") + "/" + name
     if kind == "folder":
         d = Path(where)
         if not d.is_dir():
@@ -177,6 +239,11 @@ def latest(cfg, transport=None):
             raise OffsiteError("There is no copy in the off-site folder yet.")
         return found[-1].name, found[-1].read_bytes()
     name = cfg.get("OFFSITE_LATEST") or "dental-os-latest.copy"
+    if kind == "s3":
+        status, body = _s3(cfg, "GET", name, transport=transport)
+        if status != 200:
+            raise OffsiteError(f"Could not fetch the copy from S3 (HTTP {status}).")
+        return name, body
     status, body = (transport or _http)("GET", where + urllib.parse.quote(name), _auth(cfg))
     if status != 200:
         raise OffsiteError(f"Could not fetch the copy (HTTP {status}).")
@@ -195,7 +262,7 @@ def make_and_send(cfg, db_path, files_path, conn=None, transport=None, now=None)
             check(data)
         blob = lock(data, cfg.get("OFFSITE_PASSPHRASE") or "")
         where = send(cfg, blob, name, transport)
-        if _target(cfg)[0] == "webdav":
+        if _target(cfg)[0] in ("webdav", "s3"):
             send(cfg, blob, "dental-os-latest.copy", transport)
     except OffsiteError as exc:
         if conn is not None:

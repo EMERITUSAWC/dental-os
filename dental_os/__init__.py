@@ -6,7 +6,8 @@ from datetime import timedelta
 from pathlib import Path
 
 import click
-from flask import Flask, abort, g, redirect, request, session, url_for
+from flask import Flask, Request, abort, g, jsonify, redirect, request, session, url_for
+from werkzeug.datastructures import ImmutableMultiDict, iter_multi_items
 from werkzeug.security import generate_password_hash
 
 from . import db as dbmod
@@ -27,8 +28,31 @@ def _dev_secret(instance_path):
     return key
 
 
+class _SafeValues(ImmutableMultiDict):
+    """0.68: a number typed into a form becomes a database value. One too large for the database (more than 18 digits) used to
+    crash the page; now it counts as not a number, the same as letters, so each form gives its own plain message."""
+    LIMIT = 2 ** 62
+
+    def __init__(self, mapping=None):
+        # 0.68: the invisible NUL character (pasted from a PDF, say) is dropped. PostgreSQL refuses it and it never means anything.
+        if mapping is not None:
+            mapping = [(k, v.replace("\x00", "") if isinstance(v, str) else v) for k, v in iter_multi_items(mapping)]
+        super().__init__(mapping)
+
+    def get(self, key, default=None, type=None):
+        value = super().get(key, default, type)
+        if type is int and isinstance(value, int) and not -self.LIMIT < value < self.LIMIT:
+            return default
+        return value
+
+
+class _SafeRequest(Request):
+    parameter_storage_class = _SafeValues
+
+
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
+    app.request_class = _SafeRequest
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     app.config.update(
         DATABASE=os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_PATH", str(Path(app.instance_path) / "dental.sqlite")),
@@ -55,9 +79,13 @@ def create_app(test_config=None):
         # 0.67: who to tell about a security problem, served as /.well-known/security.txt (RFC 9116). mailto: or https:, comma between.
         SECURITY_CONTACT=os.environ.get("SECURITY_CONTACT") or None,
         SECURITY_POLICY_URL=os.environ.get("SECURITY_POLICY_URL") or None,
+        # 0.68: operators (who run the service for every clinic) must use two-step login. Set up with `flask operator-2fa`.
+        OPERATOR_REQUIRE_2FA=os.environ.get("OPERATOR_REQUIRE_2FA", "1") == "1",
     )
     if test_config:
         app.config.update(test_config)
+        if test_config.get("TESTING") and "OPERATOR_REQUIRE_2FA" not in test_config:
+            app.config["OPERATOR_REQUIRE_2FA"] = False          # the older tests sign operators in with a password alone
     # 0.56: behind a proxy (nginx, Caddy, a load balancer), set TRUST_PROXY to how many proxies sit in front, usually 1. Then the
     # visitor's real address and https come from the proxy's headers, so the per-visitor limits work. Never set it with no proxy:
     # anyone could then claim any address.
@@ -312,6 +340,23 @@ def create_app(test_config=None):
             return jsonify({"error": {"code": "server_error", "message": "Something went wrong.", "ref": ref}}), 500
         return render_template("error_500.html", ref=ref), 500
 
+    @app.errorhandler(OverflowError)
+    def too_large(exc):
+        """0.68: a number far too large for the database, from any form. Back to the form with a plain message, not an error page."""
+        from flask import flash
+        from .safeurl import local_path
+        from urllib.parse import urlsplit
+        try:
+            dbmod.get_db().rollback()
+        except Exception:                                          # noqa: BLE001 - nothing to undo is fine
+            pass
+        if request.path.startswith("/api/"):
+            return jsonify({"error": {"code": "bad_request", "message": "A number is too large."}}), 400
+        flash("One of the numbers is far too large. Check what was typed.", "error")
+        ref = urlsplit(request.referrer or "")
+        back = local_path(ref.path + ("?" + ref.query if ref.query else "")) if ref.path else None
+        return redirect(back or url_for("views.dashboard"))
+
     @app.get("/health")
     def health():
         return "ok"
@@ -518,6 +563,30 @@ def create_app(test_config=None):
         conn = dbmod.connect(app.config["DATABASE"])
         ok = OS.net_check(conn, app.config["NET_CHECK_URL"])
         click.echo("The internet is there." if ok else "No internet.")
+
+    @app.cli.command("operator-2fa")
+    @click.option("--username", prompt=True)
+    def operator_2fa(username):
+        """0.68: set up two-step login for an operator. Shows the setup link for the authenticator app, then asks for a code."""
+        from .services import platform as _plat, twofactor as _tf
+        conn = dbmod.connect(app.config["DATABASE"])
+        try:
+            op = conn.execute("SELECT * FROM operators WHERE username = ? AND active = 1", (username.strip(),)).fetchone()
+            if not op:
+                raise click.ClickException("No operator with that username.")
+            secret = _tf.new_secret()
+            click.echo("Add this to the authenticator app (or type the secret in by hand):")
+            click.echo("  " + _tf.uri(secret, username, "Dental OS operator"))
+            click.echo("  secret: " + secret)
+            code = click.prompt("Then type the 6-digit code it shows")
+            step = _tf.check(secret, code)
+            if step is None:
+                raise click.ClickException("That code is not right. Nothing was changed; run this again.")
+            _plat.set_operator_2fa(conn, op["id"], app.config["SECRET_KEY"], secret, step)
+            conn.commit()
+        finally:
+            conn.close()
+        click.echo(f"Two-step login is on for {username}.")
 
     @app.cli.command("create-operator")
     @click.option("--username", prompt=True)

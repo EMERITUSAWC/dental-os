@@ -1,4 +1,4 @@
-# Dental OS, version 0.67
+# Dental OS, version 0.68
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -146,9 +146,37 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
 
+### Added in version 0.68: a review of every version from 0.1
+
+Every version was gone over again, from the first patient form to the compliance pack, looking for what would let a real clinic down.
+What changed:
+
+- Money that cannot be taken twice. A pressed button waits while its form is sent, on every screen. At the desk, the same payment
+  sent twice within a minute is refused, and one mobile money or card reference cannot be on two payments for the same patient.
+- Money that cannot be made from nothing. A refund can no longer be more than the patient actually paid in, so a discount or
+  write-off can never be paid out as cash. A write-off typed in by hand cannot be more than is left on a claim (a payer's own
+  remittance file is still posted as the payer sent it).
+- Amounts are plain numbers only. "1e5" used to be read as 100,000, and a 40-digit number crashed the page. Both now get a message.
+- Messages cannot mention money. Message wording, campaigns and staff replies to a patient's WhatsApp refuse currencies, amounts,
+  balances and invoices, in English and French. The patient's private link is the place for those.
+- Records the database itself keeps. A signed clinical note's words, author and signature cannot be changed or deleted, and a recorded
+  payment's amount, date, way of paying and receipt number cannot change; it can only be voided, once. This holds whatever program
+  touches the database, on SQLite and PostgreSQL. Merging two records of one person still moves notes and payments across.
+  The compliance page and the evidence pack report it (20 controls now).
+- Two-step login for operators, the people who run the service for every clinic. Set up with `flask operator-2fa`; required unless
+  `OPERATOR_REQUIRE_2FA=0`.
+- Off-site copies to Amazon S3 or Lightsail object storage (`OFFSITE_TARGET=s3://bucket/folder`), signed with AWS Signature
+  Version 4 and checked against AWS's own published example. `deploy/Caddyfile.cloud.example` and a new AWS section in
+  `deploy/README.md` cover running on a cloud server with a real domain.
+- No form crashes. A new test opens every page, reads every form on it with its real fields, and sends each one impossible dates,
+  huge and negative numbers, 20,000-character text and odd characters. Before the review, five forms crashed (the patient form,
+  payments, adjustments, statements and "not a duplicate"), and ten more on PostgreSQL when text held the invisible NUL character
+  that copying from a PDF can bring. Now none do, and a number too large for the database anywhere in the app brings the person
+  back to the form with a plain message. The full findings are in `docs/REVIEW-0.68.md`.
+
 ### Added in version 0.67
 
-- A security and compliance pack ready for an outside audit (Settings, Security and compliance). The page checks 19 controls each
+- A security and compliance pack ready for an outside audit (Settings, Security and compliance). The page checks 19 controls (20 from 0.68) each
   time it opens, shows where each sits in ISO/IEC 27001:2022 Annex A and the HIPAA Security Rule, and says which need a person to check.
 - The activity log is locked: the database refuses to change or delete a row, on SQLite and PostgreSQL. It is also sealed every night
   (`flask audit-seal`, in the cron file) with a keyed hash chain, so a change made around the locks shows up in `flask audit-verify`.

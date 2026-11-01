@@ -163,6 +163,8 @@ COLUMN_UPGRADES = [
     ("clinics", "state_reason", "TEXT"),                                 # why the service paused or closed the clinic, shown to its manager
     ("clinics", "plan_id", "INTEGER"),                                   # 0.54: the plan it pays for
     ("clinics", "paid_until", "TEXT"),                                   # paid up to this date; the next bill starts here
+    ("operators", "totp_secret", "TEXT"),                                # 0.68: encrypted. The operator's two-step login
+    ("operators", "totp_last_step", "INTEGER NOT NULL DEFAULT 0"),
 ]
 
 
@@ -179,15 +181,44 @@ LOCKED = ("audit_log", "audit_seals")        # 0.67: rows go in and are never ch
 LOCKED_MESSAGE = "The activity log cannot be changed or deleted."
 
 
+NOTE_LOCKED_MESSAGE = "A signed clinical note cannot be changed or deleted. Add an addendum."
+PAYMENT_LOCKED_MESSAGE = "A recorded payment cannot be changed or deleted. Void it with a reason and record it again."
+PAYMENT_FIELDS = ("amount_p", "method", "receipt_no", "received_on", "clinic_id", "purpose", "reference", "created_at")
+NOTE_FIELDS = ("body", "title", "tooth", "status", "author_id", "signed_by", "signed_at", "created_at", "addendum_of", "clinic_id", "template")
+
+
 def lock_logs(conn):
-    """0.67: the database itself refuses UPDATE and DELETE on the activity log and its seals, whatever program asks."""
+    """0.67: the database itself refuses UPDATE and DELETE on the activity log and its seals, whatever program asks.
+    0.68: and a signed clinical note's words, author and signature can never change, nor can it be deleted. Moving it to another
+    patient record is still allowed, because merging two records of the same person does that."""
     if isinstance(conn, sqlite3.Connection):
         for t in LOCKED:
             for op in ("UPDATE", "DELETE"):
                 conn.execute(f"CREATE TRIGGER IF NOT EXISTS {t}_no_{op.lower()} BEFORE {op} ON {t} "
                              f"BEGIN SELECT RAISE(ABORT, '{LOCKED_MESSAGE}'); END")
+        changed = " OR ".join(f"NEW.{f} IS NOT OLD.{f}" for f in NOTE_FIELDS)
+        conn.execute(f"CREATE TRIGGER IF NOT EXISTS signed_note_keep BEFORE UPDATE ON clinical_notes WHEN OLD.status = 'signed' AND ({changed}) "
+                     f"BEGIN SELECT RAISE(ABORT, '{NOTE_LOCKED_MESSAGE}'); END")
+        conn.execute("CREATE TRIGGER IF NOT EXISTS signed_note_no_delete BEFORE DELETE ON clinical_notes WHEN OLD.status = 'signed' "
+                     f"BEGIN SELECT RAISE(ABORT, '{NOTE_LOCKED_MESSAGE}'); END")
+        # 0.68: money taken stays as it was recorded. Voiding (once), the payer link and a merge's move of patient are allowed.
+        paid = " OR ".join(f"NEW.{f} IS NOT OLD.{f}" for f in PAYMENT_FIELDS)
+        conn.execute(f"CREATE TRIGGER IF NOT EXISTS payment_keep BEFORE UPDATE ON payments WHEN ({paid}) OR (OLD.voided = 1 AND NEW.voided = 0) "
+                     f"BEGIN SELECT RAISE(ABORT, '{PAYMENT_LOCKED_MESSAGE}'); END")
+        conn.execute(f"CREATE TRIGGER IF NOT EXISTS payment_no_delete BEFORE DELETE ON payments BEGIN SELECT RAISE(ABORT, '{PAYMENT_LOCKED_MESSAGE}'); END")
         conn.commit()
         return
+    changed = " OR ".join(f"NEW.{f} IS DISTINCT FROM OLD.{f}" for f in NOTE_FIELDS)
+    conn._exec("CREATE OR REPLACE FUNCTION dos_keep_note() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN "
+               "IF OLD.status = 'signed' AND (TG_OP = 'DELETE' OR " + changed + ") THEN "
+               f"RAISE EXCEPTION '{NOTE_LOCKED_MESSAGE}'; END IF; "
+               "IF TG_OP = 'DELETE' THEN RETURN OLD; END IF; RETURN NEW; END $$")
+    conn._exec("CREATE OR REPLACE TRIGGER signed_note_keep BEFORE UPDATE OR DELETE ON clinical_notes FOR EACH ROW EXECUTE FUNCTION dos_keep_note()")
+    paid = " OR ".join(f"NEW.{f} IS DISTINCT FROM OLD.{f}" for f in PAYMENT_FIELDS)
+    conn._exec("CREATE OR REPLACE FUNCTION dos_keep_payment() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN "
+               "IF TG_OP = 'DELETE' OR " + paid + " OR (OLD.voided = 1 AND NEW.voided = 0) THEN "
+               f"RAISE EXCEPTION '{PAYMENT_LOCKED_MESSAGE}'; END IF; RETURN NEW; END $$")
+    conn._exec("CREATE OR REPLACE TRIGGER payment_keep BEFORE UPDATE OR DELETE ON payments FOR EACH ROW EXECUTE FUNCTION dos_keep_payment()")
     conn._exec("CREATE OR REPLACE FUNCTION dos_keep_log() RETURNS trigger LANGUAGE plpgsql AS "
                f"$$ BEGIN RAISE EXCEPTION '{LOCKED_MESSAGE}'; END $$")
     for t in LOCKED:
@@ -218,3 +249,13 @@ def close_db(exc=None):
         if exc is not None:
             conn.rollback()
         conn.close()
+
+
+def records_locked(conn):
+    """0.68: True when signed notes and recorded payments are locked in the database."""
+    if isinstance(conn, sqlite3.Connection):
+        names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'trigger'")}
+        return {"signed_note_keep", "signed_note_no_delete", "payment_keep", "payment_no_delete"} <= names
+    names = {r[0] for r in conn.execute("SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                                        "WHERE c.relnamespace = to_regnamespace(current_schema()) AND NOT t.tgisinternal AND t.tgenabled <> 'D'")}
+    return {"signed_note_keep", "payment_keep"} <= names

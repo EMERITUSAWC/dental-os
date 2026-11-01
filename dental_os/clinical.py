@@ -131,7 +131,7 @@ def payment_add(pid):
     try:
         pay_id = billing.record_payment(db, g.clinic, g.user["id"], pid, money.parse_money(request.form.get("amount", ""), g.clinic["currency"]),
                                         request.form.get("method", ""), request.form.get("reference"),
-                                        request.form.get("note"))
+                                        request.form.get("note"), desk=True)
         flash("Payment recorded.", "ok")
         return redirect(url_for("clinical.receipt", pay_id=pay_id))
     except (billing.BillingError, ValueError) as exc:

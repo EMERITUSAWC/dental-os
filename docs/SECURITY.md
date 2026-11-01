@@ -5,7 +5,7 @@ patient data, which control does what, and how to prove each claim yourself rath
 Nothing here says that a clinic, a host or the product meets ISO/IEC 27001, HIPAA, the GDPR or Ghana's Data Protection Act. Those
 depend on the clinic and the host as much as on the software, and only an auditor or a lawyer can say so.
 
-Version 0.67. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
+Version 0.68. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
 
 ## 1. How it is built
 
@@ -34,6 +34,10 @@ its database; each outside service.
 | A forged form sent from another site (CSRF) | A token on every form | `test_v04` and on |
 | A "go back to" link that sends the user to another site | Only paths on this site are followed | `test_v56` SafeUrlTests |
 | A spreadsheet export that runs a formula | Cells starting with `=`, `+`, `-` or `@` are made plain text | `test_v56` SpreadsheetTests |
+| A signed note or a payment is altered later | The database refuses to change a signed note's words, author or signature, or a payment's amount, date, method or receipt number; a payment is only voided, once | `test_v68` RecordLockTests |
+| A form sent twice takes money twice | Buttons wait while a form is sent; the desk refuses the same payment within a minute and a reused mobile money or card reference | `test_v68` DeskPaymentTests |
+| A discount paid out as cash | A refund cannot be more than the patient paid in | `test_v68` CreditFromNothingTests |
+| A stolen operator password | Operators need a code from an authenticator app as well | `test_v68` OperatorTwoStepTests |
 | Someone covers their tracks in the activity log | The database refuses to change or delete log rows; daily seals show a change made around the database | `test_v67` LockTests and SealTests |
 | A login nobody needs any more | Quarterly access review; remove switches the login off at once | `test_v67` ReviewTests |
 | A disk, laptop or backup is lost | Off-site copies are locked with a passphrase before they leave; monthly restore drill. Disk encryption is the host's job | `test_v50`, `test_v58` |
@@ -44,7 +48,7 @@ its database; each outside service.
 Each row is a line of `controls.csv` in the evidence pack, with its state worked out on the day the pack was made. The ISO and
 HIPAA columns say where the control sits, to help an auditor find their way. ISO/IEC 27001:2022 Annex A names: A.5.16 Identity
 management, A.5.18 Access rights, A.5.19 and A.5.20 supplier relationships and agreements, A.5.24 and A.5.26 incident planning
-and response, A.5.28 Collection of evidence, A.5.34 Privacy and protection of PII, A.6.3 awareness and training, A.8.2 Privileged
+and response, A.5.28 Collection of evidence, A.5.33 Protection of records, A.5.34 Privacy and protection of PII, A.6.3 awareness and training, A.8.2 Privileged
 access rights, A.8.5 Secure authentication, A.8.7 Protection against malware, A.8.8 Management of technical vulnerabilities,
 A.8.13 Information backup, A.8.15 Logging, A.8.24 Use of cryptography, A.8.28 Secure coding, A.8.29 Security testing in
 development and acceptance. HIPAA references are to the Security Rule, 45 CFR Part 164 Subpart C.
@@ -58,6 +62,7 @@ development and acceptance. HIPAA references are to the Security Rule, 45 CFR Pa
 | Access review in the last 90 days | A.5.18 | 164.308(a)(4) | `access_reviews.csv` and the newest review's decisions |
 | Managers kept to a few | A.8.2 | 164.308(a)(4) | `users.csv` |
 | Activity log cannot be changed or deleted | A.8.15 | 164.312(b) | `flask audit-verify` reports the database locks |
+| Signed notes and recorded payments cannot be changed | A.5.33 | 164.312(c)(1) | `controls.csv`; `tests/test_v68.py` RecordLockTests |
 | Activity log sealed and intact | A.8.15, A.5.28 | 164.312(b), 164.312(c)(1) | `audit_chain.txt`; `flask audit-verify --anchor` |
 | Locked off-site copies every night | A.8.13 | 164.308(a)(7)(ii)(A) | `backups.csv` |
 | Restore drill in the last 35 days | A.8.13 | 164.308(a)(7)(ii)(D) | `backups.csv` |

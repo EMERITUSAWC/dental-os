@@ -514,7 +514,7 @@ def post_835(db, clinic, user_id, text, file_id=None):
             today = now_local(clinic["timezone"]).date().isoformat()
             day = min(r["paid_on"] or today, today)              # an EFT can be dated a day or two ahead
             pp_id = PP.post(db, clinic, user_id, r["payer_id"], day, r["total_p"], r["trace"] or "835",
-                            [{"claim_id": x["claim"]["id"], "amount_p": x["paid_p"], "writeoff_p": max(x["writeoff_p"], 0), "final": True}
+                            [{"claim_id": x["claim"]["id"], "amount_p": x["paid_p"], "writeoff_p": max(x["writeoff_p"], 0), "final": True, "era": True}
                              for x in paid], note="From remittance file (835)")
         except PP.PayerPayError as exc:
             raise EdiError(str(exc))

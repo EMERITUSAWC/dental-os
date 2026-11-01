@@ -1,0 +1,13 @@
+# Caddy in front of Dental OS on a cloud server (AWS Lightsail, EC2 or any host) reached by a real domain name.
+# Copy to /etc/caddy/Caddyfile, change the name, then: sudo systemctl reload caddy
+# Caddy gets a free public certificate by itself and renews it. Point the domain's A record at the server's fixed address first.
+app.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8000
+	header {
+		-Server
+	}
+	request_body {
+		max_size 40MB
+	}
+}

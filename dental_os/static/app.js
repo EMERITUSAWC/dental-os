@@ -36,3 +36,17 @@ document.addEventListener("click", function (e) {
   ask();
   setInterval(ask, 5000);
 })();
+
+// 0.68: a form sent twice on a slow connection books, charges or sends twice. Once a form is sent, its buttons wait.
+document.addEventListener("submit", function (e) {
+  var form = e.target;
+  if (!form || (form.method || "").toLowerCase() !== "post" || form.hasAttribute("data-again")) { return; }
+  if (form.getAttribute("data-sent") === "1") { e.preventDefault(); return; }
+  form.setAttribute("data-sent", "1");
+  var buttons = form.querySelectorAll("button[type=submit], button:not([type]), input[type=submit]");
+  setTimeout(function () { buttons.forEach(function (b) { b.disabled = true; b.setAttribute("aria-busy", "true"); }); }, 0);
+  setTimeout(function () {                                   // a download or an error that stays on the page: allow again
+    form.removeAttribute("data-sent");
+    buttons.forEach(function (b) { b.disabled = false; b.removeAttribute("aria-busy"); });
+  }, 8000);
+});

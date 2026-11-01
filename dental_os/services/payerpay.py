@@ -52,7 +52,8 @@ def post(db, clinic, user_id, payer_id, received_on, amount_p, reference, alloca
     for a in used:
         try:
             pay_id = INS.record_payer_payment(db, clinic, user_id, a["claim_id"], a.get("amount_p") or 0, reference, a.get("writeoff_p") or 0,
-                                              f"{payer['name']} {reference}", final=bool(a.get("final")), allow_zero=True)
+                                              f"{payer['name']} {reference}", final=bool(a.get("final")), allow_zero=True,
+                                              from_remittance=bool(a.get("era")))
         except INS.InsuranceError as exc:
             raise PayerPayError(str(exc))
         if pay_id:

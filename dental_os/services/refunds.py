@@ -30,6 +30,9 @@ def by_method(db, cid, start, end):
                                                        AND refunded_on BETWEEN ? AND ? GROUP BY method""", (cid, str(start), str(end)))}
 
 
+NOT_PAID_IN = "A refund can't be more than the patient actually paid in. Part of this credit comes from a discount or a write-off, which is not money the clinic received."
+
+
 def refund(db, clinic, user_id, pid, amount_p, method, reason, reference=None, note=None, refunded_on=None, today=None):
     from . import billing, periodlock
     cid = clinic["id"]
@@ -46,6 +49,10 @@ def refund(db, clinic, user_id, pid, amount_p, method, reason, reference=None, n
         raise RefundError("This patient holds no credit, so there is nothing to refund.")
     if amount_p > credit:
         raise RefundError("A refund can't be more than the credit the patient holds.")
+    # 0.68: credit made by a discount or write-off is not money the clinic received. Only money paid in can go back out as money.
+    t = billing.totals(db, cid, pid)
+    if amount_p > t["paid"] - t["refunded"]:
+        raise RefundError(NOT_PAID_IN)
     day = (refunded_on or "").strip() or (today or datetime.date.today()).isoformat()
     try:
         day = datetime.date.fromisoformat(day).isoformat()

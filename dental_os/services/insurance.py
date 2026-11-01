@@ -399,7 +399,11 @@ def cancel(db, clinic, user_id, claim_id):
     audit.log(db, cid, user_id, "claim.cancel", "claim", claim_id)
 
 
-def record_payer_payment(db, clinic, user_id, claim_id, amount_p, reference, writeoff_p=0, writeoff_note=None, final=False, allow_zero=False):
+WRITEOFF_TOO_BIG = "The write-off is more than is left to pay on this claim. Write off only the part the payer will not pay."
+
+
+def record_payer_payment(db, clinic, user_id, claim_id, amount_p, reference, writeoff_p=0, writeoff_note=None, final=False, allow_zero=False,
+                         from_remittance=False):
     """The payer has paid. Records a payment by insurance matched to the claim, and an optional write-off for the
     part that will never be paid. 'final' closes the claim even if less than the estimate was paid."""
     cid = clinic["id"]
@@ -410,6 +414,8 @@ def record_payer_payment(db, clinic, user_id, claim_id, amount_p, reference, wri
         raise InsuranceError("The amount must be more than zero.")
     if writeoff_p < 0:
         raise InsuranceError("The write-off cannot be negative.")
+    if writeoff_p and not from_remittance and writeoff_p > max(0, c["estimate_p"] - c["paid_p"] - c["writeoff_p"] - amount_p):
+        raise InsuranceError(WRITEOFF_TOO_BIG)                 # 0.68: more than is left on the claim would make credit from nothing
     pay_id = None
     try:
         if amount_p:

@@ -61,7 +61,8 @@ def login():
     db = get_db()
     if request.method == "POST":
         try:
-            op = PF.operator_login(db, request.form.get("username"), request.form.get("password"), _ip())
+            op = PF.operator_login(db, request.form.get("username"), request.form.get("password"), _ip(), request.form.get("code"),
+                                   current_app.config["SECRET_KEY"], current_app.config["OPERATOR_REQUIRE_2FA"])
             db.commit()
             session.clear()
             session["op_id"] = op["id"]

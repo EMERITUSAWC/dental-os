@@ -62,8 +62,37 @@ def _begin(db):
         db.execute("BEGIN IMMEDIATE")
 
 
+REPEAT_SECONDS = 60
+SAME_REFERENCE = "That transaction reference is already on a payment for this patient. Check the account before recording it again."
+JUST_RECORDED = "The same payment was recorded a moment ago. If this really is a second payment, wait a minute and record it again."
+
+
+def _no_repeat(db, clinic, patient_id, amount_p, method, reference, user_id):
+    """0.68. A mobile money or card reference is one transaction: it can be on one payment for a patient, not two. And the same
+    amount, way of paying and person within a minute is almost always the same form sent twice on a slow connection.
+    Insurance is left out (one transfer from a payer pays many claims), and so are payments confirmed by the payment company,
+    which carry their own check."""
+    cid = clinic["id"]
+    if reference and db.execute("""SELECT 1 FROM payments WHERE clinic_id = ? AND patient_id = ? AND method = ? AND reference = ?
+                                   AND voided = 0""", (cid, patient_id, method, reference)).fetchone():
+        raise BillingError(SAME_REFERENCE)
+    recent = db.execute("""SELECT a.at FROM payments p JOIN audit_log a ON a.object_type = 'payment' AND a.object_id = p.id
+                                AND a.action = 'payment.record'
+                           WHERE p.clinic_id = ? AND p.patient_id = ? AND p.amount_p = ? AND p.method = ? AND p.voided = 0
+                             AND COALESCE(p.received_by, 0) = COALESCE(?, 0) ORDER BY p.id DESC LIMIT 1""",
+                        (cid, patient_id, amount_p, method, user_id)).fetchone()
+    if recent:
+        import datetime as _dt
+        try:
+            when = _dt.datetime.fromisoformat(str(recent[0])[:19])
+        except ValueError:
+            return
+        if (_dt.datetime.now(_dt.timezone.utc).replace(tzinfo=None) - when).total_seconds() < REPEAT_SECONDS:
+            raise BillingError(JUST_RECORDED)
+
+
 def record_payment(db, clinic, user_id, patient_id, amount_p, method, reference=None, note=None, purpose="treatment", plan_id=None, claim_id=None,
-                   online=False):
+                   online=False, desk=False):
     """online: a payment confirmed by the clinic's payment company, which counts whatever ways of paying the desk has switched on."""
     cid = clinic["id"]
     if method not in enabled_methods(clinic) and not (online and method in ("card", "mobile_money")):
@@ -78,6 +107,8 @@ def record_payment(db, clinic, user_id, patient_id, amount_p, method, reference=
     _begin(db)
     if not db.execute("SELECT 1 FROM patients WHERE id=? AND clinic_id=?", (patient_id, cid)).fetchone():
         raise BillingError("That patient was not found.")
+    if desk and method != "insurance":                        # 0.68: a double click or a resent form must not take money twice
+        _no_repeat(db, clinic, patient_id, amount_p, method, reference, user_id)
     receipt_no = db.execute("SELECT COALESCE(MAX(receipt_no),0)+1 FROM payments WHERE clinic_id=?", (cid,)).fetchone()[0]
     cur = db.execute(
         """INSERT INTO payments(clinic_id, patient_id, amount_p, method, reference, note, receipt_no, received_on, received_by,

@@ -347,6 +347,8 @@ class Cursor:
 
 
 def _param(v):
+    if isinstance(v, str) and "\x00" in v:
+        return v.replace("\x00", "")              # 0.68: PostgreSQL refuses the NUL character in text; it never means anything
     if isinstance(v, bool):
         return int(v)
     if hasattr(v, "isoformat") and not isinstance(v, str):

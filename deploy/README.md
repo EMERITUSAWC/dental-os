@@ -51,3 +51,27 @@ matched for ten working days in a row, and Settings, Ready to go live shows noth
 Staff report anything that goes wrong with the "Report a problem" link at the bottom of every page. If a page breaks,
 it shows a reference like `E-7K2Q9X`; the same reference is in the problem list and in the server log
 (`journalctl -u dental-os`) with the full details.
+
+## On AWS (or any cloud server)
+
+The same kit runs on a cloud server. On AWS, Lightsail is the simple choice: one Ubuntu Server 24.04 LTS server for a fixed
+monthly price. The steps are the same as above, with these differences:
+
+1. In Lightsail, attach a static IP to the server, and in its firewall allow ports 80 and 443 from anywhere and port 22 only from
+   your own address. Point your domain's A record (for example `app.yourdomain.com`) at the static IP.
+2. After `sudo sh deploy/install-ubuntu.sh`, copy `deploy/Caddyfile.cloud.example` to `/etc/caddy/Caddyfile`, put your domain
+   in it, and `sudo systemctl reload caddy`. Staff then open `https://app.yourdomain.com`; no certificate needs trusting by hand.
+3. In `/etc/dental-os.env`: `PUBLIC_URL=https://app.yourdomain.com`, `COOKIE_SECURE=1`, `TRUST_PROXY=1`, and `SECURITY_CONTACT`.
+4. Off-site copies to Amazon S3 or Lightsail object storage (0.68):
+   `OFFSITE_TARGET=s3://your-bucket/dental-os`, `OFFSITE_S3_REGION=eu-west-2` (the bucket's region),
+   `OFFSITE_USER=` the access key id and `OFFSITE_PASSWORD=` the secret of a key that may only put and get objects in that bucket.
+   For a store that speaks the S3 API elsewhere, also set `OFFSITE_S3_ENDPOINT=https://...`. Put the bucket in a different region
+   from the server, block public access on it, and add a lifecycle rule that deletes copies older than 30 days. The copies are
+   locked with `OFFSITE_PASSPHRASE` before they leave, so the bucket never holds readable patient data.
+5. Many clinics on one server: use PostgreSQL. Create the database (Lightsail managed PostgreSQL, or RDS), install the driver with
+   `/opt/dental-os/venv/bin/pip install -r requirements-postgres.txt`, set `DATABASE_URL=postgresql://user:password@host:5432/dental_os?sslmode=require`,
+   and move an existing SQLite database across with `dos copy-to-postgres`.
+6. Turn on Lightsail's automatic daily snapshots as well. They are a second safety net, not a replacement for the locked copies.
+
+Real patient data on a server outside the clinic's own country needs a legal basis first (in Ghana, the Data Protection Act,
+2012). Start with made-up patients (`dos seed-demo`) until that is settled.

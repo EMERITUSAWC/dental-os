@@ -45,6 +45,13 @@ class TemplateError(Exception):
     pass
 
 
+# 0.68: the fields already keep amounts out; this keeps them out of wording a clinic types itself. Money talk belongs in the
+# patient's private link or a printed statement, not in a message anyone holding the phone can read.
+MONEY_WORDS = re.compile(r"[₵$£€₦]|\b(GHS|GH¢|NGN|USD|GBP|EUR|KES|XOF|ZAR|cedis?|naira|dollars?|pounds?|balance|owe|owes|owing|outstanding|"
+                         r"debts?|arrears|invoices?|overdue|solde|dette|facture|impayé)\b", re.I)
+NO_MONEY = "Messages cannot mention money: no amounts, currencies, balances or invoices. Anyone holding the phone can read them. Send the patient their private link instead."
+
+
 def names_in(body):
     return re.findall(r"\{(\w*)\}", body)
 
@@ -66,6 +73,8 @@ def validate(body, required=(), allowed=None):
     for name in required:
         if name not in used:
             raise TemplateError("This message needs {" + name + "} in it.")
+    if MONEY_WORDS.search(body):
+        raise TemplateError(NO_MONEY)
     return body
 
 

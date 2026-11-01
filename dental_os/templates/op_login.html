@@ -6,5 +6,6 @@
   <p class="muted small">{{ _("For the people who run the service. Clinic staff sign in on the usual page.") }}</p>
   <label for="username">{{ _("Username") }}</label><input id="username" name="username" required autocomplete="username">
   <label for="password">{{ _("Password") }}</label><input id="password" type="password" name="password" required autocomplete="current-password">
+  <label for="code">{{ _("Code from the authenticator app") }}</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8">
   <p><button class="primary" type="submit">{{ _("Sign in") }}</button></p></form></div>
 {% endblock %}

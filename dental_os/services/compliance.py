@@ -49,6 +49,7 @@ CONTROLS = {
     "review": "Access review in the last 90 days",
     "managers": "Managers (full access) kept to a few",
     "log_locked": "Activity log cannot be changed or deleted",
+    "records": "Signed notes and recorded payments cannot be changed",
     "log_sealed": "Activity log sealed and intact",
     "offsite": "Locked off-site copies, made every night",
     "drill": "Restore drill in the last 35 days",
@@ -66,6 +67,7 @@ REFS = {
     "accounts": ("A.5.16", "164.312(a)(2)(i)"), "two_step": ("A.8.5", "164.312(d)"), "idle": ("A.8.5", "164.312(a)(2)(iii)"),
     "login_limits": ("A.8.5", "164.308(a)(5)(ii)(C)"), "review": ("A.5.18", "164.308(a)(4)"), "managers": ("A.8.2", "164.308(a)(4)"),
     "log_locked": ("A.8.15", "164.312(b)"), "log_sealed": ("A.8.15, A.5.28", "164.312(b), 164.312(c)(1)"),
+    "records": ("A.5.33", "164.312(c)(1)"),
     "offsite": ("A.8.13", "164.308(a)(7)(ii)(A)"), "drill": ("A.8.13", "164.308(a)(7)(ii)(D)"), "https": ("A.8.24", "164.312(e)(1)"),
     "secrets": ("A.8.24", "164.312(a)(2)(iv)"), "incidents": ("A.5.24, A.5.26", "164.308(a)(6)"), "requests": ("A.5.34", ""),
     "outside": ("A.5.19, A.5.20", "164.308(b)(1)"), "sbom": ("A.8.8", "164.308(a)(1)(ii)(A)"), "code": ("A.8.28, A.8.29", ""),
@@ -342,6 +344,7 @@ def controls(db, clinic, cfg, now=None):
     good = drill["last_ok"]
     idle = cfg.get("SESSION_IDLE_MINUTES") or 0
     locked = dbmod.logs_locked(db)
+    kept = dbmod.records_locked(db)
     late_breach = db.execute("""SELECT COUNT(*) FROM incidents WHERE clinic_id = ? AND risk <> 'low' AND regulator_told = 0
                                 AND status <> 'closed' AND found_at < ?""",
                              (cid, (now - datetime.timedelta(hours=72)).strftime("%Y-%m-%d %H:%M"))).fetchone()[0]
@@ -362,6 +365,8 @@ def controls(db, clinic, cfg, now=None):
          {"n": len(managers), "all": len(users)}),
         ("log_locked", "ok" if locked else "attention", "The database refuses changes and deletions." if locked else
          "The database locks are missing. Restart the app to put them back, and find out who removed them.", {}),
+        ("records", "ok" if kept else "attention", "The database refuses to change a signed note or a payment's amount, date or receipt."
+         if kept else "The database locks are missing. Restart the app to put them back, and find out who removed them.", {}),
         ("log_sealed", "attention" if seal_old else "ok",
          "Last sealed %(when)s UTC, up to row %(upto)s." if last_seal else "Not sealed yet.",
          {"when": str(last_seal["sealed_at"])[:16] if last_seal else "", "upto": last_seal["upto_id"] if last_seal else 0}),

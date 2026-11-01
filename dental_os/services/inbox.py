@@ -77,6 +77,9 @@ def reply(db, clinic, user_id, pid, text):
         raise InboxError("Write the message first.")
     if len(text) > 1000:
         raise InboxError("That message is too long.")
+    from .msgtemplates import MONEY_WORDS, NO_MONEY
+    if MONEY_WORDS.search(text):                         # 0.68: the same rule as every other message
+        raise InboxError(NO_MONEY)
     since = (now_local(clinic["timezone"]).date() - timedelta(days=REPLY_WINDOW_DAYS)).isoformat()
     wrote_lately = db.execute("SELECT 1 FROM messages WHERE clinic_id = ? AND patient_id = ? AND direction = 'in' AND date(created_at) >= ?",
                               (cid, pid, since)).fetchone()

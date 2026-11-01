@@ -27,6 +27,11 @@ def parse_money(text, currency, allow_zero=False):
     if digits and re.fullmatch(r"\d+,\d{1,%d}" % digits, raw):
         raw = raw.replace(",", ".")
     raw = raw.replace(",", "")
+    if raw.startswith("-") and re.fullmatch(r"-\d+(\.\d+)?", raw):
+        raise ValueError("The amount must be more than zero.")
+    # 0.68: plain digits only. "1e5" is a typo, not 100,000, and a 40-digit number must get a message, not a crash.
+    if not re.fullmatch(r"\d{1,15}(\.\d{1,6})?|\.\d{1,6}", raw):
+        raise ValueError("Use numbers only, for example 150 or 150.50." if digits else "Use whole numbers only.")
     try:
         value = Decimal(raw)
     except InvalidOperation:

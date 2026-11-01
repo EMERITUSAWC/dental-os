@@ -81,6 +81,8 @@ def clean(form, db=None, clinic_id=None, patient_id=None, country=None):
             gid = int(guarantor)
         except ValueError:
             gid = None
+        if gid is not None and not 0 < gid < 2 ** 62:          # 0.68: a number too large for the database is not a patient
+            gid = None
         if gid is None or (patient_id and gid == patient_id):
             errors["guarantor_id"] = "Pick a different family head."
         elif db is not None and not get(db, clinic_id, gid):

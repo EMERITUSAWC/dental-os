@@ -183,7 +183,7 @@ def make_run(db, clinic, user_id, min_balance, older_than_days, gap_days, add_fe
     gap = _int(gap_days if gap_days not in (None, "") else 25, "Write the gap between statements in days, from 0 to 365.", 0, 365)
     rows = candidates(db, clinic, min_p, older, gap)
     if patient_ids is not None:
-        wanted = {int(x) for x in patient_ids}
+        wanted = {int(x) for x in patient_ids if str(x).isdigit() and len(str(x)) < 18}
         rows = [r for r in rows if r["patient"]["id"] in wanted]
     if not rows:
         raise StatementError("Nobody matches. Lower the smallest balance or the age, or check who had a statement recently.")

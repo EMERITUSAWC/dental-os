@@ -84,6 +84,8 @@ def candidates(db, cid, limit=100):
 
 def not_duplicate(db, clinic, user_id, a, b):
     """Two records that look alike but are different people (twins sharing a parent's phone, for example)."""
+    if not a or not b or a == b:
+        raise MergeError("That patient was not found.")
     a, b = sorted((a, b))
     for pid in (a, b):
         if not db.execute("SELECT 1 FROM patients WHERE id = ? AND clinic_id = ?", (pid, clinic["id"])).fetchone():
