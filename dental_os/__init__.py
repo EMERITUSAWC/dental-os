@@ -112,6 +112,7 @@ def create_app(test_config=None):
             total = _ob.attention(dbmod.get_db(), g.clinic, g.user)["total"]
             group = _orgs.for_user(dbmod.get_db(), g.user)
         clocked, task_due, phone_on, nhs_on, team_unread = None, 0, False, False, 0
+        assistant_on = False
         from .services import permgroups as _pg
         mine = _pg.areas_of(dbmod.get_db(), g.user) if g.get("user") else set(_pg.AREAS)
 
@@ -124,6 +125,8 @@ def create_app(test_config=None):
             nhs_on = _nhs.is_on(dbmod.get_db(), g.clinic["id"])
             from .services import team as _team
             team_unread = _team.unread(dbmod.get_db(), g.user)
+            from .services import assistant as _asst                     # 0.65: the Ask link when the assistant is on
+            assistant_on = _asst.is_on(dbmod.get_db(), g.clinic["id"], app.config["SECRET_KEY"])
         if g.get("user") and g.get("clinic"):
             from .services import tasks as _tasks, timeclock as _tc
             clocked = _tc.open_entry(dbmod.get_db(), g.clinic["id"], g.user["id"])
@@ -151,7 +154,7 @@ def create_app(test_config=None):
         return {"csrf_token": session["csrf"], "user": g.get("user"), "clinic": g.get("clinic"), "attn_total": total, "group": group,
                 "plan_banner": plan_banner, "support_on": g.get("support"),
                 "offline_since": offline, "backup_stale": backup_stale, "read_only": read_only,
-                "clocked_in": clocked, "task_due": task_due, "phone_on": phone_on, "nhs_on": nhs_on, "team_unread": team_unread, "can": can, "kiosk_on": bool(session.get("kiosk")),
+                "clocked_in": clocked, "task_due": task_due, "phone_on": phone_on, "nhs_on": nhs_on, "assistant_on": assistant_on, "team_unread": team_unread, "can": can, "kiosk_on": bool(session.get("kiosk")),
                 "lang": g.get("lang") or "en", "languages": i18n.LANGS}
 
     # ---- request lifecycle
@@ -310,7 +313,7 @@ def create_app(test_config=None):
     def health():
         return "ok"
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -365,6 +368,7 @@ def create_app(test_config=None):
     app.register_blueprint(rxviews.bp)
     app.register_blueprint(rxviews.pub)
     app.register_blueprint(fhirapi.bp)
+    app.register_blueprint(assistantviews.bp)
 
     # ---- command line
     @app.cli.command("create-clinic")

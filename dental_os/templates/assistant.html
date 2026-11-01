@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Ask") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Ask about the clinic") }}</h1>
+{% if not on %}<p class="flash warn" role="status">{{ _("The assistant is not switched on. A manager can switch it on in Settings.") }}</p>
+{% else %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="q">{{ _("Your question") }}</label>
+  <textarea id="q" name="q" rows="2" maxlength="600" required aria-describedby="q-hint">{{ question }}</textarea>
+  <p id="q-hint" class="muted small">{{ _("For example:") }} <span class="nw">“{{ _("Who has not confirmed for tomorrow?") }}”</span> <span class="nw">“{{ _("When is the next free 45-minute slot this week?") }}”</span>
+    <span class="nw">“{{ _("Which patients are due a check-up this month?") }}”</span> <span class="nw">“{{ _("How much did we take last week?") }}”</span></p>
+  <p><button class="primary" type="submit">{{ _("Ask") }}</button></p>
+</form>
+{% if result %}<section class="card" aria-live="polite"><h2>{{ _("Answer") }}</h2>
+  <div class="answer">{% for text, pid in result.parts %}{% if pid %}<a href="{{ url_for('views.patient_view', pid=pid) }}">{{ text }}</a>{% else %}{{ text }}{% endif %}{% endfor %}</div>
+  <p class="muted small">{{ _("Looked at:") }} {{ result.tools|join(", ") if result.tools else _("nothing in the records") }}.
+    {{ _("Check anything important on its own screen. The assistant can be wrong, and it cannot change anything.") }}</p></section>{% endif %}
+<section class="card"><h2>{{ _("How it works") }}</h2>
+  <p class="small">{{ _("It looks only at what you are allowed to see, and it cannot book, change, charge or send anything: it tells you which screen to use.") }}</p>
+  <p class="small">{{ _("Your question and what the records say go to Anthropic's Claude service, which is in another country. Patients' names, phone numbers and emails are never sent: each patient is given a code for this one question, and the names are put back here. The question and answer are not kept.") }}</p>
+</section>
+{% endif %}
+{% endblock %}

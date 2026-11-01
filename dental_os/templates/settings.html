@@ -122,6 +122,14 @@
 </section>
 
 <section class="card">
+  <h2>{{ _("The assistant") }}</h2>
+  <p class="muted small">{{ _("Off unless you switch it on. Staff ask questions about the diary, recalls and, for managers, money, and get plain answers. It uses the AI key above. It sees only what each person may see, and it cannot change anything. Patients' names, phone numbers and emails are never sent to the AI service: each patient is given a code for one question. Other details from the records are sent, so ask your lawyer first, as for AI help with notes.") }}</p>
+  <form method="post" action="{{ url_for('assistant.switch') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <p><label><input type="checkbox" name="on" value="1" {{ 'checked' if ai.assistant }}> {{ _("Switch the assistant on for this clinic") }}</label></p>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+</section>
+
+<section class="card">
   <h2>{{ _("Dentists' registration details") }}</h2>
   <p class="muted small">{{ _("Printed on prescriptions, referral letters and signed letters. A dentist cannot prescribe until their registration number is in.") }}</p>
   {% for r in providers if r.active %}

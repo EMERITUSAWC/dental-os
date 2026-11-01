@@ -1,4 +1,4 @@
-# Dental OS, version 0.64
+# Dental OS, version 0.65
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,22 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.65
+
+- An assistant staff can ask about the clinic in plain words (Ask, in the menu, once a manager switches it on in Settings). It can
+  look at the diary, who has not confirmed, free slots, finding a patient, one patient's next and last visit and recall, recalls due,
+  and for managers money taken and who owes most. It answers in the language the person is using.
+- It only reads. It has no way to book, change, charge or send anything; it says which screen to use.
+- It sees what the person asking may see: each tool checks the same permissions as the screens. Money is for managers; medical
+  alerts are for clinical staff.
+- No patient's name, phone number or email goes to the AI service. Each patient is given a code for that one question, and Dental OS
+  puts the names back on screen as links. A full patient name typed in the question is swapped for the code first, and phone
+  numbers and emails typed in it are removed. Codes change with every question. The AI's text is never shown as HTML.
+- The question and answer are not stored. The activity log keeps that a question was asked and which tools were used, and each
+  patient whose details were read appears in their "who looked" log. 60 questions an hour at most, as a cost guard.
+- It uses the clinic's own Anthropic key (the one for AI help with notes), switched on separately. Not yet tried against the live
+  service: try it first with made-up patients.
 
 ### Added in version 0.64
 

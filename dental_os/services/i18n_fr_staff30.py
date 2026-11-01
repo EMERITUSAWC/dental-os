@@ -1,6 +1,25 @@
 """French for versions 0.60 onwards: the X-ray picture check and the X-ray AI connection."""
 
 STAFF30 = {
+    # 0.65
+    'Ask': 'Demander',
+    'Ask about the clinic': 'Questions sur la clinique',
+    'The assistant is not switched on. A manager can switch it on in Settings.': 'L’assistant n’est pas activé. Un responsable peut l’activer dans Paramètres.',
+    'Your question': 'Votre question',
+    'For example:': 'Par exemple :',
+    'Answer': 'Réponse',
+    'Looked at:': 'Consulté :',
+    'nothing in the records': 'rien dans les dossiers',
+    'Check anything important on its own screen. The assistant can be wrong, and it cannot change anything.': 'Vérifiez tout point important sur son propre écran. L’assistant peut se tromper, et il ne peut rien modifier.',
+    'It looks only at what you are allowed to see, and it cannot book, change, charge or send anything: it tells you which screen to use.': 'Il ne consulte que ce que vous avez le droit de voir, et il ne peut ni réserver, ni modifier, ni facturer, ni envoyer quoi que ce soit : il vous indique l’écran à utiliser.',
+    "Your question and what the records say go to Anthropic's Claude service, which is in another country. Patients' names, phone numbers and emails are never sent: each patient is given a code for this one question, and the names are put back here. The question and answer are not kept.": 'Votre question et ce que disent les dossiers partent vers le service Claude d’Anthropic, situé dans un autre pays. Les noms, numéros de téléphone et e-mails des patients ne sont jamais envoyés : chaque patient reçoit un code pour cette seule question, et les noms sont remis ici. La question et la réponse ne sont pas conservées.',
+    'The assistant': 'L’assistant',
+    "Off unless you switch it on. Staff ask questions about the diary, recalls and, for managers, money, and get plain answers. It uses the AI key above. It sees only what each person may see, and it cannot change anything. Patients' names, phone numbers and emails are never sent to the AI service: each patient is given a code for one question. Other details from the records are sent, so ask your lawyer first, as for AI help with notes.": 'Désactivé tant que vous ne l’activez pas. Le personnel pose des questions sur l’agenda, les rappels et, pour les responsables, l’argent, et obtient des réponses simples. Il utilise la clé IA ci-dessus. Il ne voit que ce que chaque personne peut voir, et il ne peut rien modifier. Les noms, numéros de téléphone et e-mails des patients ne sont jamais envoyés au service IA : chaque patient reçoit un code pour une question. D’autres détails des dossiers sont envoyés : consultez d’abord votre avocat, comme pour l’aide IA aux notes.',
+    'Switch the assistant on for this clinic': 'Activer l’assistant pour cette clinique',
+    'Who has not confirmed for tomorrow?': 'Qui n’a pas confirmé pour demain ?',
+    'When is the next free 45-minute slot this week?': 'Quel est le prochain créneau libre de 45 minutes cette semaine ?',
+    'Which patients are due a check-up this month?': 'Quels patients doivent faire un contrôle ce mois-ci ?',
+    'How much did we take last week?': 'Combien avons-nous encaissé la semaine dernière ?',
     # 0.63
     'Returned: fix and send again': 'Renvoyée : corrigez et renvoyez',
     'Clearinghouse connection': 'Connexion à la chambre de compensation',
@@ -141,6 +160,12 @@ STAFF30 = {
 
 # Plain messages and errors raised in the code (not in templates).
 MESSAGES30 = {
+    "Save the clinic's AI key under AI help first.": 'Enregistrez d’abord la clé IA de la clinique dans Aide IA.',
+    'Type a question first.': 'Tapez d’abord une question.',
+    'That question is too long. Keep it short.': 'Cette question est trop longue. Faites court.',
+    'A lot of questions were asked in the last hour. Wait a little and try again.': 'Beaucoup de questions ont été posées dans la dernière heure. Patientez un peu et réessayez.',
+    'The AI service could not answer this time. Try again later.': 'Le service IA n’a pas pu répondre cette fois. Réessayez plus tard.',
+    'The assistant could not finish an answer. Try asking in a simpler way.': 'L’assistant n’a pas pu terminer sa réponse. Essayez de poser la question plus simplement.',
     'Pick the clearinghouse.': 'Choisissez la chambre de compensation.',
     "To switch it on you need the clinic's key from the clearinghouse.": 'Pour l’activer, il faut la clé de la clinique fournie par la chambre de compensation.',
     'The clearinghouse key cannot be read. A manager should enter it again.': 'La clé de la chambre de compensation ne peut pas être lue. Un responsable doit la saisir à nouveau.',

@@ -485,7 +485,8 @@ def staff_toggle(uid):
 def _ai_row(db, cid):
     from .services import ainotes
     r = ainotes.row(db, cid)
-    return {"enabled": bool(r and r["enabled"]), "has_key": bool(r and r["api_key"]), "model": (r["model"] if r else ainotes.DEFAULT_MODEL)}
+    return {"enabled": bool(r and r["enabled"]), "has_key": bool(r and r["api_key"]), "model": (r["model"] if r else ainotes.DEFAULT_MODEL),
+            "assistant": bool(r and r["assistant"])}
 
 
 def _notations():
