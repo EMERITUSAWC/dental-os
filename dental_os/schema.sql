@@ -2544,3 +2544,43 @@ CREATE TABLE IF NOT EXISTS clearinghouse_seen (          -- transactions already
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (clinic_id, transaction_id)
 );
+
+-- ---- v0.67: the security and compliance pack ---------------------------------------------------------------------------------
+-- The activity log is locked: the database refuses to change or delete a row (triggers made in db.py). A seal is a keyed hash of
+-- every row up to a point, chained to the seal before it, so a row changed or removed behind the database's back shows up.
+CREATE TABLE IF NOT EXISTS audit_seals (
+  id INTEGER PRIMARY KEY,
+  upto_id INTEGER NOT NULL,                              -- the last activity row this seal covers
+  rows_sealed INTEGER NOT NULL,                          -- how many rows this seal added
+  chain TEXT NOT NULL,                                   -- HMAC-SHA256 over every row so far, in id order
+  sealed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  sealed_by INTEGER REFERENCES users(id),
+  key_id TEXT NOT NULL DEFAULT ''                        -- which SECRET_KEY made it (a short fingerprint), so a new key is not taken for tampering
+);
+CREATE INDEX IF NOT EXISTS idx_audit_user_action ON audit_log(user_id, action, at);
+
+-- A manager looks at every staff login, decides keep, change or remove for each, and the review is kept.
+CREATE TABLE IF NOT EXISTS access_reviews (
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  reviewed_by INTEGER NOT NULL REFERENCES users(id),
+  reviewed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  logins INTEGER NOT NULL,
+  kept INTEGER NOT NULL,
+  changed INTEGER NOT NULL,
+  removed INTEGER NOT NULL,
+  note TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_access_reviews_clinic ON access_reviews(clinic_id, reviewed_at);
+CREATE TABLE IF NOT EXISTS access_review_items (
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  review_id INTEGER NOT NULL REFERENCES access_reviews(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  decision TEXT NOT NULL CHECK (decision IN ('keep','change','remove')),
+  role TEXT NOT NULL,                                    -- as it was on the day
+  two_step INTEGER NOT NULL,
+  last_sign_in TEXT,
+  note TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_access_review_items ON access_review_items(review_id);

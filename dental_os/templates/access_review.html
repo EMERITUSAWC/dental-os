@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Access review") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Access review") }}</h1><div class="row">
+  <a class="btn" href="{{ url_for('compliance.home') }}">{{ _("Security and compliance") }}</a>
+  <a class="btn" href="{{ url_for('views.staff') }}">{{ _("Staff logins") }}</a></div></div>
+<p>{{ _("Look at every login that is switched on and decide: keep it, change it, or remove it. Do this every %(n)s days, and whenever someone leaves.", n=every) }}
+  {% if status.last %}{{ _("Next due %(due)s.", due=status.due) }}{% endif %}
+  {% if status.overdue %}<span class="pill bad">{{ _("Due now") }}</span>{% endif %}</p>
+<p class="muted small">{{ _("Remove switches the login off as soon as you save. For a change, write what should change, then make it on the staff screen.") }}</p>
+
+<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+<div class="tbl-wrap"><table><thead><tr><th>{{ _("Login") }}</th><th>{{ _("Role") }}</th><th>{{ _("Two-step login") }}</th><th>{{ _("Last sign-in") }}</th><th>{{ _("Look at") }}</th><th>{{ _("Decision") }}</th><th>{{ _("Note") }}</th></tr></thead><tbody>
+{% for r in rows %}{% set uid = r.u.id %}
+<tr><td>{{ r.u.display_name }}<br><span class="small muted">{{ r.u.username }}{% if r.group %} · {{ r.group }}{% endif %}</span></td>
+  <td>{{ r.u.role|replace('_', ' ') }}</td>
+  <td>{% if r.u.totp_enabled %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill bad">{{ _("Off") }}</span>{% endif %}</td>
+  <td class="small">{{ (r.last or '')[:16] or _("Never") }}</td>
+  <td class="small">{% for f in r.flags %}{{ _(flags[f]) }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+  <td><label for="d{{ uid }}" class="sr-only">{{ _("Decision") }}</label><select id="d{{ uid }}" name="d{{ uid }}"><option value="">{{ _("Choose") }}</option>
+    {% for k, label in decisions.items() %}<option value="{{ k }}"{% if form.get('d' ~ uid) == k %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select></td>
+  <td><label for="n{{ uid }}" class="sr-only">{{ _("Note") }}</label><input id="n{{ uid }}" name="n{{ uid }}" maxlength="300" value="{{ form.get('n' ~ uid, '') }}"></td></tr>
+{% endfor %}</tbody></table></div>
+<p><label for="note">{{ _("Anything else to record (optional)") }}</label><br><input id="note" name="note" maxlength="500" size="60" value="{{ form.get('note', '') }}"></p>
+<button type="submit">{{ _("Save the review") }}</button>
+</form>
+
+{% if off %}<section class="card"><h2>{{ _("Logins already switched off") }}</h2>
+  <p class="small">{% for r in off %}{{ r.u.display_name }} ({{ r.u.username }}){% if not loop.last %}, {% endif %}{% endfor %}</p></section>{% endif %}
+
+<section class="card"><h2>{{ _("Earlier reviews") }}</h2>
+{% if history %}<div class="tbl-wrap"><table><thead><tr><th>{{ _("When") }}</th><th>{{ _("By") }}</th><th>{{ _("Logins") }}</th><th>{{ _("Kept") }}</th><th>{{ _("Changed") }}</th><th>{{ _("Removed") }}</th><th></th></tr></thead><tbody>
+{% for h in history %}<tr><td>{{ h.reviewed_at[:16] }} UTC</td><td>{{ h.display_name }}</td><td>{{ h.logins }}</td><td>{{ h.kept }}</td><td>{{ h.changed }}</td><td>{{ h.removed }}</td>
+  <td><a href="{{ url_for('compliance.review_view', review_id=h.id) }}">{{ _("Open") }}</a></td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endif %}</section>
+{% endblock %}

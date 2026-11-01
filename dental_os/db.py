@@ -172,6 +172,38 @@ def init_schema(conn):
         ensure_column(conn, table, column, ddl)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_provider ON messages(clinic_id, provider_id)")
     conn.commit()
+    lock_logs(conn)
+
+
+LOCKED = ("audit_log", "audit_seals")        # 0.67: rows go in and are never changed or removed
+LOCKED_MESSAGE = "The activity log cannot be changed or deleted."
+
+
+def lock_logs(conn):
+    """0.67: the database itself refuses UPDATE and DELETE on the activity log and its seals, whatever program asks."""
+    if isinstance(conn, sqlite3.Connection):
+        for t in LOCKED:
+            for op in ("UPDATE", "DELETE"):
+                conn.execute(f"CREATE TRIGGER IF NOT EXISTS {t}_no_{op.lower()} BEFORE {op} ON {t} "
+                             f"BEGIN SELECT RAISE(ABORT, '{LOCKED_MESSAGE}'); END")
+        conn.commit()
+        return
+    conn._exec("CREATE OR REPLACE FUNCTION dos_keep_log() RETURNS trigger LANGUAGE plpgsql AS "
+               f"$$ BEGIN RAISE EXCEPTION '{LOCKED_MESSAGE}'; END $$")
+    for t in LOCKED:
+        conn._exec(f"CREATE OR REPLACE TRIGGER {t}_keep BEFORE UPDATE OR DELETE ON {t} FOR EACH ROW EXECUTE FUNCTION dos_keep_log()")
+        conn._exec(f"CREATE OR REPLACE TRIGGER {t}_keep_all BEFORE TRUNCATE ON {t} FOR EACH STATEMENT EXECUTE FUNCTION dos_keep_log()")
+    conn.raw.commit()
+
+
+def logs_locked(conn):
+    """True when every lock is in place. The evidence pack reports this."""
+    if isinstance(conn, sqlite3.Connection):
+        names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'trigger'")}
+        return all(f"{t}_no_{op}" in names for t in LOCKED for op in ("update", "delete"))
+    names = {r[0] for r in conn.execute("SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                                        "WHERE c.relnamespace = to_regnamespace(current_schema()) AND NOT t.tgisinternal AND t.tgenabled <> 'D'")}
+    return all(f"{t}_keep" in names and f"{t}_keep_all" in names for t in LOCKED)
 
 
 def get_db():

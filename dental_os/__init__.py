@@ -52,6 +52,9 @@ def create_app(test_config=None):
         OFFSITE_PASSPHRASE=os.environ.get("OFFSITE_PASSPHRASE") or None,   # locks the copy. Keep it written down, away from the computer
         NET_CHECK_URL=os.environ.get("NET_CHECK_URL") or "https://www.gstatic.com/generate_204",
         READ_ONLY=os.environ.get("READ_ONLY", "0") == "1",                 # 0.51: a viewing copy that refuses every change
+        # 0.67: who to tell about a security problem, served as /.well-known/security.txt (RFC 9116). mailto: or https:, comma between.
+        SECURITY_CONTACT=os.environ.get("SECURITY_CONTACT") or None,
+        SECURITY_POLICY_URL=os.environ.get("SECURITY_POLICY_URL") or None,
     )
     if test_config:
         app.config.update(test_config)
@@ -196,7 +199,7 @@ def create_app(test_config=None):
             abort(403, "This is a read-only copy. Changes are made at the clinic.")
         is_api = request.path.startswith("/api/")            # only the API blueprint lives under /api/
         hook = request.blueprint in ("wahook", "voicehook") or request.endpoint == "paypub.hook"   # Meta and the payment company call these: a signature is required
-        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "signup") or is_api
+        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health", "security_txt") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "signup") or is_api
         idle = app.config["SESSION_IDLE_MINUTES"]
         if g.user and not is_api and request.endpoint != "static":
             now = int(time.time())
@@ -313,7 +316,16 @@ def create_app(test_config=None):
     def health():
         return "ok"
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews
+    @app.get("/.well-known/security.txt")
+    def security_txt():
+        """0.67: RFC 9116, so a researcher who finds a hole knows whom to tell. 404 until SECURITY_CONTACT is set."""
+        from .services import compliance as _comp
+        text = _comp.security_txt(app.config)
+        if text is None:
+            abort(404)
+        return app.response_class(text, mimetype="text/plain")
+
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews, complianceviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -369,6 +381,7 @@ def create_app(test_config=None):
     app.register_blueprint(rxviews.pub)
     app.register_blueprint(fhirapi.bp)
     app.register_blueprint(assistantviews.bp)
+    app.register_blueprint(complianceviews.bp)
 
     # ---- command line
     @app.cli.command("create-clinic")
@@ -800,6 +813,58 @@ def create_app(test_config=None):
         twofactor.disable(conn, row["id"], None, row["clinic_id"], "2fa.reset.cli")
         conn.commit()
         click.echo(f"Two-step login is off for {username}. They can set it up again after signing in.")
+
+    @app.cli.command("audit-seal")
+    def audit_seal():
+        """0.67: seal the activity log up to now. Run it every day (the cron file does). Prints the seal value to keep."""
+        from .services import compliance as C
+        conn = dbmod.connect(app.config["DATABASE"])
+        try:
+            s = C.seal(conn, app.config["SECRET_KEY"])
+        finally:
+            conn.close()
+        click.echo(f"Sealed up to row {s['upto_id']}. Seal value: {s['upto_id']}:{s['chain']}" if s else "The activity log is empty.")
+
+    @app.cli.command("audit-verify")
+    @click.option("--anchor", default=None, help="A seal value kept from earlier, UPTO:CHAIN. Proves the history before it was not rewritten.")
+    def audit_verify(anchor):
+        """0.67: check every activity row against the seals. Changes nothing. Exit code 1 if anything does not match."""
+        from .services import compliance as C
+        conn = dbmod.connect(app.config["DATABASE"])
+        try:
+            r = C.verify(conn, app.config["SECRET_KEY"], anchor)
+            locked = dbmod.logs_locked(conn)
+        except C.ComplianceError as exc:
+            raise click.ClickException(str(exc))
+        finally:
+            conn.close()
+        click.echo(f"Rows checked: {r['checked']}. Seals: {r['seals']}. Rows not yet sealed: {r['unsealed']}. Database locks: {'on' if locked else 'MISSING'}.")
+        if r["broken"]:
+            click.echo(f"BROKEN at seal {r['broken']['id']} (made {r['broken']['sealed_at']} UTC, up to row {r['broken']['upto_id']}).")
+        if r["anchor"]:
+            click.echo({"match": "The kept seal value matches.", "different": "The kept seal value is DIFFERENT: the history was rewritten.",
+                        "unknown": "No seal ends at that row: the kept value cannot be found."}[r["anchor"]])
+        if not r["ok"] or not locked:
+            raise SystemExit(1)
+        click.echo("Intact.")
+
+    @app.cli.command("audit-pack")
+    @click.option("--clinic-id", type=int, required=True)
+    @click.option("--out", "out", required=True, help="Where to write the zip.")
+    def audit_pack(clinic_id, out):
+        """0.67: the evidence pack for an outside auditor, for one clinic. The same zip a manager downloads."""
+        from pathlib import Path
+        from .services import compliance as C
+        conn = dbmod.connect(app.config["DATABASE"])
+        try:
+            clinic = conn.execute("SELECT * FROM clinics WHERE id = ?", (clinic_id,)).fetchone()
+            if not clinic:
+                raise click.ClickException("No clinic with that number.")
+            data = C.evidence_pack(conn, clinic, app.config, None, app.config["SECRET_KEY"])
+        finally:
+            conn.close()
+        Path(out).write_bytes(data)
+        click.echo(f"Written {out} ({len(data) // 1024} KB).")
 
     @app.cli.command("doctor")
     def doctor():

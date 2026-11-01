@@ -150,11 +150,16 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | FHIR R4 interface | Open Dental's API is its own format; Dentrix through partner programs | The international health format, read-only; a separate key for clinical records; every read in the patient's access log | 0.64 |
 | AI assistant inside the app | Dentrix Ascend: AI agents through its MCP layer | Read-only, the person's own permissions, no patient names ever sent, every read in the patient's access log | 0.65 |
 | Patient side in Spanish, Portuguese and Arabic | Open Dental and Dentrix: English (Open Dental has community translations) | Booking, private page, forms, paying, check-in, documents and messages; Arabic right to left | 0.66 |
+| Evidence pack for an outside security audit | Dentrix and Open Dental: audit trail reports; the rest is the vendor's own paperwork | 19 controls checked live, mapped to ISO 27001 and HIPAA; one zip with the evidence and a software parts list | 0.67 |
+| Tamper-evident activity log | Open Dental: audit trail that shows in red any entry failing its check that it is unchanged; Dentrix: audit trail | The database refuses changes and deletions; nightly sealed chain, checkable later against a value the auditor keeps | 0.67 |
+| Access reviews | Not built in | Quarterly, every login decided and kept; remove switches it off | 0.67 |
 
 ## Waiting on an outside party (the code is built)
 
 - Canadian claims (CDAnet): CDA vendor certification and the CDAnet specification, which is not published. Nothing is built until the CDA provides it.
 - A native speaker's check of the Spanish, Portuguese and Arabic.
+- An independent penetration test (OWASP ASVS 5.0) and Bandit and pip-audit runs on a machine that can reach PyPI. Then the host's own
+  evidence (disk encryption, updates, access to the server) and the clinic's written policies and training records for the audit.
 
 - Clearinghouse: a first run with Stedi's test key and test payer, then a clinic's live account. Other clearinghouses (DentalXChange, Availity, Claim.MD) as adapters when a clinic uses them.
 

@@ -1437,7 +1437,8 @@ LABEL_DICTS = [("rxlink", "STATES"), ("xrayai", "KINDS"), ("xrayai", "STATES"), 
                ("nhs", "COURSES"), ("nhs", "EXEMPTIONS"), ("nhs", "EVIDENCE"), ("nhs", "NHS_CLASSES"), ("nhs", "STATUSES"),
                ("ortho", "APPLIANCES"), ("ortho", "ARCHES"), ("ortho", "MOLAR"), ("ortho", "CROWDING"), ("ortho", "STATUSES"),
                ("team", "EQUIPMENT_KINDS"), ("team", "EVENT_KINDS"), ("reportbuilder", "OPS"), ("reportbuilder", "AGGS"), ("reportbuilder", "LABELS"), ("sms", "PROVIDERS"), ("formbuilder", "KINDS"), ("formbuilder", "STATUSES"), ("implants", "KINDS"), ("implants", "REASONS"), ("providerpay", "BASES"), ("providerpay", "STATUSES"), ("governance", "CHANNELS"), ("governance", "CATEGORIES"), ("governance", "OUTCOMES"), ("governance", "C_STATUSES"), ("governance", "KINDS"), ("governance", "HARM"), ("governance", "I_STATUSES"), ("staffcpd", "TITLES"), ("staffcpd", "SCHEMES"), ("staffcpd", "OUTCOMES"), ("reactivation", "REASONS"), ("merge", "LABELS"), ("merge", "LEFT"), ("refunds", "REASONS"), ("autocodes", "REGIONS"), ("migrate", "KINDS"), ("ghclaims", "BATCH_STATUS"), ("platform", "STATES"),
-               ("permgroups", "AREA_LABELS")]
+               ("permgroups", "AREA_LABELS"), ("compliance", "CONTROLS"), ("compliance", "STATES"), ("compliance", "DECISIONS"),
+               ("compliance", "FLAGS"), ("compliance", "SERVICES")]
 
 
 def _service_labels():

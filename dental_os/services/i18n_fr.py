@@ -444,13 +444,14 @@ for _part in (_STAFF29, _MESSAGES29):
         raise RuntimeError("French wording given twice with different text: %s" % _clash)
     _FR.update(_part)
 from .i18n_fr_staff30 import STAFF30 as _STAFF30, MESSAGES30 as _MESSAGES30  # noqa: E402
-for _part in (_STAFF30, _MESSAGES30):
+from .i18n_fr_staff31 import STAFF31 as _STAFF31, MESSAGES31 as _MESSAGES31  # noqa: E402
+for _part in (_STAFF30, _MESSAGES30, _STAFF31, _MESSAGES31):
     _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
     if _clash:
         raise RuntimeError("French wording given twice with different text: %s" % _clash)
     _FR.update(_part)
 # Plain messages and errors raised in the code (not in templates). tests.test_v10 checks each is still in the code.
-MESSAGE_KEYS = set(_STAFF7) | set(_MESSAGES8) | set(_MESSAGES9) | set(_MESSAGES10) | set(_MESSAGES11) | set(_MESSAGES12) | set(_MESSAGES13) | set(_MESSAGES14) | set(_MESSAGES15) | set(_MESSAGES16) | set(_MESSAGES17) | set(_MESSAGES18) | set(_MESSAGES19) | set(_MESSAGES20) | set(_MESSAGES21) | set(_MESSAGES22) | set(_MESSAGES23) | set(_MESSAGES24) | set(_MESSAGES25) | set(_MESSAGES26) | set(_MESSAGES27) | set(_MESSAGES28) | set(_MESSAGES29) | set(_MESSAGES30)
+MESSAGE_KEYS = set(_STAFF7) | set(_MESSAGES8) | set(_MESSAGES9) | set(_MESSAGES10) | set(_MESSAGES11) | set(_MESSAGES12) | set(_MESSAGES13) | set(_MESSAGES14) | set(_MESSAGES15) | set(_MESSAGES16) | set(_MESSAGES17) | set(_MESSAGES18) | set(_MESSAGES19) | set(_MESSAGES20) | set(_MESSAGES21) | set(_MESSAGES22) | set(_MESSAGES23) | set(_MESSAGES24) | set(_MESSAGES25) | set(_MESSAGES26) | set(_MESSAGES27) | set(_MESSAGES28) | set(_MESSAGES29) | set(_MESSAGES30) | set(_MESSAGES31)
 
 FR = {k: _typography(v) for k, v in _FR.items()}
 STARTERS_FR = {k: _typography(v) for k, v in STARTERS_FR.items()}

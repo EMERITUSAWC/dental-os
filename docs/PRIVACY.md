@@ -42,7 +42,8 @@ Every row belongs to one clinic, and a person from another clinic cannot see it 
 - Sign-out after 60 minutes idle.
 - Every form has a CSRF token. Pages are not cached. Cookies can be set to secure only.
 - Files are stored under random names outside the web folder, and served only to signed-in clinical staff of the same clinic.
-- The activity log records changes and views by user.
+- The activity log records changes and views by user. Since 0.67 the database refuses to change or delete it, and it is sealed
+  every night so tampering shows up. Details, and how an auditor checks all of this, are in `docs/SECURITY.md`.
 - The API never returns clinical data. Keys are stored hashed.
 
 If a clinic connects the WhatsApp Business API, the message text, the patient's phone number and the patient's first name leave the

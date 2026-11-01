@@ -9,7 +9,7 @@ from .db import get_db
 from .services import apikeys, audit, fhir as F, throttle
 
 bp = Blueprint("fhir", __name__, url_prefix="/api/fhir/R4")
-VERSION = "0.64"
+from .version import VERSION  # noqa: E402,F401
 RATE_PER_MINUTE = 300
 
 

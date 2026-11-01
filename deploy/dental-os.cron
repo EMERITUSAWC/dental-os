@@ -12,5 +12,6 @@ PATH=/usr/local/bin:/usr/bin:/bin
 20 6 * * *    dentalos  /opt/dental-os/deploy/dos run-autopay          >> /var/log/dental-os/jobs.log 2>&1
 25 6 * * *    dentalos  /opt/dental-os/deploy/dos post-ortho-fees      >> /var/log/dental-os/jobs.log 2>&1
 40 1 * * *    dentalos  /opt/dental-os/deploy/dos backup --to /var/lib/dental-os/backups --keep 14 >> /var/log/dental-os/jobs.log 2>&1
+5 2 * * *     dentalos  /opt/dental-os/deploy/dos audit-seal           >> /var/log/dental-os/jobs.log 2>&1
 10 2 * * *    dentalos  /opt/dental-os/deploy/dos offsite-copy         >> /var/log/dental-os/jobs.log 2>&1
 30 3 1 * *    dentalos  /opt/dental-os/deploy/dos offsite-drill        >> /var/log/dental-os/jobs.log 2>&1

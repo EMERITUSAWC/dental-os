@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Access review") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Access review") }}</h1><a class="btn" href="{{ url_for('compliance.review') }}">{{ _("All reviews") }}</a></div>
+<p>{{ _("Done %(when)s UTC by %(who)s.", when=head.reviewed_at[:16], who=head.display_name) }}{% if head.note %} {{ head.note }}{% endif %}</p>
+<div class="tbl-wrap"><table><thead><tr><th>{{ _("Login") }}</th><th>{{ _("Role") }}</th><th>{{ _("Two-step login") }}</th><th>{{ _("Last sign-in") }}</th><th>{{ _("Decision") }}</th><th>{{ _("Note") }}</th></tr></thead><tbody>
+{% for i in items %}<tr><td>{{ i.display_name }} <span class="small muted">{{ i.username }}</span></td><td>{{ i.role|replace('_', ' ') }}</td>
+  <td>{{ _("On") if i.two_step else _("Off") }}</td><td class="small">{{ (i.last_sign_in or '')[:16] or _("Never") }}</td>
+  <td>{{ _(decisions[i.decision]) }}</td><td class="small">{{ i.note or '' }}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

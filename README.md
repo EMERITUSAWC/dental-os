@@ -1,4 +1,4 @@
-# Dental OS, version 0.66
+# Dental OS, version 0.67
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,26 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.67
+
+- A security and compliance pack ready for an outside audit (Settings, Security and compliance). The page checks 19 controls each
+  time it opens, shows where each sits in ISO/IEC 27001:2022 Annex A and the HIPAA Security Rule, and says which need a person to check.
+- The activity log is locked: the database refuses to change or delete a row, on SQLite and PostgreSQL. It is also sealed every night
+  (`flask audit-seal`, in the cron file) with a keyed hash chain, so a change made around the locks shows up in `flask audit-verify`.
+  Each pack prints the newest seal value; kept by the auditor, it proves later that the history was not rewritten.
+- Access review: every 90 days a manager decides keep, change or remove for every login, seeing role, two-step login, last sign-in
+  and warnings. Remove switches the login off. Every review is kept.
+- The evidence pack: one zip with the controls, settings, logins, reviews, the log check, a summary of activity, outside services
+  and what each receives, API keys, backups and drills, breaches and data requests (no names), a CycloneDX list of the software's
+  parts, and the code check results. `flask audit-pack` makes the same from the command line.
+- `/.well-known/security.txt` (RFC 9116) once `SECURITY_CONTACT` is set.
+- The app's own code checks, which need no internet, and `tools/security-scan.sh`, which adds Bandit and pip-audit where PyPI can be
+  reached. A new test opens every page with hostile text in every common field and fails on a crash or on text printed unescaped.
+- `docs/SECURITY.md`: how the system is built, the threats and what stops each, the controls, how an auditor checks every claim,
+  and what the host and the clinic must still show for themselves.
+- Changing `SECRET_KEY` makes older seals uncheckable (they are counted, not called broken). Run `flask audit-verify` and keep a pack
+  before changing it.
 
 ### Added in version 0.66
 
