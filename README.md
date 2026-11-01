@@ -1,4 +1,4 @@
-# Dental OS, version 0.62
+# Dental OS, version 0.63
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,18 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.63
+
+- A live clearinghouse connection for US clinics (Electronic claims, Set up the connection). The first is Stedi, built from its public
+  API reference. Claims go one at a time: if the clearinghouse finds a problem, that claim is not marked as sent, and its reason is
+  written in the connection log on the Electronic claims screen. Stedi's first acknowledgement comes straight back and is shown on
+  the claim. A cover check asks the payer straight away and saves the answer on the patient's cover.
+- Later acknowledgements (277CA) and remittances (835) are fetched every half hour by `flask fetch-claims` (in `deploy/dental-os.cron`),
+  or with the Fetch button. A claim the payer returns before processing is marked rejected and listed again, to fix and send again.
+  A remittance waits on the screen for a person to check it and post it, exactly as an uploaded one does. Nothing is read twice.
+- Test and live are kept apart: the receiver ID must be STEDITEST for test files and STEDI for live ones, and the clinic uses
+  Stedi's test key with test files. Not yet tried against Stedi itself: the first run should be with a test key and Stedi's test payer.
 
 ### Added in version 0.62
 

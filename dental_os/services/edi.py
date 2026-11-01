@@ -27,7 +27,7 @@ STATE = re.compile(r"^[A-Z]{2}$")
 RELATION = {"self": "The patient", "spouse": "Spouse", "child": "Child", "other": "Someone else"}
 REL_SBR = {"self": "18", "spouse": "01", "child": "19", "other": "G8"}      # X12 individual relationship codes
 FILE_KINDS = {"837D": "Claims sent", "270": "Cover check sent", "835": "Remittance received", "271": "Cover check answer",
-              "999": "Receipt from the clearinghouse"}
+              "999": "Receipt from the clearinghouse", "277": "Claim acknowledgement"}
 CAS_GROUPS = {"CO": "Contract: the clinic writes it off", "PR": "The patient owes it", "OA": "Other adjustment",
               "PI": "Payer adjustment", "CR": "Correction"}
 CLP_STATUS = {"1": "Paid as main payer", "2": "Paid as second payer", "3": "Paid as third payer", "4": "Denied",
@@ -226,7 +226,7 @@ def claim_problems(db, clinic, claim_id):
     if not c:
         return ["That claim was not found."]
     out = []
-    if c["status"] not in ("draft", "submitted"):
+    if c["status"] not in ("draft", "submitted", "rejected"):              # 0.63: a returned claim can be fixed and sent again
         out.append("Only a draft or a sent claim can go in a claim file.")
     payer = db.execute("SELECT * FROM payers WHERE id = ?", (c["payer_id"],)).fetchone()
     if not payer["edi_payer_id"]:
@@ -343,7 +343,7 @@ def build_837(db, clinic, user_id, claim_ids, now=None):
     fid = _save_file(db, clinic, user_id, "837D", "out", ctl, body, claim_ids)
     for x in claim_ids:
         c = INS.get_claim(db, cid, x)
-        if c["status"] == "draft":
+        if c["status"] in ("draft", "rejected"):
             INS.submit(db, clinic, user_id, x, now.date().isoformat(), None)
     audit.log(db, cid, user_id, "edi.837", "edi_file", fid, f"{len(claim_ids)} claims")
     return fid
@@ -403,9 +403,10 @@ def files(db, cid, limit=100):
 
 
 def ready_claims(db, clinic):
-    """Draft and sent claims whose payer takes electronic claims, each with what still stops it."""
+    """Draft, sent and returned claims whose payer takes electronic claims, each with what still stops it. A returned (rejected)
+    claim is listed so it can be fixed and sent again (0.63)."""
     rows = db.execute("""SELECT c.*, pa.first_name, pa.last_name, py.name AS payer_name FROM claims c JOIN patients pa ON pa.id = c.patient_id
-                         JOIN payers py ON py.id = c.payer_id WHERE c.clinic_id = ? AND c.status IN ('draft','submitted')
+                         JOIN payers py ON py.id = c.payer_id WHERE c.clinic_id = ? AND c.status IN ('draft','submitted','rejected')
                          AND py.edi_payer_id IS NOT NULL ORDER BY c.claim_no""", (clinic["id"],)).fetchall()
     return [{"c": r, "problems": claim_problems(db, clinic, r["id"])} for r in rows]
 
@@ -493,7 +494,7 @@ def read_835(db, clinic, text):
     return out
 
 
-def post_835(db, clinic, user_id, text):
+def post_835(db, clinic, user_id, text, file_id=None):
     """Post a remittance: one payer payment for the paid claims (contract amounts written off), and denied claims marked rejected."""
     r = read_835(db, clinic, text)
     if not r["payer_id"]:
@@ -523,8 +524,14 @@ def post_835(db, clinic, user_id, text):
             INS.reject(db, clinic, user_id, x["claim"]["id"], f"Denied by the payer ({codes}).")
         except INS.InsuranceError as exc:
             raise EdiError(str(exc))
-    _save_file(db, clinic, user_id, "835", "in", None, text, [x["claim"]["id"] for x in usable], status="posted",
-               summary=f"{len(paid)} paid, {len(denied)} denied")
+    summary = f"{len(paid)} paid, {len(denied)} denied"
+    waiting = db.execute("SELECT id FROM edi_files WHERE id = ? AND clinic_id = ? AND kind = '835' AND status = 'waiting'",
+                         (file_id, clinic["id"])).fetchone() if file_id else None
+    if waiting:                                                 # 0.63: one fetched from the clearinghouse, now checked and posted
+        db.execute("UPDATE edi_files SET status = 'posted', summary = ?, claim_ids = ? WHERE id = ?",
+                   (summary, json.dumps([x["claim"]["id"] for x in usable]), waiting["id"]))
+    else:
+        _save_file(db, clinic, user_id, "835", "in", None, text, [x["claim"]["id"] for x in usable], status="posted", summary=summary)
     audit.log(db, clinic["id"], user_id, "edi.835", "payer_payment", pp_id)
     return {"payer_payment_id": pp_id, "paid": len(paid), "denied": len(denied)}
 

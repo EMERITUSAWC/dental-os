@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_edi_tabs.html" import tabs with context %}
+{% block title %}{{ _("Clearinghouse connection") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Clearinghouse connection") }}</h1>
+{{ tabs('setup') }}
+<div class="grid two">
+<section class="card"><h2>{{ _("The account") }}</h2>
+  {% if on %}<p class="flash ok" role="status">{{ _("Connected. Claims and cover checks go straight to the clearinghouse.") }}</p>{% endif %}
+  {% for m in problems %}<p class="flash error" role="alert">{{ _(m) }}</p>{% endfor %}
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="provider">{{ _("Clearinghouse") }}</label>
+    <select id="provider" name="provider">{% for k, v in providers.items() %}<option value="{{ k }}"{% if a and a.provider == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+    <label for="api_key">{{ _("The clinic's API key") }}</label><input id="api_key" name="api_key" type="password" autocomplete="off" aria-describedby="key-hint">
+    <p id="key-hint" class="muted small">{{ _("A key is saved, and is never shown again. Leave this empty to keep it.") if has_key else _("Stored encrypted and never shown again.") }}
+      {{ _("Use a test key while the files are marked as tests, and a live key once they are live.") }}</p>
+    <label class="check"><input type="checkbox" name="enabled" value="1"{% if a and a.enabled %} checked{% endif %}> {{ _("Switch it on") }}</label>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form></section>
+<section class="card"><h2>{{ _("What happens") }}</h2>
+  <p class="small">{{ _("Claims are sent one at a time. If the clearinghouse finds a problem, that claim is not marked as sent, and the reason is written in the connection log. The clearinghouse's first acknowledgement comes straight back.") }}</p>
+  <p class="small">{{ _("Later acknowledgements and the payers' remittances are fetched every half hour by the server's scheduled job, or when someone presses Fetch. A claim the payer returns before processing is marked rejected, so it can be fixed and sent again. A remittance waits for a person to check it and post it.") }}</p>
+  <p class="small">{{ _("A cover check asks the payer straight away and saves the answer on the patient's cover.") }}</p>
+  <p class="small">{{ _("Files are") }} <strong>{{ _("tests") if s.usage == 'T' else _("live") }}</strong>. {{ _("Run a few test claims with the clearinghouse's test payer before switching to live.") }}</p></section>
+</div>
+{% endblock %}

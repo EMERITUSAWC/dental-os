@@ -516,6 +516,25 @@ def create_app(test_config=None):
         conn.commit()
         click.echo(f"Operator {username} added.")
 
+    @app.cli.command("fetch-claims")
+    def fetch_claims():
+        """0.63: for each clinic connected to a clearinghouse, fetch new acknowledgements and remittances. Every 30 minutes."""
+        from .services import clearinghouse as CH
+        conn = dbmod.connect(app.config["DATABASE"])
+        try:
+            for clinic in conn.execute("SELECT c.* FROM clinics c JOIN clearinghouse_account a ON a.clinic_id = c.id WHERE a.enabled = 1").fetchall():
+                try:
+                    got = CH.fetch(conn, clinic, None, app.config["SECRET_KEY"], transport=app.config.get("CLEARINGHOUSE_TRANSPORT"))
+                    conn.commit()
+                    click.echo(f"Clinic {clinic['id']}: {got['acks']} acknowledgements, {got['remits']} remittances to check.")
+                except CH.ClearinghouseError as exc:
+                    conn.rollback()
+                    CH.log(conn, clinic["id"], None, "fetch", False, str(exc) + (f" {exc.detail}" if exc.detail else ""))
+                    conn.commit()
+                    click.echo(f"Clinic {clinic['id']}: {exc}")
+        finally:
+            conn.close()
+
     @app.cli.command("bill-clinics")
     def bill_clinics():
         """Make the month's bills for clinics whose paid-up period has run out, and mark late ones overdue. Run it once a day."""

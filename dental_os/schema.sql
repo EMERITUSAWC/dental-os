@@ -2513,3 +2513,34 @@ CREATE TABLE IF NOT EXISTS erx_sends (                   -- each try to send a p
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_erx_sends_patient ON erx_sends(clinic_id, patient_id);
+
+-- ---- v0.63: a live clearinghouse connection -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS clearinghouse_account (       -- one per clinic. The key is stored encrypted
+  clinic_id INTEGER PRIMARY KEY REFERENCES clinics(id),
+  enabled INTEGER NOT NULL DEFAULT 0,
+  provider TEXT NOT NULL DEFAULT 'stedi',
+  api_key TEXT,
+  poll_token TEXT,                                       -- where the last fetch stopped
+  last_poll_at TEXT,
+  updated_by INTEGER REFERENCES users(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS clearinghouse_log (           -- each send, check and fetch, with the clearinghouse's reason when it said no
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  kind TEXT NOT NULL,
+  ok INTEGER NOT NULL,
+  detail TEXT,
+  ref TEXT,
+  user_id INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_clearinghouse_log ON clearinghouse_log(clinic_id, id);
+CREATE TABLE IF NOT EXISTS clearinghouse_seen (          -- transactions already fetched, so none is read twice
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  transaction_id TEXT NOT NULL,
+  kind TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (clinic_id, transaction_id)
+);

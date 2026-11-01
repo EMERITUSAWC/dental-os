@@ -8,22 +8,30 @@
   <p>{{ _("Claims go to the payer through your clearinghouse in the standard US format (837D). Tick the claims, make the file, then upload it to the clearinghouse. Read its replies on the next tab: the receipt (999), the remittance (835) and cover check answers (271).") }}</p>
   {% if s.usage == 'T' %}<p><span class="pill warn">{{ _("Test files") }}</span> {{ _("Files are marked as tests until a manager switches them to live in Set up.") }}</p>{% endif %}
 </section>
-<form method="post" class="card">
+<section class="card"><div class="row spread"><h2>{{ _("Clearinghouse connection") }}</h2>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('edi.connection') }}">{{ _("Set up the connection") }}</a>{% endif %}</div>
+  {% if live %}<p><span class="pill ok">{{ _("Connected") }}</span> {{ ch.provider|title }}{% if ch.last_poll_at %}. {{ _("Last fetched") }}: {{ ch.last_poll_at }} UTC{% endif %}</p>
+    {% for m in ch_problems %}<p class="flash error" role="alert">{{ _(m) }}</p>{% endfor %}
+    <form method="post" action="{{ url_for('edi.fetch_now') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Fetch acknowledgements and remittances now") }}</button></form>
+    {% if waiting %}<h3>{{ _("Remittances to check and post") }}</h3><ul>{% for f in waiting %}<li><a href="{{ url_for('edi.remit_check', fid=f.id) }}">{{ f.created_at|date }} {{ f.created_at[11:16] }}</a></li>{% endfor %}</ul>{% endif %}
+    {% if chlog %}<h3>{{ _("Connection log") }}</h3>{% for l in chlog %}<p class="small">{{ l.created_at[:16] }} UTC {% if l.ok %}<span class="pill ok">{{ _("Done") }}</span>{% else %}<span class="pill bad">{{ _("Not done") }}</span>{% endif %} {{ l.detail or '' }}{% if l.ref %} ({{ l.ref }}){% endif %}</p>{% endfor %}{% endif %}
+  {% else %}<p class="muted">{{ _("Not connected: claim files are made here and uploaded to the clearinghouse by hand.") }}</p>{% endif %}
+</section>
+<form method="post" class="card"{% if live %} action="{{ url_for('edi.send_live') }}"{% endif %}>
   <input type="hidden" name="_csrf" value="{{ csrf_token }}">
   <h2>{{ _("Claims for payers that take electronic claims") }}</h2>
   {% if ready %}<div class="tbl-wrap"><table><tr><th></th><th>{{ _("Claim") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Payer") }}</th><th>{{ _("Amount") }}</th><th>{{ _("Status") }}</th></tr>
   {% for x in ready %}{% set c = x.c %}<tr>
-    <td>{% if not x.problems %}<input type="checkbox" name="claim_id" value="{{ c.id }}" aria-label="{{ _('Send claim') }} {{ c.claim_no }}" {{ 'checked' if c.status == 'draft' }}>{% endif %}</td>
+    <td>{% if not x.problems %}<input type="checkbox" name="claim_id" value="{{ c.id }}" aria-label="{{ _('Send claim') }} {{ c.claim_no }}" {{ 'checked' if c.status in ('draft', 'rejected') }}>{% endif %}</td>
     <td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a>{% if c.kind == 'preauth' %} <span class="pill">{{ _("Pre-authorisation") }}</span>{% endif %}</td>
     <td>{{ c.first_name }} {{ c.last_name }}</td><td>{{ c.payer_name }}</td><td>{{ c.total_fee_p|money }}</td>
-    <td>{% if x.problems %}<span class="pill bad">{{ _("Not ready") }}</span><ul class="small">{% for m in x.problems %}<li>{{ _(m) }}</li>{% endfor %}</ul>{% else %}{{ _("Not sent") if c.status == 'draft' else _("Sent, waiting") }}{% endif %}</td></tr>{% endfor %}</table></div>
-  <p><button class="primary" type="submit">{{ _("Make the claim file") }}</button></p>
+    <td>{% if x.problems %}<span class="pill bad">{{ _("Not ready") }}</span><ul class="small">{% for m in x.problems %}<li>{{ _(m) }}</li>{% endfor %}</ul>{% else %}{{ _("Not sent") if c.status == 'draft' else (_("Returned: fix and send again") if c.status == 'rejected' else _("Sent, waiting")) }}{% endif %}{% if c.edi_ack %}<div class="muted small">{{ c.edi_ack }}</div>{% endif %}</td></tr>{% endfor %}</table></div>
+  <p><button class="primary" type="submit">{{ _("Send to the clearinghouse") if live else _("Make the claim file") }}</button></p>
   {% else %}<p class="muted">{{ _("No claims waiting. Claims show here when their payer has a payer ID in Set up.") }}</p>{% endif %}
 </form>
 <section class="card"><h2>{{ _("Files") }}</h2>
   {% if files %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("What") }}</th><th>{{ _("Status") }}</th><th>{{ _("By") }}</th></tr>
   {% for f in files %}<tr><td class="nw"><a href="{{ url_for('edi.file_view', fid=f.id) }}">{{ f.created_at|date }} {{ f.created_at[11:16] }}</a></td><td>{{ _(kinds[f.kind]) }} ({{ f.kind }})</td>
-    <td><span class="pill {{ 'ok' if f.status in ('accepted', 'posted') else ('bad' if f.status == 'rejected' else '') }}">{{ {'made': _('Made'), 'accepted': _('Accepted'), 'rejected': _('Rejected'), 'posted': _('Read and saved')}[f.status] }}</span></td><td>{{ f.by_name or '' }}</td></tr>{% endfor %}</table></div>
+    <td><span class="pill {{ 'ok' if f.status in ('accepted', 'posted') else ('bad' if f.status == 'rejected' else '') }}">{{ {'made': _('Made'), 'accepted': _('Accepted'), 'rejected': _('Rejected'), 'posted': _('Read and saved'), 'waiting': _('Waiting to be checked')}.get(f.status, f.status) }}</span></td><td>{{ f.by_name or '' }}</td></tr>{% endfor %}</table></div>
   {% else %}<p class="muted">{{ _("No files yet.") }}</p>{% endif %}
 </section>
 {% endblock %}

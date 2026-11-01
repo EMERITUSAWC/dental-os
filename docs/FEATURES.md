@@ -146,8 +146,11 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Chairside tablet mode | Open Dental (ODTouch) | Any tablet browser; alerts first; moves the patient on the shared check-in board | 0.61 |
 | Prescriptions a pharmacy can check | Not in Open Dental or Dentrix | QR on every prescription; genuine, valid or already dispensed; works with any pharmacy, no account | 0.62 |
 | Electronic prescribing | Open Dental through DoseSpot (US, including controlled drugs) | FHIR R4 copy of every prescription; network connection built, an adapter per network once agreed | 0.62 |
+| Live clearinghouse connection | Both, through their own clearinghouse services | Claims, cover checks, acknowledgements and remittances with no file handling; a refused claim is never marked sent | 0.63 |
 
 ## Waiting on an outside party (the code is built)
+
+- Clearinghouse: a first run with Stedi's test key and test payer, then a clinic's live account. Other clearinghouses (DentalXChange, Availity, Claim.MD) as adapters when a clinic uses them.
 
 - E-prescribing: an adapter and certification for each network (DoseSpot or Surescripts in the US, NHS EPS in England), once there is a partner agreement. The pharmacy check and the FHIR copy need nothing outside.
 

@@ -203,7 +203,11 @@ class KioskTests(Practice):
         return re.search(r'name="_csrf" value="([^"]+)"', page).group(1)
 
     def visit(self, pid=1, minutes_ahead=30):
-        start = (now_local(self.c["timezone"]) + timedelta(minutes=minutes_ahead)).strftime("%Y-%m-%d %H:%M")
+        now = now_local(self.c["timezone"])
+        later = now + timedelta(minutes=minutes_ahead)
+        if later.date() != now.date():                       # late in the evening: keep the visit today, which is all the kiosk looks at
+            later = now.replace(hour=23, minute=59)
+        start = later.strftime("%Y-%m-%d %H:%M")
         self.conn.execute("""INSERT INTO appointments(clinic_id, patient_id, provider_id, chair_id, start_at, duration_min, status)
                              VALUES (1, ?, 1, 1, ?, 30, 'scheduled')""", (pid, start))
         self.conn.commit()

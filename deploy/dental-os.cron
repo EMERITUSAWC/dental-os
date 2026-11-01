@@ -7,6 +7,7 @@ PATH=/usr/local/bin:/usr/bin:/bin
 */5 * * * *   dentalos  /opt/dental-os/deploy/dos send-sms             >> /var/log/dental-os/jobs.log 2>&1
 */5 * * * *   dentalos  /opt/dental-os/deploy/dos send-email           >> /var/log/dental-os/jobs.log 2>&1
 */2 * * * *   dentalos  /opt/dental-os/deploy/dos deliver-webhooks     >> /var/log/dental-os/jobs.log 2>&1
+*/30 * * * *  dentalos  /opt/dental-os/deploy/dos fetch-claims         >> /var/log/dental-os/jobs.log 2>&1
 15 6 * * *    dentalos  /opt/dental-os/deploy/dos run-renewals         >> /var/log/dental-os/jobs.log 2>&1
 20 6 * * *    dentalos  /opt/dental-os/deploy/dos run-autopay          >> /var/log/dental-os/jobs.log 2>&1
 25 6 * * *    dentalos  /opt/dental-os/deploy/dos post-ortho-fees      >> /var/log/dental-os/jobs.log 2>&1
