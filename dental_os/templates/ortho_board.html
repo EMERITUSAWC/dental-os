@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Orthodontics") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Orthodontics") }}</h1>
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("Status") }}</th><th>{{ _("Appliance") }}</th><th>{{ _("Months") }}</th><th>{{ _("Next visit due") }}</th><th>{{ _("Contract") }}</th></tr>
+  {% for x in rows %}{% set o = x.o %}<tr><td><a href="{{ url_for('ortho.patient', pid=o.patient_id) }}">{{ o.first_name }} {{ o.last_name }}</a> <span class="muted small">{{ o.dentist }}</span></td>
+    <td>{{ _(statuses[o.status]) }}</td><td>{{ _(appliances[o.appliance]) }}</td>
+    <td>{{ x.months }} / {{ o.est_months }}{% if x.over %} <span class="pill warn">{{ _("over the estimate") }}</span>{% endif %}</td>
+    <td class="nw">{% if x.next_due %}{{ x.next_due.isoformat()|date }}{% if x.late %} <span class="pill bad">{{ _("late") }}</span>{% endif %}{% endif %}</td>
+    <td class="nw">{% if x.contract %}{{ x.posted_p|money }} {{ _("charged") }}, {{ x.left_p|money }} {{ _("to come") }}{% else %}<span class="muted">{{ _("none") }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("No ortho cases open. Open one from a patient's Ortho tab.") }}</p>{% endif %}</section>
+{% endblock %}

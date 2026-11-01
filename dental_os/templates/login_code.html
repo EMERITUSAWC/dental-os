@@ -4,7 +4,7 @@
 <div class="login card">
   <h1>{{ _("Your code") }}</h1>
   <p class="muted">{{ _("Open your authenticator app and type the 6-digit code it shows. If you have lost your phone, type one of your recovery codes instead.") }}</p>
-  {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+  {% if error %}<div class="flash error" role="alert">{{ _(error) }}</div>{% endif %}
   <form method="post" autocomplete="off">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
     <label for="code">{{ _("Code") }}</label>

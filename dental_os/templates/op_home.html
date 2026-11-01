@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Clinics on the service") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Clinics on the service") }}</h1>
+<section class="card"><p class="muted small">{{ _("Counts only. Patient names and records are never shown here; a clinic can grant support access to look, for a few hours.") }}</p>
+  <table><thead><tr><th>{{ _("Clinic") }}</th><th>{{ _("Country") }}</th><th>{{ _("State") }}</th><th>{{ _("Plan") }}</th><th>{{ _("Patients") }}</th><th>{{ _("Staff") }}</th><th>{{ _("Last sign-in") }}</th><th>{{ _("Open bills") }}</th></tr></thead><tbody>
+  {% for x in rows %}<tr><td><a href="{{ url_for('operator.clinic', cid=x.c.id) }}">{{ x.c.name }}</a></td><td>{{ x.c.country }}</td><td><span class="pill {{ 'ok' if x.state == 'active' else ('warn' if x.state in ('trial', 'past_due') else 'bad') }}">{{ _(states[x.state]) }}</span>{% if x.state == 'trial' and x.c.trial_ends_on %} <span class="small muted">{{ x.c.trial_ends_on }}</span>{% endif %}</td>
+    <td>{{ x.plan.name if x.plan else '' }}</td><td>{{ x.patients }}</td><td>{{ x.staff }}</td><td class="small">{{ (x.last_seen or '')[:16] }}</td><td>{{ x.open_bills or '' }}</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

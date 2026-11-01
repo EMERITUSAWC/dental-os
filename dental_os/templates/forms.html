@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% from "_msg_tabs.html" import tabs with context %}
-{% block title %}Health forms{% endblock %}
+{% block title %}{{ _("Health forms") }}{% endblock %}
 {% block body %}
-<h1>Messages</h1>
+<h1>{{ _("Messages") }}</h1>
 {{ tabs(active, attn) }}
-<p class="muted">Health forms patients filled in on their own phones. They do not change the record until a clinician checks and accepts them.</p>
+<p class="muted">{{ _("Health forms patients filled in on their own phones. They do not change the record until a clinician checks and accepts them.") }}</p>
 <section class="card"><div class="tbl-wrap"><table>
-  <tr><th>Patient</th><th>Sent</th><th></th></tr>
-  {% for r in rows %}<tr><td><a href="{{ url_for('comms.form_review', sid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a></td><td class="muted">{{ r.submitted_at[:16] }}</td><td><a class="btn" href="{{ url_for('comms.form_review', sid=r.id) }}">Review</a></td></tr>
-  {% else %}<tr><td colspan="3" class="muted">No forms waiting.</td></tr>{% endfor %}
+  <tr><th>{{ _("Patient") }}</th><th>{{ _("Sent") }}</th><th></th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('comms.form_review', sid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a></td><td class="muted">{{ r.submitted_at[:16] }}</td><td><a class="btn" href="{{ url_for('comms.form_review', sid=r.id) }}">{{ _("Review") }}</a></td></tr>
+  {% else %}<tr><td colspan="3" class="muted">{{ _("No forms waiting.") }}</td></tr>{% endfor %}
 </table></div></section>
 {% endblock %}

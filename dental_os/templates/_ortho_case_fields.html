@@ -1,0 +1,12 @@
+{% macro fields(c, appliances, arches, molar, crowding, sfx='') %}
+<div class="grid three">
+  <div><label for="appliance{{ sfx }}">{{ _("Appliance") }}</label><select id="appliance{{ sfx }}" name="appliance">{% for k, v in appliances.items() %}<option value="{{ k }}" {{ 'selected' if c and c.appliance == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="arches{{ sfx }}">{{ _("Arches") }}</label><select id="arches{{ sfx }}" name="arches">{% for k, v in arches.items() %}<option value="{{ k }}" {{ 'selected' if c and c.arches == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="est_months{{ sfx }}">{{ _("Expected length, months") }}</label><input id="est_months{{ sfx }}" name="est_months" type="number" min="1" max="60" value="{{ c.est_months if c else 18 }}"></div>
+  <div><label for="molar_class{{ sfx }}">{{ _("Molar class") }}</label><select id="molar_class{{ sfx }}" name="molar_class">{% for k, v in molar.items() %}<option value="{{ k }}" {{ 'selected' if c and (c.molar_class or '') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="overjet_mm{{ sfx }}">{{ _("Overjet, mm") }}</label><input id="overjet_mm{{ sfx }}" name="overjet_mm" inputmode="decimal" value="{{ (c.overjet_tenths / 10) if c and c.overjet_tenths is not none else '' }}"></div>
+  <div><label for="overbite_mm{{ sfx }}">{{ _("Overbite, mm") }}</label><input id="overbite_mm{{ sfx }}" name="overbite_mm" inputmode="decimal" value="{{ (c.overbite_tenths / 10) if c and c.overbite_tenths is not none else '' }}"></div>
+  <div><label for="crowding{{ sfx }}">{{ _("Crowding") }}</label><select id="crowding{{ sfx }}" name="crowding">{% for k, v in crowding.items() %}<option value="{{ k }}" {{ 'selected' if c and (c.crowding or '') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+</div>
+<label for="notes{{ sfx }}">{{ _("Diagnosis and plan notes") }}</label><textarea id="notes{{ sfx }}" name="notes" rows="2">{{ c.notes or '' if c else '' }}</textarea>
+{% endmacro %}

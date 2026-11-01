@@ -1,23 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Consent forms{% endblock %}
+{% block title %}{{ _("Consent forms") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Consent forms</h1>
-  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="starter"><button type="submit">Add the starter forms</button></form></div>
-<p class="muted">The starter wording is plain and general. Have a dentist and a lawyer in your country read it before it is used with patients. Changing a form never changes consents that were already signed: each one keeps the wording it was signed with.</p>
+<div class="row spread"><h1>{{ _("Consent forms") }}</h1>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="starter"><button type="submit">{{ _("Add the starter forms") }}</button></form></div>
+<p class="muted">{{ _("The starter wording is plain and general. Have a dentist and a lawyer in your country read it before it is used with patients. Changing a form never changes consents that were already signed: each one keeps the wording it was signed with.") }}</p>
 {% for r in rows %}
 <section class="card"><form method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ r.id }}">
-  <label for="n{{ r.id }}">Name</label><input id="n{{ r.id }}" name="name" value="{{ r.name }}" maxlength="80">
-  <label for="b{{ r.id }}">Wording</label><textarea id="b{{ r.id }}" name="body" rows="5" maxlength="6000">{{ r.body }}</textarea>
-  <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if r.active }}><span>In use</span></label>
-  <p><button type="submit">Save</button></p>
+  <label for="n{{ r.id }}">{{ _("Name") }}</label><input id="n{{ r.id }}" name="name" value="{{ r.name }}" maxlength="80">
+  <label for="b{{ r.id }}">{{ _("Wording") }}</label><textarea id="b{{ r.id }}" name="body" rows="5" maxlength="6000">{{ r.body }}</textarea>
+  <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if r.active }}><span>{{ _("In use") }}</span></label>
+  <p><button type="submit">{{ _("Save") }}</button></p>
 </form></section>
 {% endfor %}
-<section class="card"><h2>New form</h2><form method="post">
+<section class="card"><h2>{{ _("New form") }}</h2><form method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-  <label for="nn">Name</label><input id="nn" name="name" maxlength="80" required>
-  <label for="nb">Wording</label><textarea id="nb" name="body" rows="5" maxlength="6000" required></textarea>
+  <label for="nn">{{ _("Name") }}</label><input id="nn" name="name" maxlength="80" required>
+  <label for="nb">{{ _("Wording") }}</label><textarea id="nb" name="body" rows="5" maxlength="6000" required></textarea>
   <input type="hidden" name="active" value="1">
-  <p><button class="primary" type="submit">Add form</button></p>
+  <p><button class="primary" type="submit">{{ _("Add form") }}</button></p>
 </form></section>
 {% endblock %}

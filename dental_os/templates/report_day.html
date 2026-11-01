@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Day sheet") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Day sheet: %(day)s", day=day|day) }}</h1>
+  <div class="row no-print"><a class="btn" href="{{ url_for('practice.day_sheet', date=prev) }}" aria-label="{{ _('Previous day') }}">←</a><a class="btn" href="{{ url_for('practice.day_sheet', date=next) }}" aria-label="{{ _('Next day') }}">→</a><button data-print>{{ _("Print") }}</button></div></div>
+<div class="stats four">
+  <div class="card"><div class="stat">{{ d.visits|length }}</div><div class="muted">{{ _("visits booked") }}</div></div>
+  <div class="card"><div class="stat">{{ d.production|money }}</div><div class="muted">{{ _("work done") }}</div></div>
+  <div class="card"><div class="stat">{{ d.collected|money }}</div><div class="muted">{{ _("money taken") }}</div></div>
+  <div class="card"><div class="stat">{{ d.new_patients }}</div><div class="muted">{{ _("new patients") }}</div></div>
+</div>
+{% if d.by_dentist %}<section class="card"><h2>{{ _("Work done by dentist") }}</h2><table>{% for name, total in d.by_dentist %}<tr><td>{{ name or _('Not recorded') }}</td><td class="nw">{{ total|money }}</td></tr>{% endfor %}</table></section>{% endif %}
+<section class="card"><h2>{{ _("Visits") }}</h2><div class="tbl-wrap"><table><tr><th>{{ _("Time") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Dentist") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for a in d.visits %}<tr><td>{{ a.start_at|time }}</td><td>{{ a.first_name }} {{ a.last_name }}</td><td>{{ a.provider_name or '' }}</td>
+    <td>{{ {'scheduled': _('Booked'), 'complete': _('Done'), 'broken': _('Missed or cancelled')}.get(a.status, a.status) }}</td></tr>{% else %}<tr><td colspan="4" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</table></div></section>
+<section class="card"><h2>{{ _("Work done") }}</h2><div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("Treatment") }}</th><th>{{ _("Dentist") }}</th><th>{{ _("Fee") }}</th></tr>
+  {% for w in d.work %}<tr><td>{{ w.first_name }} {{ w.last_name }}</td><td>{{ w.code_name }}{% if w.tooth %} {{ w.tooth|tooth }}{% endif %}</td><td>{{ w.provider_name or '' }}</td><td class="nw">{{ w.fee_p|money }}</td></tr>{% else %}<tr><td colspan="4" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</table></div></section>
+<section class="card"><h2>{{ _("Money taken") }}</h2><div class="tbl-wrap"><table><tr><th>{{ _("Receipt") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Paid by") }}</th><th>{{ _("Amount") }}</th></tr>
+  {% for p in d.payments %}<tr><td>R-{{ '%06d' % p.receipt_no }}{% if p.voided %} <span class="pill bad">{{ _("voided") }}</span>{% endif %}</td><td>{{ p.first_name }} {{ p.last_name }}</td><td>{{ _(methods.get(p.method, p.method)) }}</td><td class="nw">{{ p.amount_p|money }}</td></tr>{% else %}<tr><td colspan="4" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</table></div></section>
+{% endblock %}

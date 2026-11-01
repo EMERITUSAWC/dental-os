@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_letterhead.html" import letterhead with context %}
+{% block title %}{{ letter.title }}{% endblock %}
+{% block body %}
+<div class="sheet card printdoc">
+  {{ letterhead() }}
+  <p>{{ letter.created_at[:10]|date }}</p>
+  {% if letter.addressee %}<p class="addressee note-body">{{ letter.addressee }}</p>{% endif %}
+  <h2>{{ letter.title }}</h2>
+  <div class="note-body">{{ letter.body }}</div>
+  {% if letter.provider_name %}<div class="signblock"><p>______________________________</p><p><strong>{{ letter.provider_name }}</strong>{% if letter.qualifications %}, {{ letter.qualifications }}{% endif %}{% if letter.reg_number %}<br>{{ letter.reg_body or _d("Registration") }} {{ letter.reg_number }}{% endif %}</p></div>{% endif %}
+</div>
+<div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button><a class="btn" href="{{ url_for('care.patient_letters', pid=p.id) }}">{{ _("Back to letters") }}</a></div>
+{% endblock %}

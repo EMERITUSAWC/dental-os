@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Team messages") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Team messages") }}</h1>
+<p class="row"><a class="btn {{ 'primary' if box == 'in' }}" href="{{ url_for('team.inbox') }}">{{ _("To me") }}</a><a class="btn {{ 'primary' if box == 'sent' }}" href="{{ url_for('team.inbox', box='sent') }}">{{ _("Sent") }}</a></p>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">{% if reply_to %}<input type="hidden" name="reply_to" value="{{ reply_to }}">{% endif %}
+  <div class="row"><label for="to_user">{{ _("To") }}</label><select id="to_user" name="to_user"><option value="">{{ _("Everyone") }}</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if request.args.get('to')|int == u.id }}>{{ u.display_name }}</option>{% endfor %}</select></div>
+  <label for="body">{{ _("Message") }}</label><textarea id="body" name="body" rows="3" maxlength="2000" required></textarea>
+  <p class="muted small">{{ _("To link a message to a patient, send it from the patient's record. Messages cannot be changed once sent.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Send") }}</button></p>
+</form>
+<section class="card">{% for m in rows %}
+  <div class="taskline {{ '' if m.seen or box == 'sent' else 'late' }}">
+    <p><strong>{{ m.from_name }}</strong> {{ _("to") }} {{ m.to_name or _("everyone") }} <span class="muted small">{{ m.created_at[:16] }} UTC</span>{% if not m.seen and box == 'in' %} <span class="pill warn">{{ _("new") }}</span>{% endif %}
+      {% if m.patient_id %}· <a href="{{ url_for('views.patient_view', pid=m.patient_id) }}">{{ m.first_name }} {{ m.last_name }}</a>{% endif %}</p>
+    <p>{{ m.body }}</p>
+    {% if box == 'in' %}<p class="small"><a href="{{ url_for('team.inbox', reply=m.id, to=m.from_user) }}">{{ _("Reply") }}</a></p>{% endif %}
+  </div>{% else %}<p class="muted">{{ _("No messages.") }}</p>{% endfor %}</section>
+{% endblock %}

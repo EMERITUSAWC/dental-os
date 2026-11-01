@@ -1,0 +1,6 @@
+{% macro table(result) %}
+{% if result.rows %}<div class="tbl-wrap"><table><tr>{% for h in result.head %}<th>{{ _(h[0]) }}</th>{% endfor %}</tr>
+  {% for row in result.rows %}<tr>{% for v in row %}{% set t = result.head[loop.index0][1] %}<td class="{{ 'nw' if t in ('date', 'money') }}">{% if v is none %}{% elif t == 'money' %}{{ v|money }}{% elif t == 'flag' %}{{ _("Yes") if v else _("No") }}{% elif t == 'date' and v %}{{ v|date }}{% elif t == 'number' and v is number and v != v|int %}{{ '%.2f' % v }}{% else %}{{ v }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</table></div>
+  <p class="muted small">{{ result.rows|length }} {{ _("rows") }}{% if result.more %}. {{ _("Only the first 5000 are shown. Add a filter to narrow it.") }}{% endif %}</p>
+{% else %}<p class="muted">{{ _("Nothing matches.") }}</p>{% endif %}
+{% endmacro %}

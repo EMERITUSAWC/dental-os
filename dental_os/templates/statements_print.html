@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Statements") }}{% endblock %}
+{% block body %}
+<div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button> <a href="{{ url_for('statements.run_view', rid=d.run.id) }}">{{ _("Back to the run") }}</a></div>
+{% for x in pages %}{% set p = x.p %}{% set t = x.t %}
+<section class="card receipt pagebreak" style="max-width:760px; margin-top:12px">
+  <p class="muted">{{ clinic.name }}{% if clinic.address %}, {{ clinic.address }}{% endif %}</p><h1>{{ _d("Statement") }}</h1>
+  <dl class="facts"><dt>{{ _d("Patient") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd><dt>{{ _d("Date") }}</dt><dd>{{ today|date }}</dd></dl>
+  <table style="margin-top:12px"><tr><th>{{ _d("Date") }}</th><th>{{ _d("What") }}</th><th style="text-align:right">{{ _d("Amount") }}</th><th style="text-align:right">{{ _d("Balance") }}</th></tr>
+    {% for e in x.events %}<tr><td class="nw">{{ e.day|date }}</td><td>{{ e.label }}{% if e.voided %} ({{ _d("voided") }}){% endif %}</td>
+      <td class="nw" style="text-align:right">{{ e.delta|money }}</td><td class="nw" style="text-align:right">{{ e.balance|money if e.counts else '' }}</td></tr>{% endfor %}
+  </table>
+  <p style="font-size:1.2rem; margin-top:12px"><strong>{{ _d('Amount due:') if t.balance > 0 else _d('Credit:') if t.balance < 0 else _d('Nothing to pay:') }} {{ (t.balance|abs)|money }}</strong></p>
+  {% if t.balance > 0 %}<p class="small">{{ _d("Of the amount due:") }} {% for k, v in x.ageing.items() if v %}{{ k }} {{ _d("days") }} {{ v|money }}; {% endfor %}{% if x.insurers %}{{ _d("the insurer is expected to pay") }} {{ x.insurers|money }}.{% endif %}</p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

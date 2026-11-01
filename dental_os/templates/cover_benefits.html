@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Cover terms") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('finance.patient_insurance', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ cover.payer_name }}</h1>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Cover terms") }}</h2>
+  <p class="muted small">{{ _("Copy these from the patient's policy or the payer's letter. Leave a share empty to use the cover's general share (%(pct)s%%).", pct=cover.coverage_pct) }}</p>
+  <div class="grid three">
+    <div><label for="deductible">{{ _("Excess each benefit year") }}</label><input id="deductible" name="deductible" inputmode="decimal" value="{{ cover.deductible_p|plain if cover.deductible_p else '' }}"></div>
+    <div><label for="year_start_month">{{ _("Benefit year starts in") }}</label><select id="year_start_month" name="year_start_month">{% for m, name in months %}<option value="{{ m }}" {{ 'selected' if m == cover.year_start_month }}>{{ _(name) }}</option>{% endfor %}</select></div>
+    <div><label for="ortho_max">{{ _("Orthodontic lifetime limit (empty for none)") }}</label><input id="ortho_max" name="ortho_max" inputmode="decimal" value="{{ cover.ortho_max_p|plain if cover.ortho_max_p else '' }}"></div>
+  </div>
+  <label class="check"><input type="checkbox" name="on_preventive" value="1" {{ 'checked' if cover.deductible_on_preventive }}> <span>{{ _("The excess also applies to check-ups, cleaning and X-rays") }}</span></label>
+  <label for="waiting_from">{{ _("Waiting periods count from (empty: the cover's start date)") }}</label><input id="waiting_from" type="date" name="waiting_from" value="{{ cover.waiting_from or '' }}" style="width:auto">
+  <h3>{{ _("Share by kind of treatment") }}</h3>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Kind of treatment") }}</th><th>{{ _("Payer pays (%)") }}</th><th>{{ _("Waiting period (months)") }}</th></tr>
+    {% for cat in categories %}{% set r = rules.get(cat) %}<tr><td>{{ _(cat) }}</td>
+      <td><input name="pct_{{ loop.index0 }}" type="number" min="0" max="100" value="{{ r.pct if r else '' }}" placeholder="{{ cover.coverage_pct }}" style="width:90px" aria-label="{{ _('Share for %(kind)s', kind=_(cat)) }}"></td>
+      <td><input name="wait_{{ loop.index0 }}" type="number" min="0" max="60" value="{{ r.waiting_months if r and r.waiting_months else '' }}" style="width:90px" aria-label="{{ _('Waiting period for %(kind)s', kind=_(cat)) }}"></td></tr>{% endfor %}
+  </table></div>
+  <h3>{{ _("How-often limits") }}</h3>
+  <p class="muted small">{{ _("For example: scale and polish, 2 times in 12 months. The payer is expected to pay nothing beyond the limit.") }}</p>
+  {% for i in range(6) %}{% set l = lims[i] if i < lims|length else none %}
+  <div class="row"><select name="lim_code_{{ i }}" aria-label="{{ _('Treatment') }} {{ i + 1 }}" style="width:auto"><option value="">{{ _("None") }}</option>{% for c in codes %}<option value="{{ c.id }}" {{ 'selected' if l and l.code_id == c.id }}>{{ c.name }}</option>{% endfor %}</select>
+    <input name="lim_times_{{ i }}" type="number" min="1" max="50" value="{{ l.times if l else '' }}" style="width:80px" aria-label="{{ _('Times') }}"> {{ _("times in") }}
+    <input name="lim_months_{{ i }}" type="number" min="1" max="120" value="{{ l.months if l else '' }}" style="width:80px" aria-label="{{ _('Months') }}"> {{ _("months") }}</div>{% endfor %}
+  <p><button class="primary" type="submit">{{ _("Save cover terms") }}</button></p>
+</form>
+{% endblock %}

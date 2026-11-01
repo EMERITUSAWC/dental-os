@@ -7,8 +7,9 @@ from werkzeug.security import check_password_hash
 
 from werkzeug.security import generate_password_hash
 
+from .safeurl import local_path
 from .db import get_db
-from .services import audit, i18n, passwords, permissions, qr, twofactor
+from .services import audit, i18n, passwords, permissions, qr, throttle, twofactor
 
 bp = Blueprint("auth", __name__)
 
@@ -43,11 +44,11 @@ def signer_required(view):
     return wrapped
 
 
+LOGIN_FAILS_PER_ADDRESS = 30     # wrong passwords from one address in 15 minutes, across all usernames
+
+
 def _safe_next(target):
-    if not target:
-        return None
-    parts = urlparse(target)
-    return target if not parts.netloc and not parts.scheme and target.startswith("/") and not target.startswith("//") else None
+    return local_path(target)
 
 
 def _sign_in(row, nxt):
@@ -63,6 +64,8 @@ def _sign_in(row, nxt):
 @bp.route("/login/code", methods=["GET", "POST"])
 def login_code():
     """The second step: a code from the authenticator app, or one recovery code."""
+    if g.user:                                    # already signed in: opening this page must not sign them out
+        return redirect(url_for("views.dashboard"))
     uid, started = session.get("pending_uid"), session.get("pending_at", 0)
     if not uid or time.time() - started > 300:
         session.clear()
@@ -100,8 +103,12 @@ def login():
         failures = db.execute(
             "SELECT COUNT(*) FROM login_attempts WHERE username = ? AND ok = 0 AND at > datetime('now','-15 minutes')",
             (username,)).fetchone()[0]
+        # 0.56: also a limit per network address, so one address cannot try a common password on many usernames.
+        ip_bucket = "login-bad:" + throttle.key(current_app.config["SECRET_KEY"], request.remote_addr or "unknown")
         if failures >= 5:
             error = "Too many tries. Wait 15 minutes, or ask the manager to help."
+        elif throttle.count(db, ip_bucket, 15) >= LOGIN_FAILS_PER_ADDRESS:
+            error = "Too many wrong logins from this network. Wait 15 minutes and try again."
         else:
             row = db.execute("SELECT * FROM users WHERE username = ? AND active = 1", (username,)).fetchone()
             ok = False
@@ -111,6 +118,8 @@ def login():
                 ok = False
             ok = bool(ok and row)
             db.execute("INSERT INTO login_attempts(username, ok) VALUES (?,?)", (username, 1 if ok else 0))
+            if not ok:
+                throttle.record(db, ip_bucket)
             audit.log(db, row["clinic_id"] if row else None, row["id"] if row else None,
                       ("login.password.ok" if row["totp_enabled"] else "login.ok") if ok else "login.failed",
                       detail=None if ok else username[:40])

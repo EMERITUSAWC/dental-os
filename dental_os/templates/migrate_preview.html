@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Preview the move") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Preview the move") }}: {{ r.file_name }}</h1><a class="btn" href="{{ url_for('migrate.home') }}">{{ _("Back") }}</a></div>
+<form method="post">
+<input type="hidden" name="_csrf" value="{{ csrf_token }}">
+{% if result %}<section class="card"><h2>{{ _("What would be brought in") }}</h2>
+  <p class="muted small">{{ _("This is the real import run and then undone, so these numbers are exactly what will happen.") }}</p>
+  <table><thead><tr><th></th><th>{{ _("New") }}</th><th>{{ _("Already here") }}</th></tr></thead><tbody>
+  {% for k, v in kinds.items() %}{% if result.counts[k] or result.already[k] %}<tr><td>{{ _(v) }}</td><td>{{ result.counts[k] }}</td><td>{{ result.already[k] }}</td></tr>{% endif %}{% endfor %}</tbody></table>
+  {% if result.no_phone %}<p class="flash error">{{ result.no_phone }} {{ _("patients have no phone number that could be read. They are brought in with the phone empty; add it when they next call or visit.") }}</p>{% endif %}
+  {% if result.skipped %}<h3>{{ _("Left out on purpose") }}</h3>{% for why, n in result.skipped.items() %}<p class="small">{{ _(why) }}: {{ n }}</p>{% endfor %}{% endif %}
+  {% if result.problems %}<h3>{{ _("Lines that could not be read") }} ({{ result.problems|length }}{% if result.problems|length >= 300 %}+{% endif %})</h3>
+    {% for p in result.problems[:100] %}<p class="small">{{ p.file }}, {{ _("line") }} {{ p.line }}: {{ _(p.text) }}</p>{% endfor %}{% endif %}
+</section>{% endif %}
+<section class="card"><h2>{{ _("Settings") }}</h2>
+  <label for="notation">{{ _("Tooth numbers in the old system") }}</label><select id="notation" name="notation">{% for k, v in notations.items() %}<option value="{{ k }}" {{ 'selected' if k == notation }}>{{ _(v) }}</option>{% endfor %}</select>
+  <p class="muted small">{{ _("Open Dental and most US systems use Universal numbers (1 to 32). Systems from Europe and Africa often use FDI (11 to 48).") }}</p></section>
+{% for f in files %}<section class="card"><h2>{{ f.name }} <span class="small muted">{{ f.rows }} {{ _("lines") }}{% if f.source == 'opendental' %}, {{ _("Open Dental layout") }}{% endif %}</span></h2>
+  <label for="kind_{{ f.index }}">{{ _("This file holds") }}</label><select id="kind_{{ f.index }}" name="kind_{{ f.index }}"><option value="">{{ _("Leave this file out") }}</option>{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if k == f.kind }}>{{ _(v) }}</option>{% endfor %}</select>
+  {% if f.missing %}<p class="flash error">{{ _("Columns still needed") }}: {{ f.missing|join(', ') }}</p>{% endif %}
+  {% if f.kind %}<details {{ 'open' if f.missing }}><summary>{{ _("Match the columns") }}</summary><div class="grid three">
+    {% for h in f.header %}{% set c = loop.index0 %}<div><label for="m{{ f.index }}_{{ c }}" class="small">{{ h }}</label><select id="m{{ f.index }}_{{ c }}" name="map_{{ f.index }}_{{ c }}"><option value="">{{ _("Not used") }}</option>{% for fld in f.fields %}<option value="{{ fld }}" {{ 'selected' if f.mapping.get(c) == fld }}>{{ fld }}{% if fld in needed[f.kind] %} *{% endif %}</option>{% endfor %}</select></div>{% endfor %}
+  </div></details>{% endif %}</section>{% endfor %}
+<section class="card row"><button type="submit" name="what" value="check">{{ _("Check again") }}</button>
+  <button class="primary" type="submit" name="what" value="import">{{ _("Import for real") }}</button>
+  <button type="submit" name="what" value="cancel">{{ _("Cancel and delete the upload") }}</button></section>
+</form>
+{% endblock %}

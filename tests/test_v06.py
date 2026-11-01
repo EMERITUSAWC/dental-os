@@ -3,6 +3,7 @@ import sqlite3
 import unittest
 from datetime import timedelta
 
+from tests import dbmeta
 from dental_os import db as dbmod
 from dental_os.services import ageing as AG, billing, insurance as INS, invoices as INV, treatment as TR
 from tests.test_v04 import Base
@@ -477,9 +478,9 @@ class UpgradeTests(unittest.TestCase):
             first.close()
             conn = dbmod.connect(path)
             dbmod.init_schema(conn)
-            cols = {r[1] for r in conn.execute("PRAGMA table_info(clinics)")}
+            cols = dbmeta.columns(conn, "clinics")
             self.assertTrue({"tax_name", "tax_rate_bp", "tax_inclusive", "tax_number", "invoice_footer"} <= cols)
-            self.assertIn("claim_id", {r[1] for r in conn.execute("PRAGMA table_info(payments)")})
+            self.assertIn("claim_id", dbmeta.columns(conn, "payments"))
             row = conn.execute("SELECT tax_rate_bp, tax_inclusive FROM clinics").fetchone()
             self.assertEqual((row[0], row[1]), (0, 1))
             conn.close()

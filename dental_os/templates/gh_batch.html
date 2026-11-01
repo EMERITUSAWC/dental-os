@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ b.payer_name }}, {{ b.month }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><a class="btn" href="{{ url_for('ghclaims.batches') }}">{{ _("Monthly claim batches") }}</a><div class="row"><a class="btn" href="{{ url_for('ghclaims.batch', bid=b.id, csv=1) }}">{{ _("Spreadsheet (CSV)") }}</a><button type="button" data-print>{{ _("Print the summary") }}</button></div></div>
+<section class="card doc">
+  <p>{{ g.clinic.name }}{% if g.clinic.phone %}, {{ g.clinic.phone|phone }}{% endif %}</p>
+  <h1>{{ _("Claims for") }} {{ b.month }}: {{ b.payer_name }}</h1>
+  <p><span class="pill {{ 'ok' if b.status == 'sent' else 'warn' }}">{{ _(statuses[b.status]) }}</span>{% if b.sent_on %} {{ b.sent_on|date }}{% endif %}{% if b.payer_ref %}, {{ b.payer_ref }}{% endif %}</p>
+  <table><thead><tr><th>{{ _("Claim") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Member number") }}</th><th>{{ _("Fees") }}</th><th>{{ _("Expected") }}</th><th class="no-print"></th></tr></thead><tbody>
+  {% for c in rows %}<tr><td><a href="{{ url_for('ghclaims.form', claim_id=c.id) }}">{{ c.claim_no }}</a></td><td>{{ c.first_name }} {{ c.last_name }}</td><td>{{ c.member_no or '' }}</td><td class="nw">{{ c.total_fee_p|money }}</td><td class="nw">{{ c.estimate_p|money }}</td>
+    <td class="no-print">{% if b.status == 'draft' %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="remove"><input type="hidden" name="claim_id" value="{{ c.id }}"><button type="submit">{{ _("Take out") }}</button></form>{% endif %}</td></tr>{% endfor %}
+  <tr><td colspan="3"><strong>{{ _("Total") }}: {{ rows|length }} {{ _("claims") }}</strong></td><td class="nw"><strong>{{ total|money }}</strong></td><td class="nw"><strong>{{ expected|money }}</strong></td><td class="no-print"></td></tr></tbody></table>
+  <p style="margin-top:40px">{{ _("Signed for the clinic") }}: ____________________ &nbsp; {{ _("Date") }}: __________</p>
+</section>
+{% if b.status == 'draft' %}<form method="post" class="card row no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="sent_on">{{ _("Sent on") }}</label><input id="sent_on" type="date" name="sent_on" value="{{ today }}"><label for="payer_ref">{{ _("Payer's reference (optional)") }}</label><input id="payer_ref" name="payer_ref" maxlength="120">
+  <button class="primary" type="submit">{{ _("Mark the batch as sent") }}</button></form>{% endif %}
+{% endblock %}

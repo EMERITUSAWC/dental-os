@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_diary_nav.html" import diary_nav with context %}
+{% block title %}{{ _("Week") }}{% endblock %}
+{% block body %}
+{{ diary_nav('week') }}
+{% if providers %}
+<div class="row spread">
+  <h1>{{ _("Week of %(day)s", day=monday|day) }}</h1>
+  <div class="row">
+    <a class="btn" href="{{ url_for('diary.week', provider_id=pid, date=prev) }}" aria-label="{{ _('Previous week') }}">←</a>
+    <a class="btn" href="{{ url_for('diary.week', provider_id=pid, date=today) }}">{{ _("This week") }}</a>
+    <a class="btn" href="{{ url_for('diary.week', provider_id=pid, date=next) }}" aria-label="{{ _('Next week') }}">→</a>
+    <form method="get" class="row"><select name="provider_id" aria-label="{{ _('Dentist') }}" style="width:auto">{% for p in providers %}<option value="{{ p.id }}" {{ 'selected' if p.id == pid }}>{{ p.name }}</option>{% endfor %}</select>
+      <input type="hidden" name="date" value="{{ monday }}"><button type="submit">{{ _("Show") }}</button></form>
+  </div>
+</div>
+<div class="weekgrid">
+  {% for d in days %}
+  <section class="card day">
+    <h2><a href="{{ url_for('views.diary', date=d.day) }}">{{ d.day|day }}</a></h2>
+    {% if d.off %}<p class="pill bad">{{ _("Time off") }}{% for r in d.off if r %}: {{ r }}{% endfor %}</p>{% endif %}
+    {% if d.windows %}<p class="muted small">{% for a, b in d.windows %}{{ a }} {{ _("to") }} {{ b }}{{ ', ' if not loop.last }}{% endfor %}</p>
+      <p class="small">{{ _("%(booked)s of %(working)s minutes booked", booked=d.booked, working=d.working) }}</p>
+    {% else %}<p class="muted small">{{ _("Not working") }}</p>{% endif %}
+    {% for b in d.blocks %}<p class="blockline {{ 'hard' if b.hard }}">{{ '%02d:%02d'|format(b.start // 60, b.start % 60) }} {{ _(block_kinds.get(b.kind, b.kind)) }}{% if b.label %}: {{ b.label }}{% endif %}</p>{% endfor %}
+    {% for a in d.appts %}<a class="wk appt c-{{ a.type_colour or 'none' }} {{ 'confirmed' if a.confirmation == 'confirmed' }} {{ a.status if a.status == 'complete' }}" href="{{ url_for('views.appointment_view', aid=a.id) }}">
+      <strong>{{ a.start_at|time }}</strong> {{ a.first_name }} {{ a.last_name }}<br><span class="muted small">{{ a.type_name or _(a.category) }}, {{ a.duration_min }} {{ _("minutes") }}</span></a>{% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% else %}<div class="card"><p>{{ _("Add a dentist under Settings first.") }}</p></div>{% endif %}
+{% endblock %}

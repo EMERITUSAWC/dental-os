@@ -1,44 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Reports{% endblock %}
-{% macro rate(v) %}{{ (v|string ~ '%') if v is not none else 'No data' }}{% endmacro %}
+{% block title %}{{ _("Reports") }}{% endblock %}
+{% macro rate(v) %}{{ (v|string ~ '%') if v is not none else _('No data') }}{% endmacro %}
 {% block body %}
 <div class="row spread">
-  <h1>Reports</h1>
+  <h1>{{ _("Reports") }}</h1>
   <form method="get" class="row">
-    <input type="date" name="start" value="{{ start }}" aria-label="From" style="width:auto">
-    <input type="date" name="end" value="{{ end }}" aria-label="To" style="width:auto">
-    <button type="submit">Show</button>
+    <input type="date" name="start" value="{{ start }}" aria-label="{{ _('From') }}" style="width:auto">
+    <input type="date" name="end" value="{{ end }}" aria-label="{{ _('To') }}" style="width:auto">
+    <button type="submit">{{ _("Show") }}</button>
   </form>
 </div>
 
 <section class="card">
-  <h2>Appointment confirmations</h2>
-  <p class="muted small">Visits that were due between {{ start|date }} and {{ end|date }} and are now closed. A "no-show" is a visit marked as missed.</p>
+  <h2>{{ _("Appointment confirmations") }}</h2>
+  <p class="muted small">{{ _("Visits that were due between %(start)s and %(end)s and are now closed. A “no-show” is a visit marked as missed.", start=start|date, end=end|date) }}</p>
   <div class="stats">
-    <div class="card"><div class="stat">{{ rate(pilot.all.rate) }}</div><div class="muted">no-show rate, everyone ({{ pilot.closed }} visits)</div></div>
-    <div class="card"><div class="stat">{{ rate(pilot.confirmed.rate) }}</div><div class="muted">no-shows, confirmed visits ({{ pilot.confirmed.n }})</div></div>
-    <div class="card"><div class="stat">{{ rate(pilot.not_confirmed.rate) }}</div><div class="muted">no-shows, not confirmed ({{ pilot.not_confirmed.n }})</div></div>
+    <div class="card"><div class="stat">{{ rate(pilot.all.rate) }}</div><div class="muted">{{ _("no-show rate, everyone (%(n)s visits)", n=pilot.closed) }}</div></div>
+    <div class="card"><div class="stat">{{ rate(pilot.confirmed.rate) }}</div><div class="muted">{{ _("no-shows, confirmed visits (%(n)s)", n=pilot.confirmed.n) }}</div></div>
+    <div class="card"><div class="stat">{{ rate(pilot.not_confirmed.rate) }}</div><div class="muted">{{ _("no-shows, not confirmed (%(n)s)", n=pilot.not_confirmed.n) }}</div></div>
   </div>
-  <p>{% if pilot.confirmed_share is not none %}{{ pilot.confirmed_share }}% of closed visits were confirmed. {% else %}No visits have closed in this range yet. {% endif %}{{ pilot.messages }} confirmation messages were prepared, {{ pilot.cancelled }} visits were cancelled and {{ pilot.still_booked }} are still booked in this range.</p>
-  <p class="muted small">Careful: confirmed patients may simply be the ones who were always going to come. These numbers show a link, not proof that the messages caused it. To measure the effect properly, compare a period before you started sending confirmations with a period after, with a similar number of visits.</p>
+  <p>{% if pilot.confirmed_share is not none %}{{ _("%(pct)s%% of closed visits were confirmed.", pct=pilot.confirmed_share) }} {% else %}{{ _("No visits have closed in this range yet.") }} {% endif %}{{ _("%(messages)s confirmation messages were prepared, %(cancelled)s visits were cancelled and %(booked)s are still booked in this range.", messages=pilot.messages, cancelled=pilot.cancelled, booked=pilot.still_booked) }}</p>
+  <p class="muted small">{{ _("Careful: confirmed patients may simply be the ones who were always going to come. These numbers show a link, not proof that the messages caused it. To measure the effect properly, compare a period before you started sending confirmations with a period after, with a similar number of visits.") }}</p>
 </section>
 
 <div class="grid two">
   <section class="card">
-    <h2>Money</h2>
+    <h2>{{ _("Money") }}</h2>
     <dl class="facts">
-      <dt>Work done</dt><dd>{{ mny.charges|money }}</dd>
-      <dt>Adjustments</dt><dd>{{ mny.adjustments|money }}</dd>
-      {% for k, v in methods.items() %}<dt>Paid, {{ v }}</dt><dd>{{ mny.by_method[k]|money }}</dd>{% endfor %}
-      <dt><strong>Collected</strong></dt><dd><strong>{{ mny.collected|money }}</strong></dd>
-      <dt>New patients</dt><dd>{{ mny.new_patients }}</dd>
+      <dt>{{ _("Work done") }}</dt><dd>{{ mny.charges|money }}</dd>
+      <dt>{{ _("Adjustments") }}</dt><dd>{{ mny.adjustments|money }}</dd>
+      {% for k, v in methods.items() %}<dt>{{ _("Paid, %(method)s", method=_(v)) }}</dt><dd>{{ mny.by_method[k]|money }}</dd>{% endfor %}
+      {% if mny.refunded %}<dt>{{ _("Refunded") }}</dt><dd>-{{ mny.refunded|money }}</dd>{% endif %}
+      <dt><strong>{{ _("Collected") }}</strong></dt><dd><strong>{{ mny.collected|money }}</strong></dd>
+      <dt>{{ _("New patients") }}</dt><dd>{{ mny.new_patients }}</dd>
     </dl>
-    <p><a href="{{ url_for('ops.kpi_view') }}">Key numbers</a> | <a href="{{ url_for('clinical.takings') }}">Daily takings</a> | <a href="{{ url_for('finance.ageing_report') }}">Who owes, by age</a></p>
+    <p><a href="{{ url_for('ops.kpi_view') }}">{{ _("Key numbers") }}</a> | <a href="{{ url_for('clinical.takings') }}">{{ _("Daily takings") }}</a> | <a href="{{ url_for('finance.ageing_report') }}">{{ _("Who owes, by age") }}</a> | <a href="{{ url_for('reports.saved_list') }}">{{ _("Saved reports") }}</a>{% if user.role == 'manager' %} | <a href="{{ url_for('reports.builder') }}">{{ _("Report builder") }}</a>{% endif %}</p>
+    <p><a href="{{ url_for('practice.day_sheet') }}">{{ _("Day sheet") }}</a> | <a href="{{ url_for('practice.production') }}">{{ _("Work done by treatment") }}</a> | <a href="{{ url_for('practice.unscheduled') }}">{{ _("Treatment not booked") }}</a> | <a href="{{ url_for('practice.missed') }}">{{ _("Missed and cancelled visits") }}</a></p>
+    <p><a href="{{ url_for('practice.cashup') }}">{{ _("Cash-up") }}</a> | <a href="{{ url_for('practice.timecards') }}">{{ _("Time cards") }}</a> | <a href="{{ url_for('practice.export') }}">{{ _("Exports for the accountant") }}</a> | <a href="{{ url_for('care.referrers') }}">{{ _("Where new patients came from") }}</a>{% if user.role == 'manager' %} | <a href="{{ url_for('pay.home') }}">{{ _("Associate pay") }}</a> | <a href="{{ url_for('money.credits') }}">{{ _("Patients in credit") }}</a> | <a href="{{ url_for('money.books') }}">{{ _("Close the books") }}</a>{% endif %}</p>
   </section>
   <section class="card">
-    <h2>Who owes the most</h2>
+    <h2>{{ _("Who owes the most") }}</h2>
     {% for bal, r in owing %}<p><a href="{{ url_for('clinical.account', pid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a> {{ bal|money }}</p>
-    {% else %}<p class="muted">Nobody owes anything.</p>{% endfor %}
+    {% else %}<p class="muted">{{ _("Nobody owes anything.") }}</p>{% endfor %}
   </section>
 </div>
 {% endblock %}

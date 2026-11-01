@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Merge two records") }}{% endblock %}
+{% macro side(p, c, title) %}<section class="card"><h2>{{ title }}</h2>
+  <p><a href="{{ url_for('views.patient_view', pid=p.id) }}"><strong>{{ p.first_name }} {{ p.last_name }}</strong></a> <span class="small muted">{{ _("record") }} {{ p.id }}</span></p>
+  <dl class="facts"><dt>{{ _("Born") }}</dt><dd>{{ p.dob|date if p.dob else _('Not given') }}</dd><dt>{{ _("Phone") }}</dt><dd>{{ p.phone|phone }}</dd>
+  <dt>{{ _("Email") }}</dt><dd>{{ p.email or _('None') }}</dd><dt>{{ _("Address") }}</dt><dd>{{ p.address or _('Not given') }}</dd><dt>{{ _("Registered") }}</dt><dd>{{ p.created_at|date }}</dd></dl>
+  <h3>{{ _("What is on it") }}</h3>{% for t, n in c.items() %}<p class="small">{{ _(labels[t]) if t in labels else t }}: {{ n }}</p>{% else %}<p class="muted small">{{ _("Nothing yet.") }}</p>{% endfor %}</section>{% endmacro %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Merge two records") }}</h1><a class="btn" href="{{ url_for('merge.compare', keep=dup.id, dup=keep.id) }}">{{ _("Swap which one is kept") }}</a></div>
+<div class="grid two">{{ side(keep, kc, _("Keep this record")) }}{{ side(dup, dc, _("Merge this one into it")) }}</div>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="keep" value="{{ keep.id }}"><input type="hidden" name="dup" value="{{ dup.id }}">
+  <p>{{ _("Everything on the second record moves to the first. Empty details on the first are filled from the second. The second is archived and marked as merged. A second medical history, and recalls of a kind the first already has, stay on the old record for you to look at.") }}</p>
+  <label class="check"><input type="checkbox" name="confirm" value="1"> <span>{{ _("I have checked these are the same person. I understand a merge cannot be undone.") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Merge the records") }}</button></p></form>
+{% endblock %}

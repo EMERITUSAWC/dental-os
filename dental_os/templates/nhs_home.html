@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ _("NHS") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("NHS contract") }} {{ pr.year }}/{{ (pr.year + 1) % 100 }}</h1>
+  <div class="row">{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('nhs.fp17_csv', status=status) }}">{{ _("Download this list") }}</a><a class="btn" href="{{ url_for('nhs.setup') }}">{{ _("NHS set-up") }}</a>{% endif %}</div></div>
+{% if not on %}<p class="flash error">{{ _("NHS work is not switched on for this clinic.") }}</p>{% endif %}
+<div class="stats">
+  <div class="card"><div class="stat">{{ pr.done }}</div><div class="muted">{{ _("UDAs done") }}{% if pr.target %} {{ _("of") }} {{ pr.target }} ({{ pr.pct }}%){% endif %}</div></div>
+  <div class="card"><div class="stat">{{ pr.expected if pr.target else '-' }}</div><div class="muted">{{ _("UDAs expected by today, at an even pace") }}</div></div>
+  <div class="card"><div class="stat">{{ pr.urgent }}{% if pr.urgent_target %} / {{ pr.urgent_target }}{% endif %}</div><div class="muted">{{ _("urgent care courses this year") }}{% if pr.urgent_target %} ({{ _("target") }}){% endif %}</div></div>
+</div>
+{% if not pr.contract %}<p class="muted">{{ _("Enter this year's contracted UDAs and UDA value in NHS set-up to see progress.") }}</p>{% endif %}
+{% if pr.late or pr.due_soon %}<section class="card"><p>{% if pr.late %}<span class="pill bad">{{ pr.late }}</span> {{ _("FP17s are past the 62-day limit.") }} {% endif %}{% if pr.due_soon %}<span class="pill warn">{{ pr.due_soon }}</span> {{ _("FP17s are due in the next 14 days.") }}{% endif %}</p></section>{% endif %}
+{% if pr.months %}<section class="card"><h2>{{ _("UDAs by month") }}</h2><div class="tbl-wrap"><table><tr>{% for m, u in pr.months %}<th>{{ m }}</th>{% endfor %}</tr><tr>{% for m, u in pr.months %}<td>{{ u }}</td>{% endfor %}</tr></table></div>
+  <h2>{{ _("UDAs by dentist") }}</h2>{% for d, u in pr.by_dentist %}<p>{{ d }}: {{ u }}</p>{% endfor %}</section>{% endif %}
+<p class="row">{% for k, v in statuses.items() %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('nhs.home', status=k) }}">{{ _(v) }}</a>{% endfor %}</p>
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("Dentist") }}</th><th>{{ _("Started") }}</th><th>{{ _("Finished") }}</th><th>{{ _("Band") }}</th><th>{{ _("UDA") }}</th><th>{{ _("FP17 due") }}</th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('nhs.patient', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a></td><td>{{ r.dentist }}</td>
+    <td class="nw">{{ r.opened_on|date }}</td><td class="nw">{{ r.closed_on|date if r.closed_on }}</td><td>{{ _(courses[r.course_type]).split(':')[0] if r.course_type }}</td><td>{{ r.uda if r.uda is not none }}</td>
+    <td class="nw">{% if r.fp17_due and r.status in ('closed', 'rejected') %}{{ r.fp17_due|date }}{% if problems.get(r.id) %} <span class="pill warn">{{ _("Not ready") }}</span>{% endif %}{% endif %}{% if r.fp17_ref %}{{ r.fp17_ref }}{% endif %}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("No courses here.") }}</p>{% endif %}</section>
+{% endblock %}

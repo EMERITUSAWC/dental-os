@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_diary_nav.html" import diary_nav with context %}
+{% from "_status.html" import alert_mark %}
+{% block title %}{{ _("Check-in board") }}{% endblock %}
+{% block body %}
+{{ diary_nav('board') }}
+<div class="row spread"><h1>{{ _("Check-in board") }}: {{ day|day }}</h1><div class="row"><a class="btn" href="{{ url_for('diary.board') }}">{{ _("Refresh") }}</a>
+  {% if user.role in ('manager', 'front_desk') %}<form method="post" action="{{ url_for('practice.kiosk_start') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Turn this device into a check-in kiosk") }}</button></form>{% endif %}</div></div>
+{% set titles = {'expected': _('Expected'), 'waiting': _('Waiting'), 'in_chair': _('In the chair'), 'left': _('Has left')} %}
+{% set actions = {'expected': (('arrive', _('Check in')), ('seat', _('Take in'))), 'waiting': (('seat', _('Take in')), ('undo', _('Undo'))), 'in_chair': (('leave', _('Finished')), ('undo', _('Undo'))), 'left': (('undo', _('Undo')),)} %}
+<div class="lanes">
+{% for st in stages %}
+  <section class="card lane-col">
+    <h2>{{ titles[st] }} <span class="pill">{{ lanes[st]|length }}</span></h2>
+    {% for it in lanes[st] %}{% set a = it.row %}
+    <div class="bcard c-{{ a.type_colour or 'none' }}">
+      <p><strong>{{ a.start_at|time }}</strong> <a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}</p>
+      <p class="muted small">{{ a.provider_name }}{% if a.chair_name %}, {{ a.chair_name }}{% endif %}{% if a.type_name %}, {{ a.type_name }}{% endif %}</p>
+      {% if it.late %}<p class="pill {{ 'bad' if it.late >= 15 else 'warn' }}">{{ _("%(n)s minutes late", n=it.late) }}</p>{% endif %}
+      {% if it.waited is not none %}<p class="small {{ 'down' if it.waited >= 20 }}">{{ _("Waited %(n)s minutes", n=it.waited) }}</p>{% endif %}
+      {% if it.in_chair is not none %}<p class="small">{{ _("In the chair %(n)s minutes", n=it.in_chair) }}</p>{% endif %}
+      <div class="row">{% for act, label in actions[st] %}
+        <form method="post" action="{{ url_for('diary.stage', aid=a.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ act }}">
+          <button type="submit" class="{{ 'primary' if loop.first and act != 'undo' }}">{{ label }}</button></form>{% endfor %}</div>
+    </div>
+    {% else %}<p class="muted small">{{ _("Nobody here.") }}</p>{% endfor %}
+  </section>
+{% endfor %}
+</div>
+<p class="muted small">{{ _("Finished marks the visit as done, which also starts the recall as before. Record the treatment on the patient's Treatment tab.") }}</p>
+{% endblock %}

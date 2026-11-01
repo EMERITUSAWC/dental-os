@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_stock_tabs.html" import tabs with context %}
+{% block title %}{{ _("Treatment kits") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Treatment kits") }}</h1>
+{{ tabs('kits') }}
+{% if short %}<section class="card"><h2>{{ _("Shortfalls") }}</h2><p class="muted small">{{ _("Treatment finished when the stock list showed too little. Usually a delivery was not entered, or the count is off.") }}</p>
+  {% for s in short %}<p class="small">{{ s.done_on|date }}: {{ s.name }}, {{ _("needed") }} {{ s.wanted }}, {{ _("taken") }} {{ s.taken }} {{ s.unit }}</p>{% endfor %}</section>{% endif %}
+<section class="card"><p class="muted small">{{ _("What each treatment uses from stock. When the treatment is marked done, these are taken off the shelf by themselves.") }}</p>
+  <table><thead><tr><th>{{ _("Treatment") }}</th><th>{{ _("Items") }}</th><th>{{ _("Material cost") }}</th><th></th></tr></thead><tbody>
+  {% for r in rows %}<tr><td>{{ r.name }} <span class="small muted">{{ r.code }}</span></td><td>{{ r.n or '' }}</td><td class="nw">{{ r.cost_p|money if r.n else '' }}</td>
+    <td>{% if user.role == 'manager' %}<a href="{{ url_for('kits.edit', code_id=r.id) }}">{{ _("Set the kit") }}</a>{% endif %}</td></tr>{% endfor %}</tbody></table></section>
+<section class="card"><div class="row spread"><h2>{{ _("What treatment cost in materials") }}</h2>
+  <form method="get" class="row"><input type="date" name="start" value="{{ start }}" aria-label="{{ _('From') }}"><input type="date" name="end" value="{{ end }}" aria-label="{{ _('To') }}"><button type="submit">{{ _("Show") }}</button></form></div>
+  <table><thead><tr><th>{{ _("Treatment") }}</th><th>{{ _("Done") }}</th><th>{{ _("Fees") }}</th><th>{{ _("Materials") }}</th></tr></thead><tbody>
+  {% for c in costs %}<tr><td>{{ c.name }}</td><td>{{ c.n }}</td><td class="nw">{{ c.fees_p|money }}</td><td class="nw">{{ c.cost_p|money }}</td></tr>{% else %}<tr><td colspan="4" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Move in from another system") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Move in from another system") }}</h1>
+<section class="card">
+  <p>{{ _("Bring patients, treatment, appointments, payments, balances, recalls and notes across from Open Dental, Dentrix, another system or a spreadsheet.") }}</p>
+  <p class="muted small">{{ _("Open Dental: export the tables (patient, provider, procedurecode, procedurelog, appointment, operatory, payment, adjustment, recall, commlog) as CSV files and put them in one ZIP. They are recognised by their columns.") }}</p>
+  <p class="muted small">{{ _("Dentrix, other systems and spreadsheets: export each list as a CSV, name each file for what it holds (patients, providers, treatment, appointments, payments, adjustments, balances, recalls, notes) and put them in one ZIP. On the next screen you can match any column that was not recognised.") }}</p>
+  <p class="muted small">{{ _("Nothing is saved until you have seen the preview. Consent to messages is never brought across: patients agree again here. You can bring the same files in again later; what is already here is skipped.") }}</p>
+</section>
+<form method="post" enctype="multipart/form-data" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="file">{{ _("ZIP or CSV file (up to 100 MB)") }}</label><input id="file" type="file" name="file" accept=".zip,.csv,.txt,.tsv" required>
+  <button class="primary" type="submit">{{ _("Upload and preview") }}</button></form>
+<section class="card"><h2>{{ _("Earlier uploads") }}</h2>
+  {% for r in runs %}<p><a href="{{ url_for('migrate.preview', rid=r.id) }}">{{ r.file_name }}</a> {{ r.created_at|date }} <span class="pill {{ 'ok' if r.status == 'done' else '' }}">{% if r.status == 'preview' %}{{ _("Waiting for you") }}{% elif r.status == 'done' %}{{ _("Imported") }}{% else %}{{ _("Cancelled") }}{% endif %}</span></p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% endblock %}

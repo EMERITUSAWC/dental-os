@@ -1,102 +1,102 @@
 {% extends "base.html" %}
 {% from "_kpi_bits.html" import rate, delta, range_form %}
-{% block title %}Key numbers{% endblock %}
+{% block title %}{{ _("Key numbers") }}{% endblock %}
 {% block body %}
 {% set c = d.cur %}{% set p = d.prev %}
-<div class="row spread"><h1>Key numbers</h1>
-  <span class="row"><a class="btn" href="{{ url_for('ops.kpi_csv', start=d.start, end=d.end) }}">Download CSV</a>{% if org %}<a class="btn" href="{{ url_for('ops.group_view') }}">All clinics</a>{% endif %}</span></div>
+<div class="row spread"><h1>{{ _("Key numbers") }}</h1>
+  <span class="row"><a class="btn" href="{{ url_for('ops.kpi_csv', start=d.start, end=d.end) }}">{{ _("Download CSV") }}</a>{% if org %}<a class="btn" href="{{ url_for('ops.group_view') }}">{{ _("All clinics") }}</a>{% endif %}</span></div>
 {{ range_form(d.start, d.end, presets, url_for('ops.kpi_view')) }}
-<p class="muted small">{{ d.start|date }} to {{ d.end|date }}, compared with {{ d.prev_start|date }} to {{ d.prev_end|date }}. Each figure's meaning is explained at the bottom of the page.</p>
+<p class="muted small">{{ _("%(start)s to %(end)s, compared with %(pstart)s to %(pend)s. Each figure's meaning is explained at the bottom of the page.", start=d.start|date, end=d.end|date, pstart=d.prev_start|date, pend=d.prev_end|date) }}</p>
 
 <div class="stats four">
-  <div class="card"><div class="stat">{{ c.net_p|money }}</div><div class="muted">net production</div>{{ delta(d.deltas.net_p) }}</div>
-  <div class="card"><div class="stat">{{ c.collected_p|money }}</div><div class="muted">collected</div>{{ delta(d.deltas.collected_p) }}</div>
-  <div class="card"><div class="stat">{{ c.visits.done }}</div><div class="muted">visits done</div>{{ delta(d.deltas.visits) }}</div>
-  <div class="card"><div class="stat">{{ c.new_patients }}</div><div class="muted">new patients</div>{{ delta(d.deltas.new_patients) }}</div>
+  <div class="card"><div class="stat">{{ c.net_p|money }}</div><div class="muted">{{ _("net production") }}</div>{{ delta(d.deltas.net_p) }}</div>
+  <div class="card"><div class="stat">{{ c.collected_p|money }}</div><div class="muted">{{ _("collected") }}</div>{{ delta(d.deltas.collected_p) }}</div>
+  <div class="card"><div class="stat">{{ c.visits.done }}</div><div class="muted">{{ _("visits done") }}</div>{{ delta(d.deltas.visits) }}</div>
+  <div class="card"><div class="stat">{{ c.new_patients }}</div><div class="muted">{{ _("new patients") }}</div>{{ delta(d.deltas.new_patients) }}</div>
 </div>
 <div class="stats four">
-  <div class="card"><div class="stat">{{ rate(c.collection_rate) }}</div><div class="muted">of production collected</div></div>
-  <div class="card"><div class="stat">{{ rate(c.visits.no_show_rate) }}</div><div class="muted">no-show rate ({{ c.visits.missed }} missed, {{ c.visits.cancelled }} cancelled)</div></div>
-  <div class="card"><div class="stat">{{ rate(c.plans.value_rate) }}</div><div class="muted">of quoted money accepted ({{ c.plans.accepted }} of {{ c.plans.presented }} plans)</div></div>
-  <div class="card"><div class="stat">{{ rate(c.chairs.rate) }}</div><div class="muted">of chair time booked</div></div>
+  <div class="card"><div class="stat">{{ rate(c.collection_rate) }}</div><div class="muted">{{ _("of production collected") }}</div></div>
+  <div class="card"><div class="stat">{{ rate(c.visits.no_show_rate) }}</div><div class="muted">{{ _("no-show rate (%(missed)s missed, %(cancelled)s cancelled)", missed=c.visits.missed, cancelled=c.visits.cancelled) }}</div></div>
+  <div class="card"><div class="stat">{{ rate(c.plans.value_rate) }}</div><div class="muted">{{ _("of quoted money accepted (%(accepted)s of %(presented)s plans)", accepted=c.plans.accepted, presented=c.plans.presented) }}</div></div>
+  <div class="card"><div class="stat">{{ rate(c.chairs.rate) }}</div><div class="muted">{{ _("of chair time booked") }}</div></div>
 </div>
 
 <section class="card">
-  <h2>Production and collections {{ 'by month' if d.series.by == 'month' else 'by day' }}</h2>
+  <h2>{{ _("Production and collections by month") if d.series.by == 'month' else _("Production and collections by day") }}</h2>
   {% if d.series.rows %}
-  <div class="hbars" role="table" aria-label="Production and collections over time">
+  <div class="hbars" role="table" aria-label="{{ _('Production and collections over time') }}">
     {% for r in d.series.rows %}
     <div class="hrow" role="row"><span class="hl">{{ r.label }}</span>
       <span class="hb"><i class="bp" style="width: {{ r.production_w }}%"></i><i class="bc" style="width: {{ r.collected_w }}%"></i></span>
       <span class="hv nw">{{ r.production_p|money }} <span class="muted">/ {{ r.collected_p|money }}</span></span></div>
     {% endfor %}
   </div>
-  <p class="small muted"><span class="sw prod"></span>Production (work done) <span class="sw coll"></span>Collected (money in). Values shown as production / collected.</p>
-  {% else %}<p class="muted">Nothing in this range.</p>{% endif %}
+  <p class="small muted"><span class="sw prod"></span>{{ _("Production (work done)") }} <span class="sw coll"></span>{{ _("Collected (money in). Values shown as production / collected.") }}</p>
+  {% else %}<p class="muted">{{ _("Nothing in this range.") }}</p>{% endif %}
 </section>
 
 <div class="grid two">
-  <section class="card"><h2>Money</h2>
+  <section class="card"><h2>{{ _("Money") }}</h2>
     <dl class="facts">
-      <dt>Gross production</dt><dd>{{ c.gross_p|money }} {{ delta(d.deltas.gross_p) }}</dd>
-      <dt>Discounts and write-offs</dt><dd>{{ c.adjust_p|money }}</dd>
-      <dt><strong>Net production</strong></dt><dd><strong>{{ c.net_p|money }}</strong></dd>
-      <dt>Collected, all payments</dt><dd>{{ c.collected_p|money }}</dd>
-      <dt>Collected, treatment only</dt><dd>{{ c.collected_treatment_p|money }}</dd>
-      <dt>Average per visit</dt><dd>{{ c.per_visit_p|money if c.per_visit_p is not none else 'No data' }}</dd>
-      <dt>Lab bills for work sent</dt><dd>{{ c.lab_spend_p|money }}</dd>
+      <dt>{{ _("Gross production") }}</dt><dd>{{ c.gross_p|money }} {{ delta(d.deltas.gross_p) }}</dd>
+      <dt>{{ _("Discounts and write-offs") }}</dt><dd>{{ c.adjust_p|money }}</dd>
+      <dt><strong>{{ _("Net production") }}</strong></dt><dd><strong>{{ c.net_p|money }}</strong></dd>
+      <dt>{{ _("Collected, all payments") }}</dt><dd>{{ c.collected_p|money }}</dd>
+      <dt>{{ _("Collected, treatment only") }}</dt><dd>{{ c.collected_treatment_p|money }}</dd>
+      <dt>{{ _("Average per visit") }}</dt><dd>{{ c.per_visit_p|money if c.per_visit_p is not none else _('No data') }}</dd>
+      <dt>{{ _("Lab bills for work sent") }}</dt><dd>{{ c.lab_spend_p|money }}</dd>
     </dl>
   </section>
-  <section class="card"><h2>Treatment plans</h2>
+  <section class="card"><h2>{{ _("Treatment plans") }}</h2>
     <dl class="facts">
-      <dt>Presented</dt><dd>{{ c.plans.presented }} worth {{ c.plans.presented_p|money }}</dd>
-      <dt>Accepted</dt><dd>{{ c.plans.accepted }} worth {{ c.plans.accepted_p|money }}</dd>
-      <dt>Still deciding</dt><dd>{{ c.plans.waiting }}</dd>
-      <dt>Declined</dt><dd>{{ c.plans.declined }}</dd>
-      <dt>Accepted by number</dt><dd>{{ rate(c.plans.count_rate) }}</dd>
+      <dt>{{ _("Presented") }}</dt><dd>{{ _("%(n)s worth %(amount)s", n=c.plans.presented, amount=c.plans.presented_p|money) }}</dd>
+      <dt>{{ _("Accepted") }}</dt><dd>{{ _("%(n)s worth %(amount)s", n=c.plans.accepted, amount=c.plans.accepted_p|money) }}</dd>
+      <dt>{{ _("Still deciding") }}</dt><dd>{{ c.plans.waiting }}</dd>
+      <dt>{{ _("Declined") }}</dt><dd>{{ c.plans.declined }}</dd>
+      <dt>{{ _("Accepted by number") }}</dt><dd>{{ rate(c.plans.count_rate) }}</dd>
     </dl>
-    <p class="small"><a href="{{ url_for('commercial.plans_board') }}">Open plans waiting for an answer</a></p>
+    <p class="small"><a href="{{ url_for('commercial.plans_board') }}">{{ _("Open plans waiting for an answer") }}</a></p>
   </section>
 </div>
 
-<section class="card"><h2>By dentist</h2>
+<section class="card"><h2>{{ _("By dentist") }}</h2>
   <div class="tbl-wrap"><table>
-    <tr><th>Dentist</th><th>Production</th><th>Visits</th><th>Per visit</th><th>Missed</th><th>No-show rate</th><th>Time booked</th></tr>
+    <tr><th>{{ _("Dentist") }}</th><th>{{ _("Production") }}</th><th>{{ _("Visits") }}</th><th>{{ _("Per visit") }}</th><th>{{ _("Missed") }}</th><th>{{ _("No-show rate") }}</th><th>{{ _("Time booked") }}</th></tr>
     {% for r in d.dentists %}<tr><td>{{ r.name }}</td><td class="nw">{{ r.gross_p|money }}</td><td>{{ r.visits }}</td>
       <td class="nw">{{ r.per_visit_p|money if r.per_visit_p is not none else '' }}</td><td>{{ r.missed }}</td><td>{{ rate(r.no_show_rate) }}</td><td>{{ rate(r.use) }}</td></tr>
-    {% else %}<tr><td colspan="7" class="muted">No work or visits in this range.</td></tr>{% endfor %}
+    {% else %}<tr><td colspan="7" class="muted">{{ _("No work or visits in this range.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
 
 <div class="grid two">
-  <section class="card"><h2>Where the production came from</h2>
-    <div class="tbl-wrap"><table><tr><th>Treatment</th><th>Times</th><th>Total</th></tr>
+  <section class="card"><h2>{{ _("Where the production came from") }}</h2>
+    <div class="tbl-wrap"><table><tr><th>{{ _("Treatment") }}</th><th>{{ _("Times") }}</th><th>{{ _("Total") }}</th></tr>
       {% for r in d.top_procedures %}<tr><td>{{ r.name }}</td><td>{{ r.n }}</td><td class="nw">{{ r.total_p|money }}</td></tr>
-      {% else %}<tr><td colspan="3" class="muted">Nothing done in this range.</td></tr>{% endfor %}</table></div>
+      {% else %}<tr><td colspan="3" class="muted">{{ _("Nothing done in this range.") }}</td></tr>{% endfor %}</table></div>
   </section>
-  <section class="card"><h2>Right now</h2>
+  <section class="card"><h2>{{ _("Right now") }}</h2>
     <dl class="facts">
-      <dt>Patients on recall, not overdue</dt><dd>{{ rate(d.recall.on_time_rate) }} of {{ d.recall.total }}</dd>
-      <dt>Recall overdue 30+ days</dt><dd>{{ d.recall.overdue_30 }}</dd>
-      <dt>Recall overdue 90+ days</dt><dd>{{ d.recall.overdue_90 }}</dd>
-      <dt>Owed by patients</dt><dd>{{ d.ageing.grand_p|money }}</dd>
-      <dt>Owed 90+ days</dt><dd>{{ d.ageing.totals['90+']|money }}</dd>
-      <dt>Still owed by insurers</dt><dd>{{ d.ageing.insurers_p|money }}</dd>
+      <dt>{{ _("Patients on recall, not overdue") }}</dt><dd>{{ _("%(rate)s of %(total)s", rate=rate(d.recall.on_time_rate), total=d.recall.total) }}</dd>
+      <dt>{{ _("Recall overdue 30+ days") }}</dt><dd>{{ d.recall.overdue_30 }}</dd>
+      <dt>{{ _("Recall overdue 90+ days") }}</dt><dd>{{ d.recall.overdue_90 }}</dd>
+      <dt>{{ _("Owed by patients") }}</dt><dd>{{ d.ageing.grand_p|money }}</dd>
+      <dt>{{ _("Owed 90+ days") }}</dt><dd>{{ d.ageing.totals['90+']|money }}</dd>
+      <dt>{{ _("Still owed by insurers") }}</dt><dd>{{ d.ageing.insurers_p|money }}</dd>
     </dl>
-    <p class="small"><a href="{{ url_for('clinical.recall_list') }}">Recalls</a> | <a href="{{ url_for('finance.ageing_report') }}">Who owes, by age</a></p>
+    <p class="small"><a href="{{ url_for('clinical.recall_list') }}">{{ _("Recalls") }}</a> | <a href="{{ url_for('finance.ageing_report') }}">{{ _("Who owes, by age") }}</a></p>
   </section>
 </div>
 
-<section class="card"><h2>What each figure means</h2>
+<section class="card"><h2>{{ _("What each figure means") }}</h2>
   <ul class="small">
-    <li><strong>Gross production</strong>: the fees of treatment marked done in the period.</li>
-    <li><strong>Net production</strong>: gross production plus discounts and write-offs, which are taken off.</li>
-    <li><strong>Collected</strong>: every payment taken in the period that was not voided, from patients and insurers, including membership fees.</li>
-    <li><strong>Of production collected</strong>: treatment payments divided by net production. Above 100% means old bills were paid down.</li>
-    <li><strong>No-show rate</strong>: visits marked missed divided by visits done plus visits missed. Cancelled visits are counted separately.</li>
-    <li><strong>Plans accepted</strong>: of the plans presented in the period, how much of the money is now accepted. Plans still deciding count as not accepted yet, so recent periods look low.</li>
-    <li><strong>Chair time booked</strong>: booked minutes divided by open minutes over working days. Public holidays are not taken off.</li>
-    <li><strong>Recall not overdue</strong>: of patients on recall, the share whose check-up is not past due.</li>
+    <li><strong>{{ _("Gross production") }}</strong>{{ _(": the fees of treatment marked done in the period.") }}</li>
+    <li><strong>{{ _("Net production") }}</strong>{{ _(": gross production plus discounts and write-offs, which are taken off.") }}</li>
+    <li><strong>{{ _("Collected") }}</strong>{{ _(": every payment taken in the period that was not voided, from patients and insurers, including membership fees.") }}</li>
+    <li><strong>{{ _("Of production collected") }}</strong>{{ _(": treatment payments divided by net production. Above 100% means old bills were paid down.") }}</li>
+    <li><strong>{{ _("No-show rate") }}</strong>{{ _(": visits marked missed divided by visits done plus visits missed. Cancelled visits are counted separately.") }}</li>
+    <li><strong>{{ _("Plans accepted") }}</strong>{{ _(": of the plans presented in the period, how much of the money is now accepted. Plans still deciding count as not accepted yet, so recent periods look low.") }}</li>
+    <li><strong>{{ _("Chair time booked") }}</strong>{{ _(": booked minutes divided by open minutes over working days. Public holidays are not taken off.") }}</li>
+    <li><strong>{{ _("Recall not overdue") }}</strong>{{ _(": of patients on recall, the share whose check-up is not past due.") }}</li>
   </ul>
 </section>
 {% endblock %}

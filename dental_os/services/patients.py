@@ -69,6 +69,7 @@ def clean(form, db=None, clinic_id=None, patient_id=None, country=None):
     data["notes"] = (form.get("notes") or "").strip() or None
 
     pref = form.get("preferred_contact") or "whatsapp"
+    data["prefers_sms"] = 1 if pref == "sms" else 0                  # SMS has its own column: older databases only allow the first three
     data["preferred_contact"] = pref if pref in ("whatsapp", "call", "email") else "whatsapp"
     data["reminders_ok"] = 1 if form.get("reminders_ok") else 0
     data["offers_ok"] = 1 if form.get("offers_ok") else 0
@@ -126,6 +127,8 @@ def create(db, clinic_id, user_id, data, allow_duplicates=False):
     )
     if data.get("language"):
         db.execute("UPDATE patients SET language = ? WHERE id = ?", (data["language"], cur.lastrowid))
+    if data.get("prefers_sms"):
+        db.execute("UPDATE patients SET prefers_sms = 1 WHERE id = ?", (cur.lastrowid,))
     audit.log(db, clinic_id, user_id, "patient.create", "patient", cur.lastrowid)
     webhooks.emit(db, clinic_id, "patient.created", serialize.patient(get(db, clinic_id, cur.lastrowid)))
     return cur.lastrowid
@@ -145,6 +148,8 @@ def update(db, clinic_id, user_id, patient_id, data):
     )
     if "language" in data:
         db.execute("UPDATE patients SET language = ? WHERE id = ?", (data["language"], patient_id))
+    if "prefers_sms" in data:
+        db.execute("UPDATE patients SET prefers_sms = ? WHERE id = ?", (data["prefers_sms"], patient_id))
     audit.log(db, clinic_id, user_id, "patient.update", "patient", patient_id)
     webhooks.emit(db, clinic_id, "patient.updated", serialize.patient(get(db, clinic_id, patient_id)))
 

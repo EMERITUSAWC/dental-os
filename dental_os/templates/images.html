@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("X-ray layouts") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("X-ray layouts") }}</h1>
+{{ tabs(p, 'images') }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("New layout") }}</h2>
+  <p class="muted small">{{ _("Upload the pictures under Files first. A layout puts them in the standard positions so they can be read side by side.") }}</p>
+  <div class="grid three">
+    <div><label for="layout">{{ _("Layout") }}</label><select id="layout" name="layout">{% for k, v in layouts.items() %}<option value="{{ k }}">{{ _(v[0]) }}</option>{% endfor %}</select></div>
+    <div><label for="title">{{ _("Title (optional)") }}</label><input id="title" name="title" maxlength="80"></div>
+    <div><label for="taken_on">{{ _("Date taken") }}</label><input id="taken_on" type="date" name="taken_on" value="{{ today }}"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Make the layout") }}</button></p>
+</form>
+<section class="card"><h2>{{ _("Layouts") }}</h2>
+  {% for x in rows %}<p><a href="{{ url_for('care.mount', mid=x.m.id) }}">{{ x.m.title or _(layouts[x.m.layout][0]) }}</a> <span class="muted small">{{ (x.m.taken_on or x.m.created_at[:10])|date }}, {{ _("%(filled)s of %(total)s filled", filled=x.filled, total=x.total) }}</span></p>
+  {% else %}<p class="muted">{{ _("No layouts yet.") }}</p>{% endfor %}
+</section>
+{% endblock %}

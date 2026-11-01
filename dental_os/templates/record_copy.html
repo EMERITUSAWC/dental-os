@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Record copy: {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Record copy:") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('privacy.patient_privacy', pid=p.id) }}">Back</a></div>
+<div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button> <a href="{{ url_for('privacy.patient_privacy', pid=p.id) }}">{{ _("Back") }}</a></div>
 <section class="card" style="margin-top:12px">
-  <h1 style="margin-top:0">Copy of record</h1>
-  <p class="muted">From {{ clinic.name }}, made on {{ day|date }}. Confidential personal and health information.</p>
+  <h1 style="margin-top:0">{{ _("Copy of record") }}</h1>
+  <p class="muted">{{ _("From %(clinic)s, made on %(date)s. Confidential personal and health information.", clinic=clinic.name, date=day|date) }}</p>
   <dl class="facts">
-    <dt>Name</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd>
-    <dt>Born</dt><dd>{{ p.dob|date if p.dob else 'Not given' }}</dd>
-    <dt>Phone</dt><dd>{{ p.phone|phone }}</dd>
-    <dt>Email</dt><dd>{{ p.email or 'None' }}</dd>
-    <dt>Address</dt><dd>{{ p.address or 'Not given' }}</dd>
-    <dt>Agreed to messages</dt><dd>{{ 'Yes' if p.reminders_ok else 'No' }}</dd>
-    <dt>Agreed to offers</dt><dd>{{ 'Yes' if p.offers_ok else 'No' }}</dd>
-    <dt>Account balance</dt><dd>{{ bal.balance|money }}</dd>
-    <dt>On record since</dt><dd>{{ p.created_at[:10]|date }}</dd>
+    <dt>{{ _("Name") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd>
+    <dt>{{ _("Born") }}</dt><dd>{{ p.dob|date if p.dob else _('Not given') }}</dd>
+    <dt>{{ _("Phone") }}</dt><dd>{{ p.phone|phone }}</dd>
+    <dt>{{ _("Email") }}</dt><dd>{{ p.email or _('None') }}</dd>
+    <dt>{{ _("Address") }}</dt><dd>{{ p.address or _('Not given') }}</dd>
+    <dt>{{ _("Agreed to messages") }}</dt><dd>{{ _('Yes') if p.reminders_ok else _('No') }}</dd>
+    <dt>{{ _("Agreed to offers") }}</dt><dd>{{ _('Yes') if p.offers_ok else _('No') }}</dd>
+    <dt>{{ _("Account balance") }}</dt><dd>{{ bal.balance|money }}</dd>
+    <dt>{{ _("On record since") }}</dt><dd>{{ p.created_at[:10]|date }}</dd>
   </dl>
 </section>
 {% for table, heading, cols in sections %}
@@ -24,10 +24,10 @@
   {% if rows %}
   <div class="tbl-wrap"><table>
     <tr>{% for key, label, how in cols %}<th>{{ label }}</th>{% endfor %}</tr>
-    {% for r in rows %}<tr>{% for key, label, how in cols %}<td>{% set v = r.get(key) %}{% if how == 'money' %}{{ v|money if v is not none else '' }}{% elif how == 'yes' %}{{ 'Yes' if v else '' }}{% else %}{{ v if v is not none else '' }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+    {% for r in rows %}<tr>{% for key, label, how in cols %}<td>{% set v = r.get(key) %}{% if how == 'money' %}{{ v|money if v is not none else '' }}{% elif how == 'yes' %}{{ _('Yes') if v else '' }}{% else %}{{ v if v is not none else '' }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
   </table></div>
-  {% else %}<p class="muted">Nothing held.</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Nothing held.") }}</p>{% endif %}
 </section>
 {% endfor %}
-<p class="muted small">This page shows the main parts of the record. The zip download holds every table in full.</p>
+<p class="muted small">{{ _("This page shows the main parts of the record. The zip download holds every table in full.") }}</p>
 {% endblock %}

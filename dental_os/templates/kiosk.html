@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Check in") }}{% endblock %}
+{% block body %}
+<div class="kiosk">
+  <h1>{{ clinic.name }}</h1>
+  {% if state == 'done' %}
+    <div class="card kiosk-done"><h2>{{ _("Thank you, %(name)s. You are checked in.", name=name) }}</h2><p>{{ _("Please take a seat. We will call you soon.") }}</p>
+      <p><a class="btn primary" href="{{ url_for('practice.kiosk') }}">{{ _("Next person") }}</a></p></div>
+  {% elif state == 'choose' %}
+    <form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="last4" value="{{ form.get('last4', '') }}"><input type="hidden" name="dob" value="{{ form.get('dob', '') }}">
+      <h2>{{ _("Which visit are you here for?") }}</h2>
+      {% for a in choices %}<p><button class="primary" type="submit" name="appt_id" value="{{ a.id }}">{{ a.start_at|time }}, {{ a.first_name }}</button></p>{% endfor %}
+    </form>
+  {% else %}
+    <form method="post" class="card" autocomplete="off"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <h2>{{ _("Welcome. Check in here.") }}</h2>
+      <label for="last4">{{ _("Last four digits of your phone number") }}</label><input id="last4" name="last4" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required autocomplete="off">
+      <label for="dob">{{ _("Your date of birth") }}</label><input id="dob" type="date" name="dob" required autocomplete="off">
+      <p><button class="primary" type="submit">{{ _("Check in") }}</button></p>
+      <p class="muted small">{{ _("If anything does not work, please ask at the desk.") }}</p>
+    </form>
+  {% endif %}
+  <p class="kiosk-exit"><a class="small muted" href="{{ url_for('practice.kiosk_exit') }}">{{ _("Staff") }}</a></p>
+</div>
+{% endblock %}

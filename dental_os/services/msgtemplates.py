@@ -29,6 +29,9 @@ KINDS = {
     "review_request": ("Review request",
                        "Hello {first_name}, thank you for visiting {clinic}. If you were happy with your visit, "
                        "would you leave us a short review? {review_link}", ("review_link",)),
+    "reactivation": ("Not seen for a while",
+                     "Hello {first_name}, this is {clinic}. It has been a while since we last saw you. "
+                     "If you would like a check-up, reply to this message and we will find a time that suits you.", ()),
     "birthday": ("Birthday greeting",
                  "Happy birthday {first_name}, from all of us at {clinic}.", ()),
     "portal_link": ("Patient link",

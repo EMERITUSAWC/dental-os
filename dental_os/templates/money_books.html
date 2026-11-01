@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Close the books") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Close the books") }}</h1>
+<section class="card"><p>{% if locked %}{{ _("The books are closed up to") }} <strong>{{ locked|date }}</strong>.{% else %}{{ _("No days are closed yet.") }}{% endif %}</p>
+  <p class="muted small">{{ _("Once the accountant has finished a month, close it here. Nobody can then add, void or change payments, refunds, discounts or finished treatment dated on or before that day.") }}</p></section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="locked_to">{{ _("Close up to and including") }}</label><input id="locked_to" type="date" name="locked_to" value="{{ locked or '' }}">
+  <label for="reason">{{ _("Reason (needed to open closed days again)") }}</label><input id="reason" name="reason" maxlength="300">
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+<section class="card"><h2>{{ _("Changes") }}</h2>{% for r in rows %}<p class="small">{{ r.created_at[:10]|date }} {{ r.display_name or '' }}: {{ r.locked_to|date if r.locked_to else _("opened all days") }}{% if r.reason %}, {{ r.reason }}{% endif %}</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% endblock %}

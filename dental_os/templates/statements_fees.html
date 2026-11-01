@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_statement_tabs.html" import tabs with context %}
+{% block title %}{{ _("Late fees") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Late fees") }}</h1>
+{{ tabs('fees') }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p class="muted small">{{ _("Whether you may charge a late fee, and how much, depends on local law and on the terms patients agreed to. Check both before switching this on. A fee is only added when a manager makes a statement run and ticks the box.") }}</p>
+  <label class="check"><input type="checkbox" name="late_on" value="1" {{ 'checked' if s.late_on }}> <span>{{ _("Use late fees") }}</span></label>
+  <div class="grid three">
+    <div><label for="late_kind">{{ _("Kind") }}</label><select id="late_kind" name="late_kind"><option value="fixed" {{ 'selected' if s.late_kind == 'fixed' }}>{{ _("A fixed amount") }}</option><option value="percent" {{ 'selected' if s.late_kind == 'percent' }}>{{ _("A percentage of what is overdue") }}</option></select></div>
+    <div><label for="late_value">{{ _("Amount, or percentage") }}</label><input id="late_value" name="late_value" value="{{ (s.late_value / 100) if s.late_value else '' }}" inputmode="decimal"></div>
+    <div><label for="late_cap">{{ _("Largest fee (optional)") }}</label><input id="late_cap" name="late_cap" value="{{ (s.late_cap_p / 100) if s.late_cap_p is not none else '' }}" inputmode="decimal"></div>
+    <div><label for="late_after_days">{{ _("Overdue after (days)") }}</label><input id="late_after_days" name="late_after_days" type="number" min="1" max="365" value="{{ s.late_after_days }}"></div>
+    <div><label for="late_min">{{ _("Only when at least this much is overdue") }}</label><input id="late_min" name="late_min" value="{{ s.late_min_p / 100 }}" inputmode="decimal"></div>
+    <div><label for="late_gap_days">{{ _("At most once every (days)") }}</label><input id="late_gap_days" name="late_gap_days" type="number" min="7" max="365" value="{{ s.late_gap_days }}"></div>
+  </div>
+  <p class="muted small">{{ _("No fee is added on the part insurers are expected to pay, or for a patient on an instalment plan.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% endblock %}

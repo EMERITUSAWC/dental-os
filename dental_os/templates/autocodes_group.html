@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ grp.name }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ grp.name }}</h1><a class="btn" href="{{ url_for('autocodes.home') }}">{{ _("Auto codes") }}</a></div>
+<section class="card"><h2>{{ _("Rules") }}</h2><p class="muted small">{{ _("The most exact rule that fits is used: one that names the number of surfaces and front or back beats one that names only one of them.") }}</p>
+  <table><thead><tr><th>{{ _("Surfaces") }}</th><th>{{ _("Teeth") }}</th><th>{{ _("Code") }}</th><th></th></tr></thead><tbody>
+  {% for r in rules %}<tr><td>{{ r.surfaces or _("Any") }}</td><td>{{ _(regions[r.region]) }}</td><td>{{ r.code_name }} <span class="small muted">{{ r.code }}</span></td>
+    <td><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="remove"><input type="hidden" name="rule_id" value="{{ r.id }}"><button type="submit">{{ _("Remove") }}</button></form></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No rules yet.") }}</td></tr>{% endfor %}</tbody></table></section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("Add a rule") }}</h2>
+  <div class="grid three"><div><label for="surfaces">{{ _("Surfaces") }}</label><select id="surfaces" name="surfaces"><option value="0">{{ _("Any") }}</option>{% for n in range(1, 6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
+  <div><label for="region">{{ _("Teeth") }}</label><select id="region" name="region">{% for k, v in regions.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="code_id">{{ _("Code") }}</label><select id="code_id" name="code_id">{% for c in codes %}<option value="{{ c.id }}">{{ c.name }} ({{ c.code }})</option>{% endfor %}</select></div></div>
+  <p><button class="primary" type="submit">{{ _("Add the rule") }}</button></p></form>
+<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="group">
+  <label for="gname">{{ _("Name") }}</label><input id="gname" name="name" value="{{ grp.name }}" maxlength="80">
+  <label class="check"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" {{ 'checked' if grp.active }}> <span>{{ _("In use") }}</span></label><button type="submit">{{ _("Save") }}</button></form>
+{% endblock %}

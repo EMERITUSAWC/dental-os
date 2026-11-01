@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _d("Statement") }}, {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('clinical.account', pid=p.id) }}">Back to the account</a></div>
+<div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button> <a href="{{ url_for('clinical.account', pid=p.id) }}">{{ _("Back to the account") }}</a></div>
 <section class="card receipt" style="max-width:760px; margin-top:12px">
   <p class="muted">{{ clinic.name }}</p><h1>{{ _d("Statement") }}</h1>
   <dl class="facts"><dt>{{ _d("Patient") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd><dt>{{ _d("Date") }}</dt><dd>{{ today|date }}</dd></dl>

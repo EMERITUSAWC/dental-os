@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Write down a complaint") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Write down a complaint") }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  {% if p %}<input type="hidden" name="patient_id" value="{{ p.id }}"><p>{{ _("Patient") }}: <strong>{{ p.first_name }} {{ p.last_name }}</strong></p>{% endif %}
+  <div class="grid three">
+    <div><label for="complainant">{{ _("Who complained") }}{% if p %} {{ _("(if not the patient)") }}{% endif %}</label><input id="complainant" name="complainant" maxlength="120" {{ '' if p else 'required' }}></div>
+    <div><label for="contact">{{ _("How to reach them") }}</label><input id="contact" name="contact" maxlength="200"></div>
+    <div><label for="received_on">{{ _("Received on") }}</label><input id="received_on" type="date" name="received_on" value="{{ today }}"></div>
+    <div><label for="channel">{{ _("How it came in") }}</label><select id="channel" name="channel">{% for k, v in channels.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="category">{{ _("What it is about") }}</label><select id="category" name="category">{% for k, v in categories.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="about_staff">{{ _("Staff named (optional)") }}</label><input id="about_staff" name="about_staff" maxlength="200"></div>
+  </div>
+  <label for="summary">{{ _("The complaint, in the person's own words where you can") }}</label><textarea id="summary" name="summary" rows="5" required></textarea>
+  <label for="wanted">{{ _("What they would like to happen (optional)") }}</label><textarea id="wanted" name="wanted" rows="2"></textarea>
+  <label for="owner_id">{{ _("Who will handle it") }}</label><select id="owner_id" name="owner_id">{% for u in staff %}<option value="{{ u.id }}" {{ 'selected' if u.id == user.id }}>{{ u.display_name }}</option>{% endfor %}</select>
+  <p class="muted small">{{ _("It should be acknowledged within three working days. Complaints stay out of the clinical record.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% endblock %}

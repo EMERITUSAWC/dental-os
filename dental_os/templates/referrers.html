@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Referrers") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Referrers") }}</h1><a class="btn" href="{{ url_for('care.referrals_open') }}">{{ _("Open referrals") }}</a></div>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">{% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+  <h2>{{ _("Change this referrer") if edit else _("Add a referrer") }}</h2>
+  <p class="muted small">{{ _("Specialists and hospitals you send patients to, and dentists, doctors and others who send patients to you.") }}</p>
+  <div class="grid three">
+    <div><label for="name">{{ _("Name") }}</label><input id="name" name="name" maxlength="100" required value="{{ edit.name if edit else '' }}"></div>
+    <div><label for="kind">{{ _("Kind") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if edit and edit.kind == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="specialty">{{ _("Specialty (optional)") }}</label><input id="specialty" name="specialty" maxlength="80" value="{{ edit.specialty or '' if edit else '' }}" placeholder="{{ _('for example oral surgery') }}"></div>
+  </div>
+  <div class="grid three">
+    <div><label for="practice">{{ _("Practice or hospital") }}</label><input id="practice" name="practice" maxlength="120" value="{{ edit.practice or '' if edit else '' }}"></div>
+    <div><label for="phone">{{ _("Phone") }}</label><input id="phone" name="phone" maxlength="40" value="{{ edit.phone or '' if edit else '' }}"></div>
+    <div><label for="email">{{ _("Email") }}</label><input id="email" name="email" type="email" maxlength="120" value="{{ edit.email or '' if edit else '' }}"></div>
+  </div>
+  <label for="address">{{ _("Address") }}</label><textarea id="address" name="address" rows="2" maxlength="300">{{ edit.address or '' if edit else '' }}</textarea>
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button>{% if edit %}<a class="btn" href="{{ url_for('care.referrers') }}">{{ _("Cancel") }}</a>{% endif %}</p>
+</form>
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>{{ _("Name") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Contact") }}</th><th></th></tr>
+  {% for r in rows %}<tr class="{{ 'muted' if not r.active }}"><td>{{ r.name }}{% if r.specialty %}<br><span class="small muted">{{ r.specialty }}</span>{% endif %}</td><td>{{ _(kinds.get(r.kind, r.kind)) }}</td>
+    <td class="small">{{ r.practice or '' }}{% if r.phone %}<br>{{ r.phone }}{% endif %}{% if r.email %}<br>{{ r.email }}{% endif %}</td>
+    <td class="nw"><a href="{{ url_for('care.referrers', edit=r.id) }}">{{ _("Edit") }}</a>
+      <form method="post" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ r.id }}"><button class="link" type="submit" name="action" value="toggle">{{ _("Switch off") if r.active else _("Switch on") }}</button></form></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No referrers yet.") }}</td></tr>{% endfor %}
+</table></div></section>
+<section class="card"><h2>{{ _("Where new patients came from") }}</h2>
+  <form method="get" class="row"><label for="from" style="margin:0">{{ _("Since") }}</label><input id="from" type="date" name="from" value="{{ start }}" style="width:auto"><button type="submit">{{ _("Show") }}</button></form>
+  <div class="grid two">
+    <div><h3>{{ _("Sent by someone") }}</h3>{% if by_ref %}<table>{% for r in by_ref %}<tr><td>{{ r.name }}</td><td class="nw">{{ r.n }}</td></tr>{% endfor %}</table>{% else %}<p class="muted">{{ _("None.") }}</p>{% endif %}</div>
+    <div><h3>{{ _("How they heard of us") }}</h3>{% if by_source %}<table>{% for r in by_source %}<tr><td>{{ _(sources.get(r.source, r.source)) }}</td><td class="nw">{{ r.n }}</td></tr>{% endfor %}</table>{% else %}<p class="muted">{{ _("None.") }}</p>{% endif %}</div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Associate pay") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Associate pay") }}</h1>
+<section class="card"><p class="muted small">{{ _("Work out what each dentist or hygienist is owed: a share of their production or of the money collected for their work, less their part of the lab bills, plus any daily amount. Collections are matched to each patient's oldest completed work first.") }}</p>
+  <table><thead><tr><th>{{ _("Provider") }}</th><th>{{ _("Terms now") }}</th><th></th></tr></thead><tbody>
+  {% for x in rows %}<tr class="{{ 'muted' if not x.p.active }}"><td>{{ x.p.name }}</td>
+    <td>{% if x.terms %}{{ '%g'|format(x.terms.percent_bp / 100) }}% {{ _("of") }} {{ _(bases[x.terms.basis])|lower }}{% if x.terms.lab_bp %}, {{ _("less") }} {{ '%g'|format(x.terms.lab_bp / 100) }}% {{ _("of lab bills") }}{% endif %}{% if x.terms.daily_p %}, {{ _("plus") }} {{ x.terms.daily_p|money }} {{ _("a day") }}{% endif %}{% else %}<span class="muted">{{ _("Not set") }}</span>{% endif %}</td>
+    <td><a class="btn" href="{{ url_for('pay.provider', provider_id=x.p.id) }}">{{ _("Terms and pay runs") }}</a></td></tr>{% endfor %}
+  </tbody></table></section>
+<section class="card"><h2>{{ _("Recent pay runs") }}</h2>
+  {% for r in runs %}<p><a href="{{ url_for('pay.run_view', rid=r.id) }}">{{ r.provider_name }}: {{ r.period_from|date }} {{ _("to") }} {{ r.period_to|date }}</a> {{ r.total_p|money }} <span class="pill {{ 'ok' if r.status == 'paid' else ('warn' if r.status == 'draft' else '') }}">{{ _(statuses[r.status]) }}</span></p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+{% endblock %}

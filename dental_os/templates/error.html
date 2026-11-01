@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block body %}
 <div class="card">
-  <h1>{{ err.code }}: {{ 'Not found' if err.code == 404 else ('Not allowed' if err.code == 403 else 'Something is off') }}</h1>
-  <p class="muted">{{ err.description if err.code == 400 else 'That page is not available to you.' }}</p>
-  <p><a class="btn" href="{{ url_for('views.dashboard') if user else url_for('auth.login') }}">Back</a></p>
+  <h1>{{ err.code }}: {{ _('Not found') if err.code == 404 else (_('Not allowed') if err.code == 403 else _('Something is off')) }}</h1>
+  <p class="muted">{{ err.description if err.code == 400 else (_('This is a read-only copy. Changes are made at the clinic.') if read_only is not none and err.code == 403 else _('That page is not available to you.')) }}</p>
+  <p><a class="btn" href="{{ url_for('views.dashboard') if user else url_for('auth.login') }}">{{ _("Back") }}</a></p>
 </div>
 {% endblock %}

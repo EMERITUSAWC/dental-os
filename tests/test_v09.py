@@ -9,6 +9,7 @@ import zipfile
 from datetime import timedelta
 from pathlib import Path
 
+from tests import dbmeta
 from dental_os.services import (audit, catalogue as CAT, dataio, links, outbox, patients as P, plans as PL, msgtemplates as MT, invoices as INV, passwords, privacy as PV, qr, serialize, taxes as TX, twofactor as TF,
                                 webhooks as WH)
 from dental_os.services.timeutil import now_local
@@ -659,11 +660,11 @@ class RecordCopyTests(Priv):
     def test_every_table_with_a_person_in_it_is_in_the_copy(self):
         conn = self.db()
         known = set(PV.DIRECT) | set(PV.CHILD) | {"patients"}
-        for (t,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").fetchall():
+        for t in dbmeta.tables(conn):
             if t in known or t in PV.NOT_RECORDS:
                 continue
-            cols = {r[1] for r in conn.execute(f"PRAGMA table_info({t})")}
-            points_at = {r[2] for r in conn.execute(f"PRAGMA foreign_key_list({t})")} & known
+            cols = dbmeta.columns(conn, t)
+            points_at = dbmeta.foreign_targets(conn, t) & known
             self.assertNotIn("patient_id", cols, f"{t} has a patient_id but is not in the record copy list")
             self.assertFalse(points_at, f"{t} points at patient data ({points_at}) but is not in the record copy list")
         conn.close()
@@ -832,8 +833,8 @@ class AnonymiseTests(Priv):
         """Every place in the database where the person's name, phone, email or address can still be found."""
         conn = self.db()
         found = []
-        for (t,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").fetchall():
-            cols = [r[1] for r in conn.execute(f"PRAGMA table_info({t})") if (r[2] or "").upper() in ("TEXT", "")]
+        for t in dbmeta.tables(conn):
+            cols = [name for name, kind in dbmeta.column_types(conn, t).items() if kind in ("TEXT", "")]
             for col in cols:
                 for (v,) in conn.execute(f'SELECT "{col}" FROM {t} WHERE "{col}" IS NOT NULL').fetchall():
                     for needle in ("Mensah", "ama@example.com", "Oxford Street", "233201112223", "0201112223"):
@@ -1196,7 +1197,7 @@ class UpgradeNineTests(Priv):
         conn = dbmod.connect(path)
         dbmod.init_schema(conn)
         for t in ("tax_rates", "invoice_tax", "recovery_codes", "data_requests", "incidents"):
-            conn.execute(f"DROP TABLE {t}")
+            dbmeta.drop_table(conn, t)
         for t, col in (("users", "totp_secret"), ("users", "totp_enabled"), ("users", "totp_last_step"), ("clinics", "require_2fa"),
                        ("clinics", "retention_years"), ("patients", "anonymised_on"), ("procedure_codes", "tax_rate_id"),
                        ("invoice_lines", "tax_name"), ("invoice_lines", "tax_rate_bp")):
@@ -1205,9 +1206,9 @@ class UpgradeNineTests(Priv):
         dbmod.init_schema(conn)
         for t, col in (("users", "totp_enabled"), ("clinics", "require_2fa"), ("clinics", "retention_years"), ("patients", "anonymised_on"),
                        ("procedure_codes", "tax_rate_id"), ("invoice_lines", "tax_rate_bp")):
-            self.assertIn(col, {r[1] for r in conn.execute(f"PRAGMA table_info({t})")}, f"{t}.{col}")
+            self.assertIn(col, dbmeta.columns(conn, t), f"{t}.{col}")
         for t in ("tax_rates", "invoice_tax", "recovery_codes", "data_requests", "incidents"):
-            self.assertTrue(conn.execute("SELECT 1 FROM sqlite_master WHERE name = ?", (t,)).fetchone(), t)
+            self.assertTrue(dbmeta.has_table(conn, t), t)
         conn.close()
 
     def test_every_new_screen_opens(self):
@@ -1419,8 +1420,44 @@ CODE_WORDING = {
     "plans.py": ["Enter the full name of the person who agreed.", "Tick the box to confirm the patient has seen the cost and agreed.",
                  "This patient is under 18. A parent or guardian needs to agree."],
     "scheduling.py": ["Only booked appointments can be confirmed."],
+    "services/privacy.py": ["This person has already been anonymised.", "There are appointments still booked. Cancel or complete them first.",
+                            "Other patients list this person as their family head. Change that first.", "An insurance claim is still open. Close it first.",
+                            "The account is not settled. Collect, refund or write off the balance first, because the clinic needs to know who owes or is owed."],
 }
-DYNAMIC = {"Membership fee", "Payment", "our team", "Our team", "tooth", "parent", "legal guardian", "authorised person", "the patient"}
+LABEL_DICTS = [("plans", "STATUSES"), ("memberships", "CYCLES"), ("insurance", "CLAIM_STATUS"), ("insurance", "PAYER_KINDS"), ("instalments", "FREQUENCIES"),
+               ("labs", "LABELS"), ("stock", "KINDS"), ("medical", "KINDS"), ("medical", "SEVERITIES"), ("medical", "SMOKER"), ("files", "KINDS"),
+               ("taxes", "KINDS"), ("campaigns", "KINDS"), ("campaigns", "PURPOSES"), ("outbox", "KINDS"), ("privacy", "REQUEST_KINDS"),
+               ("diaryrules", "BLOCK_KINDS"), ("diaryrules", "REPEATS"), ("diaryrules", "COLOURS"), ("diaryrules", "WEEKDAYS"),
+               ("teeth", "NOTATIONS"), ("teeth", "HINT"),
+               ("prescriptions", "CLASSES"), ("referrals", "KINDS"), ("referrals", "SOURCES"), ("referrals", "URGENCY"), ("referrals", "STATUSES"),
+               ("vitals", "GRADES"), ("letters", "FIELDS"), ("contactlog", "KINDS"), ("mounts", "LAYOUTS"),
+               ("tasks", "PRIORITIES"), ("tasks", "REPEATS"), ("onlinepay", "PROVIDERS"), ("onlinepay", "STATUSES"),
+               ("voice", "STATUSES"), ("steri", "KINDS"), ("steri", "TESTS"), ("steri", "RESULTS"), ("steri", "CYCLE_RESULTS"),
+               ("steri", "PACK_STATUS"), ("edi", "RELATION"), ("edi", "FILE_KINDS"), ("edi", "CAS_GROUPS"), ("edi", "CLP_STATUS"),
+               ("nhs", "COURSES"), ("nhs", "EXEMPTIONS"), ("nhs", "EVIDENCE"), ("nhs", "NHS_CLASSES"), ("nhs", "STATUSES"),
+               ("ortho", "APPLIANCES"), ("ortho", "ARCHES"), ("ortho", "MOLAR"), ("ortho", "CROWDING"), ("ortho", "STATUSES"),
+               ("team", "EQUIPMENT_KINDS"), ("team", "EVENT_KINDS"), ("reportbuilder", "OPS"), ("reportbuilder", "AGGS"), ("reportbuilder", "LABELS"), ("sms", "PROVIDERS"), ("formbuilder", "KINDS"), ("formbuilder", "STATUSES"), ("implants", "KINDS"), ("implants", "REASONS"), ("providerpay", "BASES"), ("providerpay", "STATUSES"), ("governance", "CHANNELS"), ("governance", "CATEGORIES"), ("governance", "OUTCOMES"), ("governance", "C_STATUSES"), ("governance", "KINDS"), ("governance", "HARM"), ("governance", "I_STATUSES"), ("staffcpd", "TITLES"), ("staffcpd", "SCHEMES"), ("staffcpd", "OUTCOMES"), ("reactivation", "REASONS"), ("merge", "LABELS"), ("merge", "LEFT"), ("refunds", "REASONS"), ("autocodes", "REGIONS"), ("migrate", "KINDS"), ("ghclaims", "BATCH_STATUS"), ("platform", "STATES"),
+               ("permgroups", "AREA_LABELS")]
+
+
+def _service_labels():
+    """Wording that lives in dictionaries inside the services and is translated where the templates show it."""
+    import importlib
+    out = set()
+    for module, name in LABEL_DICTS:
+        for v in getattr(importlib.import_module("dental_os.services." + module), name).values():
+            out.update(x for x in v if isinstance(x, str)) if isinstance(v, tuple) else out.add(v)
+    from dental_os.services import catalogue, perio
+    for label, about, _codes in catalogue.PACKS.values():
+        out.update((label, about))
+    out.update(name for name, _teeth in perio.SEXTANTS)
+    from dental_os.services import mounts
+    out.update(label for _name, rows in mounts.LAYOUTS.values() for row in rows for label in row if label)
+    return out
+
+
+DYNAMIC = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+           "Cover not in force on that day.", "Excess applied.", "Orthodontic lifetime limit reached.", "Yearly maximum reached.", "Refused", "This month", "Last month", "Last 30 days", "This quarter", "This year", "Active", "Completed", "Cancelled", "Membership fee", "Payment", "our team", "Our team", "tooth", "parent", "legal guardian", "authorised person", "the patient"}
 
 
 def _marked_in_templates():
@@ -1457,18 +1494,24 @@ class FrenchCatalogueTests(unittest.TestCase):
         for name in list(self.S.CATEGORIES) + list(self.B.METHODS.values()) + list(self.B.ADJUSTMENT_REASONS.values()):
             self.assertIn(name, self.fr, name)
 
+    def test_service_labels_have_french(self):
+        self.assertEqual(sorted(k for k in _service_labels() if k not in self.fr), [])
+
     def test_no_french_line_is_dead(self):
-        used = _marked_in_templates() | DYNAMIC | set(self.S.CATEGORIES) | set(self.B.METHODS.values()) | set(self.B.ADJUSTMENT_REASONS.values())
+        used = _marked_in_templates() | DYNAMIC | _service_labels() | set(self.S.CATEGORIES) | set(self.B.METHODS.values()) | set(self.B.ADJUSTMENT_REASONS.values())
         used |= {m.group(1) for m in SAY.finditer((SRC / "public.py").read_text())}
         for lines in CODE_WORDING.values():
             used |= set(lines)
+        from dental_os.services import i18n_fr_staff, i18n_fr_staff7
+        used |= set(i18n_fr_staff7.MESSAGES) | self.mod.MESSAGE_KEYS   # plain errors and after-action messages; tests.test_v10 checks each is still in the code
+        used |= set(i18n_fr_staff.FLASH)          # shown after an action; tests.test_v10 checks each is still in the code
         self.assertEqual(sorted(k for k in self.fr if k not in used), [])
 
     def test_fields_match_between_english_and_french(self):
         for en, fr in self.fr.items():
             self.assertEqual(sorted(re.findall(r"%\(\w+\)s", en)), sorted(re.findall(r"%\(\w+\)s", fr)), en)
             self.assertNotIn("\u2014", fr)                       # no em dashes
-            self.assertEqual(fr, fr.strip())
+            self.assertEqual(fr, fr.strip(" "))
             self.assertNotEqual(fr, "", en)
         for kind, (_label, starter, required) in self.MT.KINDS.items():
             french = self.mod.STARTERS_FR[kind]

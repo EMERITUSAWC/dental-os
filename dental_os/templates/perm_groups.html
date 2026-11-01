@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Permission groups") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Permission groups") }}</h1>
+<p><a href="{{ url_for('views.staff') }}">{{ _("Back to staff") }}</a></p>
+<section class="card"><p>{{ _("Each person's role sets the most they can do. A group narrows that: tick the areas people in the group may use, and everything else is closed to them. A group never gives more than the role allows. Managers are never put in a group.") }}</p></section>
+{% for x in groups %}<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="group_id" value="{{ x.g.id }}">
+  <label for="n{{ x.g.id }}">{{ _("Name") }}</label><input id="n{{ x.g.id }}" name="name" value="{{ x.g.name }}" maxlength="60">
+  <div class="row">{% for k, a in areas.items() %}<label class="check"><input type="checkbox" name="area" value="{{ k }}" {{ 'checked' if k in x.areas }}> <span>{{ _(a[0]) }}</span></label>{% endfor %}</div>
+  <p class="small muted">{{ _("In this group:") }} {% for m in x.members %}{{ m.display_name }}{{ ', ' if not loop.last }}{% else %}{{ _("nobody yet") }}{% endfor %}</p>
+  <p><button type="submit">{{ _("Save") }}</button></p></form>{% endfor %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("New group") }}</h2>
+  <label for="name">{{ _("Name") }}</label><input id="name" name="name" placeholder="{{ _('For example Front desk, no money') }}" maxlength="60" required>
+  <div class="row">{% for k, a in areas.items() %}<label class="check"><input type="checkbox" name="area" value="{{ k }}" checked> <span>{{ _(a[0]) }}</span></label>{% endfor %}</div>
+  <p><button class="primary" type="submit">{{ _("Add group") }}</button></p></form>
+{% if groups %}<section class="card"><h2>{{ _("Who is in which group") }}</h2>
+  {% for p in people if p.role != 'manager' %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="assign"><input type="hidden" name="user_id" value="{{ p.id }}">
+    <span style="min-width:12em">{{ p.display_name }}</span><label class="sr-only" for="g{{ p.id }}">{{ _("Group") }}</label><select id="g{{ p.id }}" name="group_id"><option value="">{{ _("No group: everything the role allows") }}</option>{% for x in groups %}<option value="{{ x.g.id }}" {{ 'selected' if p.perm_group_id == x.g.id }}>{{ x.g.name }}</option>{% endfor %}</select>
+    <button type="submit">{{ _("Save") }}</button></form>{% endfor %}</section>{% endif %}
+{% endblock %}

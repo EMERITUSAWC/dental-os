@@ -396,7 +396,7 @@ class WebTests(unittest.TestCase):
         for pid in ("1", "2"):
             self.post("/appointments", "/", patient_id=pid, provider_id="1", date=str(day.date()), duration="30",
                       category="Consultation", slot="09:00|1")
-        count = sqlite3.connect(self.app.config["DATABASE"]).execute("SELECT COUNT(*) FROM appointments").fetchone()[0]
+        count = dbmod.connect(self.app.config["DATABASE"]).execute("SELECT COUNT(*) FROM appointments").fetchone()[0]
         self.assertEqual(count, 1)
 
     def test_security_headers(self):

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("NHS") }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }}</h1>
+{{ tabs(p, 'nhs') }}
+{% if not courses or courses[0].c.status != 'open' %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="open">
+  <h2>{{ _("Start an NHS course of treatment") }}</h2>
+  <div class="grid three">
+    <div><label for="provider_id">{{ _("Dentist") }}</label><select id="provider_id" name="provider_id">{% for d in providers %}<option value="{{ d.id }}">{{ d.name }}{% if not d.nhs_performer_no %} ({{ _("no performer number") }}){% endif %}</option>{% endfor %}</select></div>
+    <div><label for="opened_on">{{ _("Start date") }}</label><input id="opened_on" type="date" name="opened_on" value="{{ today }}"></div>
+    <div><label for="exemption">{{ _("Pays, or why free") }}</label><select id="exemption" name="exemption">{% for k, v in exemptions.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="evidence">{{ _("Evidence") }}</label><select id="evidence" name="evidence">{% for k, v in evidence.items() %}<option value="{{ k }}" {{ 'selected' if k == 'na' }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="hc3_amount">{{ _("HC3: most the patient pays (£)") }}</label><input id="hc3_amount" name="hc3_amount" inputmode="decimal"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Start course") }}</button></p>
+</form>{% endif %}
+{% for x in courses %}{% set c = x.c %}
+<section class="card">
+  <div class="row spread"><h2>{{ _(kinds[c.course_type]).split(':')[0] if c.course_type else _("Course of treatment") }}: {{ c.opened_on|date }}{% if c.closed_on %} {{ _("to") }} {{ c.closed_on|date }}{% endif %}</h2>
+    <span class="pill {{ 'ok' if c.status == 'accepted' else ('bad' if c.status == 'rejected' else ('warn' if c.status == 'closed' else '')) }}">{{ _(statuses[c.status]) }}</span></div>
+  <p>{{ c.dentist }}. {{ _(exemptions[c.exemption]) }}{% if c.exemption not in ('none', 'under18') %}, {{ _(evidence[c.evidence]).lower() }}{% endif %}.{% if c.charge_p is not none %} {{ _("Charge") }}: {{ c.charge_p|money }}.{% endif %}{% if c.uda is not none %} {{ _("UDA") }}: {{ c.uda }}.{% endif %}
+    {% if c.declaration_on %}{{ _("Declaration signed") }} {{ c.declaration_on|date }}.{% endif %}</p>
+  {% if x.work %}<p class="small">{{ _("NHS treatment done:") }} {% for r in x.work %}{{ r.code }}{% if r.tooth %} {{ r.tooth|tooth }}{% endif %}{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+  {% if c.status in ('open', 'closed', 'rejected') and not c.declaration_on %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="declare"><input type="hidden" name="course_id" value="{{ c.id }}">
+    <label for="signed_on{{ c.id }}">{{ _("Patient signed the NHS declaration on") }}</label><input id="signed_on{{ c.id }}" type="date" name="signed_on" value="{{ today }}"><button type="submit">{{ _("Record") }}</button></form>{% endif %}
+  {% if c.status == 'open' %}
+    <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="update"><input type="hidden" name="course_id" value="{{ c.id }}">
+      <label class="sr-only" for="ex{{ c.id }}">{{ _("Pays, or why free") }}</label><select id="ex{{ c.id }}" name="exemption">{% for k, v in exemptions.items() %}<option value="{{ k }}" {{ 'selected' if c.exemption == k }}>{{ _(v) }}</option>{% endfor %}</select>
+      <label class="sr-only" for="ev{{ c.id }}">{{ _("Evidence") }}</label><select id="ev{{ c.id }}" name="evidence">{% for k, v in evidence.items() %}<option value="{{ k }}" {{ 'selected' if c.evidence == k }}>{{ _(v) }}</option>{% endfor %}</select>
+      <label class="sr-only" for="hc{{ c.id }}">{{ _("HC3: most the patient pays (£)") }}</label><input id="hc{{ c.id }}" name="hc3_amount" value="{{ '%.2f' % (c.hc3_amount_p / 100) if c.hc3_amount_p else '' }}" placeholder="{{ _('HC3 amount') }}" class="narrow">
+      <button type="submit">{{ _("Save") }}</button></form>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="close"><input type="hidden" name="course_id" value="{{ c.id }}">
+      {% if x.suggest %}<p>{{ _("The work done points to:") }} <strong>{{ {'band1': _('Band 1'), 'band2': _('Band 2: choose 2a, 2b or 2c'), 'band3': _('Band 3'), 'urgent': _('Urgent care')}[x.suggest] }}</strong></p>{% endif %}
+      <p class="muted small">{{ _("Band 2a: fillings, extractions, front-tooth root canals or sealants on one or two teeth. 2b: molar root canal work, or that work on three or more teeth. 2c: the most complex Band 2 work. Check the NHSBSA rules for each course.") }}</p>
+      <div class="row"><label class="sr-only" for="ct{{ c.id }}">{{ _("Band") }}</label><select id="ct{{ c.id }}" name="course_type">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if x.suggest == k or (x.suggest == 'band2' and k == 'band2a') }}>{{ _(v) }}</option>{% endfor %}</select>
+        <label class="sr-only" for="cd{{ c.id }}">{{ _("End date") }}</label><input id="cd{{ c.id }}" type="date" name="closed_on" value="{{ today }}">
+        <button class="primary" type="submit">{{ _("Finish the course") }}</button></div></form>
+  {% endif %}
+  {% if c.status in ('closed', 'rejected') %}
+    <p>{{ _("FP17 due by") }} <strong>{{ c.fp17_due|date }}</strong>. <a href="{{ url_for('nhs.fp17', course_id=c.id) }}">{{ _("FP17 details") }}</a></p>
+    {% if x.problems %}<ul class="small">{% for m in x.problems %}<li>{{ _(m) }}</li>{% endfor %}</ul>{% endif %}
+    {% if c.outcome_note %}<p class="small">{{ c.outcome_note }}</p>{% endif %}
+    <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="sent"><input type="hidden" name="course_id" value="{{ c.id }}">
+      <label class="sr-only" for="ref{{ c.id }}">{{ _("NHSBSA reference") }}</label><input id="ref{{ c.id }}" name="reference" placeholder="{{ _('NHSBSA reference') }}">
+      <button type="submit" {{ 'disabled' if x.problems }}>{{ _("FP17 sent") }}</button></form>
+  {% endif %}
+  {% if c.status == 'submitted' %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="outcome"><input type="hidden" name="course_id" value="{{ c.id }}">
+    <span>{{ _("FP17 reference") }} {{ c.fp17_ref }}, {{ c.fp17_sent_on|date }}.</span><input name="note" placeholder="{{ _('Why it was rejected') }}" aria-label="{{ _('Why it was rejected') }}">
+    <button type="submit" name="outcome" value="accepted">{{ _("Accepted") }}</button><button type="submit" name="outcome" value="rejected">{{ _("Rejected") }}</button></form>{% endif %}
+  {% if c.status in ('open', 'closed') %}<details><summary class="small">{{ _("Withdraw this course") }}</summary><form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="withdraw"><input type="hidden" name="course_id" value="{{ c.id }}">
+    <input name="reason" placeholder="{{ _('Why, for example opened by mistake') }}" aria-label="{{ _('Why') }}" required><button type="submit">{{ _("Withdraw") }}</button></form></details>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

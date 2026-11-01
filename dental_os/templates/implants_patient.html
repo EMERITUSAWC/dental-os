@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("Implants and materials") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ p.first_name }} {{ p.last_name }}</h1><a class="btn" href="{{ url_for('implants.card', pid=p.id) }}">{{ _("Implant card for the patient") }}</a></div>
+{{ tabs(p, 'implants') }}
+<section class="card"><h2>{{ _("Implants and materials") }}</h2>
+  <table><thead><tr><th>{{ _("Tooth") }}</th><th>{{ _("Item") }}</th><th>{{ _("Maker and product") }}</th><th>{{ _("Lot") }}</th><th>{{ _("Size") }}</th><th>{{ _("Placed") }}</th><th></th></tr></thead><tbody>
+  {% for i in rows %}<tr class="{{ 'muted' if i.removed_on }}">
+    <td>{{ i.tooth|tooth if i.tooth else '' }}</td><td>{{ _(kinds[i.kind]) }}</td>
+    <td>{{ i.maker }}{% if i.product %}, {{ i.product }}{% endif %}{% if i.ref_code %} <span class="small muted">{{ _("ref") }} {{ i.ref_code }}</span>{% endif %}</td>
+    <td>{{ i.lot }}{% if i.expires_on %} <span class="small muted">{{ _("expires") }} {{ i.expires_on|date }}</span>{% endif %}</td>
+    <td>{{ i.size or '' }}</td><td>{{ i.placed_on|date }}{% if i.provider_name %} <span class="small muted">{{ i.provider_name }}</span>{% endif %}</td>
+    <td>{% if i.removed_on %}<span class="pill">{{ _("Removed") }} {{ i.removed_on|date }}: {{ _(reasons[i.removed_reason]) }}</span>
+      {% else %}<details><summary>{{ _("Mark as removed") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="remove"><input type="hidden" name="item_id" value="{{ i.id }}">
+        <label for="r{{ i.id }}">{{ _("Why") }}</label><select id="r{{ i.id }}" name="reason">{% for k, v in reasons.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+        <label for="d{{ i.id }}">{{ _("Date") }}</label><input id="d{{ i.id }}" type="date" name="removed_on">
+        <label for="n{{ i.id }}">{{ _("Note (optional)") }}</label><input id="n{{ i.id }}" name="note" maxlength="500">
+        <button type="submit">{{ _("Mark as removed") }}</button></form></details>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">{{ _("Nothing in the register for this patient.") }}</td></tr>{% endfor %}
+  </tbody></table></section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("Add an item") }}</h2>
+  <p class="muted small">{{ _("Copy the details from the label or sticker on the box. The lot number is what a recall will search for.") }}</p>
+  <div class="grid three">
+    <div><label for="kind">{{ _("Item") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="tooth">{{ _("Tooth") }}</label><input id="tooth" name="tooth" class="narrow" aria-describedby="toothhelp"><p id="toothhelp" class="small muted">{{ _(tooth_help) }}</p></div>
+    <div><label for="placed_on">{{ _("Placed on") }}</label><input id="placed_on" type="date" name="placed_on"></div>
+    <div><label for="maker">{{ _("Maker") }}</label><input id="maker" name="maker" maxlength="120" required></div>
+    <div><label for="product">{{ _("Product") }}</label><input id="product" name="product" maxlength="120"></div>
+    <div><label for="ref_code">{{ _("Catalogue or reference code") }}</label><input id="ref_code" name="ref_code" maxlength="60"></div>
+    <div><label for="lot">{{ _("Lot or batch number") }}</label><input id="lot" name="lot" maxlength="60" required></div>
+    <div><label for="size">{{ _("Size") }}</label><input id="size" name="size" maxlength="60"></div>
+    <div><label for="expires_on">{{ _("Expiry date") }}</label><input id="expires_on" type="date" name="expires_on"></div>
+    <div><label for="provider_id">{{ _("Placed by") }}</label><select id="provider_id" name="provider_id"><option value="">-</option>{% for pr in providers %}<option value="{{ pr.id }}">{{ pr.name }}</option>{% endfor %}</select></div>
+  </div>
+  <label for="notes">{{ _("Notes") }}</label><textarea id="notes" name="notes" rows="2"></textarea>
+  <p><button class="primary" type="submit">{{ _("Add to the register") }}</button></p></form>
+{% endblock %}

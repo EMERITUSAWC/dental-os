@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Monthly claim batches") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Monthly claim batches") }}</h1><a class="btn" href="{{ url_for('finance.claims_list') }}">{{ _("Claims") }}</a></div>
+<form method="get" class="card row"><label for="payer_id">{{ _("Payer") }}</label><select id="payer_id" name="payer_id"><option value="">-</option>{% for p in payers %}<option value="{{ p.id }}" {{ 'selected' if p.id == payer_id }}>{{ p.name }}</option>{% endfor %}</select>
+  <label for="month">{{ _("Month") }}</label><input id="month" type="month" name="month" value="{{ month }}"><button type="submit">{{ _("Show") }}</button></form>
+{% if payer_id %}<section class="card"><h2>{{ _("Draft claims for that month") }}: {{ ready|length }}</h2>
+  {% for c in ready %}<p class="small"><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a> {{ c.first_name }} {{ c.last_name }}{% if c.member_no %}, {{ c.member_no }}{% endif %}: {{ c.total_fee_p|money }}</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}
+  {% if ready %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="payer_id" value="{{ payer_id }}"><input type="hidden" name="month" value="{{ month }}"><button class="primary" type="submit">{{ _("Put them in a batch") }}</button></form>{% endif %}</section>{% endif %}
+<section class="card"><h2>{{ _("Batches") }}</h2>{% for b in rows %}<p><a href="{{ url_for('ghclaims.batch', bid=b.id) }}">{{ b.payer_name }}, {{ b.month }}</a>: {{ b.n }} {{ _("claims") }}, {{ b.total_p|money }} <span class="pill {{ 'ok' if b.status == 'sent' else 'warn' }}">{{ _(statuses[b.status]) }}</span></p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+{% endblock %}

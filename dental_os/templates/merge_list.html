@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Duplicate records") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Duplicate records") }}</h1><a class="btn" href="{{ url_for('views.patients') }}">{{ _("Patients") }}</a></div>
+<section class="card"><p class="muted small">{{ _("Records with the same phone number, or the same name and date of birth. Check each pair: a parent's phone on two children is not a duplicate.") }}</p>
+  <table><thead><tr><th>{{ _("Record") }}</th><th>{{ _("Record") }}</th><th>{{ _("Why") }}</th><th></th></tr></thead><tbody>
+  {% for r in rows %}<tr><td><a href="{{ url_for('views.patient_view', pid=r.a_id) }}">{{ r.a_first }} {{ r.a_last }}</a> <span class="small muted">{{ r.a_dob|date if r.a_dob else '' }}</span></td>
+    <td><a href="{{ url_for('views.patient_view', pid=r.b_id) }}">{{ r.b_first }} {{ r.b_last }}</a> <span class="small muted">{{ r.b_dob|date if r.b_dob else '' }}</span></td>
+    <td>{{ _("Same phone") if r.why == 'phone' else _("Same name and date of birth") }}</td>
+    <td class="row"><a class="btn" href="{{ url_for('merge.compare', keep=r.a_id, dup=r.b_id) }}">{{ _("Compare") }}</a>
+      <form method="post" action="{{ url_for('merge.not_duplicate') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="a" value="{{ r.a_id }}"><input type="hidden" name="b" value="{{ r.b_id }}"><button type="submit">{{ _("Different people") }}</button></form></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No likely duplicates.") }}</td></tr>{% endfor %}</tbody></table></section>
+<section class="card"><h2>{{ _("Merges done") }}</h2>{% for m in merges %}<p><a href="{{ url_for('merge.done', mid=m.id) }}">{{ m.first_name }} {{ m.last_name }}</a> {{ m.created_at|date }}{% if m.display_name %}, {{ m.display_name }}{% endif %}</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% endblock %}

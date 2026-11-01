@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ _("FP17 details") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><h1>{{ _("FP17 details") }}</h1><button class="primary" type="button" data-print>{{ _("Print") }}</button></div>
+{% if problems %}<div class="flash error no-print"><ul>{% for m in problems %}<li>{{ _(m) }}</li>{% endfor %}</ul></div>{% endif %}
+<section class="card">
+  <dl class="facts">
+    <dt>{{ _("Contract") }}</dt><dd>{{ s.contract_no or '' }}</dd>
+    <dt>{{ _("Performer") }}</dt><dd>{{ c.dentist }} ({{ c.nhs_performer_no or _("no performer number") }})</dd>
+    <dt>{{ _("Patient") }}</dt><dd>{{ c.last_name }}, {{ c.first_name }}</dd>
+    <dt>{{ _("Date of birth") }}</dt><dd>{{ c.dob|date if c.dob }}</dd>
+    <dt>{{ _("Sex") }}</dt><dd>{{ _(c.gender) if c.gender }}</dd>
+    <dt>{{ _("Address") }}</dt><dd>{{ c.address or '' }}</dd>
+    <dt>{{ _("Course") }}</dt><dd>{{ c.opened_on|date }} {{ _("to") }} {{ c.closed_on|date if c.closed_on }}</dd>
+    <dt>{{ _("Band") }}</dt><dd>{{ _(kinds[c.course_type]) if c.course_type }}</dd>
+    <dt>{{ _("UDA") }}</dt><dd>{{ c.uda if c.uda is not none }}</dd>
+    <dt>{{ _("Pays, or why free") }}</dt><dd>{{ _(exemptions[c.exemption]) }}, {{ _(evidence[c.evidence]).lower() }}</dd>
+    <dt>{{ _("Charge") }}</dt><dd>{{ (c.charge_p or 0)|money }}</dd>
+    <dt>{{ _("Declaration signed") }}</dt><dd>{{ c.declaration_on|date if c.declaration_on }}</dd>
+  </dl>
+  <h2>{{ _("Treatment") }}</h2>
+  {% for r in items %}<p>{{ r.done_on|date }}: {{ r.code }} {{ r.name }}{% if r.tooth %}, {{ _("tooth") }} {{ r.tooth|tooth }}{% endif %}</p>{% else %}<p class="muted">{{ _("None recorded.") }}</p>{% endfor %}
+</section>
+{% endblock %}

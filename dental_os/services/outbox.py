@@ -1,7 +1,7 @@
 """The list of messages waiting for a person to send, and the rules that fill it.
 
-Nothing here sends anything by itself. The official WhatsApp Business API is not connected, so each message is prepared
-and a person opens WhatsApp and presses send. The list is filled by `build`, which is safe to run as often as you like:
+Nothing here sends anything by itself. By default each message is prepared and a person opens WhatsApp and presses send.
+(A clinic that connects the official WhatsApp Business API can send through it instead: see services/whatsapp.py.) The list is filled by `build`, which is safe to run as often as you like:
 every message has a key, and the same key is never queued twice. Consent is checked when a message is queued and again
 when it is opened. 'care' messages (reminders, recalls, quote follow-ups) need the patient's agreement to appointment
 messages. 'offer' messages (birthday greetings, promotions) need their agreement to offers."""
@@ -12,7 +12,8 @@ from .messaging import wa_link
 from .timeutil import now_local, parse_date, parse_dt
 
 KINDS = {"reminder": "Visit reminder", "recall": "Check-up due", "review_request": "Review request", "birthday": "Birthday greeting",
-         "plan_followup": "Quote follow-up", "campaign": "Campaign"}
+         "plan_followup": "Quote follow-up", "campaign": "Campaign",
+         "reactivation": "Not seen for a while"}
 MAX_PLAN_CHASES = 3
 REVIEW_GAP_DAYS = 90
 
@@ -217,7 +218,8 @@ def text_for(db, clinic, o):
         body = db.execute("SELECT body FROM campaigns WHERE id = ?", (o["campaign_id"],)).fetchone()["body"]
     else:
         body = MT.body_for(db, clinic["id"], {"reminder": "reminder", "recall": "recall", "review_request": "review_request",
-                                              "birthday": "birthday", "plan_followup": "plan_followup"}[o["kind"]],
+                                              "birthday": "birthday", "plan_followup": "plan_followup",
+                                              "reactivation": "reactivation"}[o["kind"]],
                            i18n.patient_lang(p, clinic))
     try:
         return p, MT.render(body, ctx)
@@ -229,7 +231,7 @@ def queue(db, clinic, today=None):
     cid = clinic["id"]
     out = []
     for o in db.execute(
-            """SELECT o.*, p.first_name, p.last_name, p.phone FROM outbox o JOIN patients p ON p.id = o.patient_id
+            """SELECT o.*, p.first_name, p.last_name, p.phone, p.email, p.preferred_contact, p.prefers_sms FROM outbox o JOIN patients p ON p.id = o.patient_id
                WHERE o.clinic_id = ? AND o.status = 'queued' ORDER BY o.due_on, o.id LIMIT 300""", (cid,)).fetchall():
         try:
             text, error = text_for(db, clinic, o)[1], None

@@ -1,31 +1,41 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Files, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Files,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: files</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": files") }}</h1>
 {{ tabs(p, 'files') }}
-<section class="card"><h2>Add a file</h2>
+{% if stations %}<section class="card"><h2>{{ _("Take X-rays now") }}</h2>
+  {% for r in sessions %}<form method="post" action="{{ url_for('care.xray_done', rid=r.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <span><span class="pill ok">{{ r.station }}</span> {{ _("is sending its new images to this patient.") }} {{ _("Images received:") }} {{ r.files }}</span><button type="submit">{{ _("Finished") }}</button></form>{% endfor %}
+  <form method="post" action="{{ url_for('care.xray_now', pid=p.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="station">{{ _("X-ray computer") }}</label><select id="station" name="station">{% for s in stations %}<option value="{{ s.name }}">{{ s.name }}</option>{% endfor %}</select>
+    <button class="primary" type="submit">{{ _("Take X-rays now") }}</button></form>
+  <p class="muted small">{{ _("Patient ID to type in the sensor software:") }} <strong>DOS-{{ p.id }}</strong>. {{ _("DICOM files that carry it are filed on this patient whenever they arrive.") }}</p>
+</section>{% endif %}
+<section class="card"><h2>{{ _("Add a file") }}</h2>
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
     <div class="grid three">
-      <div><label for="file">File (PNG, JPEG, WebP, PDF or DICOM, up to 10 MB)</label><input id="file" type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.dcm" required></div>
-      <div><label for="kind">What it is</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
-      <div><label for="taken_on">Date taken</label><input id="taken_on" type="date" name="taken_on" value="{{ today }}"></div>
+      <div><label for="file">{{ _("File (PNG, JPEG, WebP, PDF or DICOM, up to 10 MB)") }}</label><input id="file" type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.dcm" required></div>
+      <div><label for="kind">{{ _("What it is") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div><label for="taken_on">{{ _("Date taken") }}</label><input id="taken_on" type="date" name="taken_on" value="{{ today }}"></div>
     </div>
-    <label for="note">Note</label><input id="note" name="note" maxlength="200">
-    <p><button class="primary" type="submit">Upload</button></p>
+    <label for="note">{{ _("Note") }}</label><input id="note" name="note" maxlength="200">
+    <p><button class="primary" type="submit">{{ _("Upload") }}</button></p>
   </form>
 </section>
-<section class="card"><h2>On this record</h2>
+<section class="card"><div class="row spread"><h2>{{ _("On this record") }}</h2><a href="{{ url_for('care.images', pid=p.id) }}">{{ _("X-ray layouts") }}</a></div>
   <div class="filegrid">
   {% for f in rows %}
     <div class="file">
       {% if f.mime in inline %}<a href="{{ url_for('record.file_get', file_id=f.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('record.file_get', file_id=f.id) }}" alt="{{ f.original_name }}" loading="lazy"></a>
+      {% elif f.mime == 'application/dicom' %}<a href="{{ url_for('care.viewer', file_id=f.id) }}"><img src="{{ url_for('record.file_preview', file_id=f.id) }}" alt="{{ f.original_name }}" loading="lazy"></a>
       {% else %}<a class="doc" href="{{ url_for('record.file_get', file_id=f.id) }}">{{ f.mime.split('/')[-1]|upper }}</a>{% endif %}
-      <div class="small"><strong>{{ kinds[f.kind] }}</strong>, {{ (f.taken_on or f.created_at[:10])|date }}<br>{{ f.original_name }}{% if f.note %}<br>{{ f.note }}{% endif %}</div>
-      <form method="post" action="{{ url_for('record.file_archive', file_id=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">Hide</button></form>
+      <div class="small"><strong>{{ _(kinds[f.kind]) }}</strong>, {{ (f.taken_on or f.created_at[:10])|date }}<br>{{ f.original_name }}{% if f.note %}<br>{{ f.note }}{% endif %}</div>
+      {% if f.mime in inline or f.mime == 'application/dicom' %}<p class="small"><a href="{{ url_for('care.viewer', file_id=f.id) }}">{{ _("Open in the viewer") }}</a></p>{% endif %}
+      <form method="post" action="{{ url_for('record.file_archive', file_id=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Hide") }}</button></form>
     </div>
-  {% else %}<p class="muted">No files yet.</p>{% endfor %}
+  {% else %}<p class="muted">{{ _("No files yet.") }}</p>{% endfor %}
   </div>
 </section>
 {% endblock %}

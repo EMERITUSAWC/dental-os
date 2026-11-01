@@ -1,0 +1,4 @@
+# Optional: lets the viewer show JPEG and JPEG 2000 compressed DICOM X-rays. Uncompressed DICOM needs nothing extra.
+Pillow>=10
+# Optional: makes large DICOM X-rays faster to show.
+numpy>=1.26

@@ -1,34 +1,34 @@
 {% extends "base.html" %}
-{% block title %}Patients{% endblock %}
+{% block title %}{{ _("Patients") }}{% endblock %}
 {% block body %}
 <div class="row spread">
-  <h1>{{ 'Who is the appointment for?' if booking else 'Patients' }}</h1>
-  <a class="btn primary" href="{{ url_for('views.patient_new') }}">New patient</a>
+  <h1>{{ _('Who is the appointment for?') if booking else _('Patients') }}</h1>
+  <div class="row">{% if user.role == 'manager' and not booking %}<a class="btn" href="{{ url_for('merge.duplicates') }}">{{ _("Duplicate records") }}</a>{% endif %}<a class="btn primary" href="{{ url_for('views.patient_new') }}">{{ _("New patient") }}</a></div>
 </div>
 <form method="get" class="card row">
   {% if booking %}<input type="hidden" name="book" value="1">{% endif %}
-  <input name="q" value="{{ q }}" placeholder="Name or phone number" aria-label="Search patients" style="flex:1;min-width:200px" autofocus>
-  <label class="check" style="margin:0"><input type="checkbox" name="archived" value="1" {{ 'checked' if archived }}> Include archived</label>
-  <button type="submit">Search</button>
+  <input name="q" value="{{ q }}" placeholder="{{ _('Name or phone number') }}" aria-label="{{ _('Search patients') }}" style="flex:1;min-width:200px" autofocus>
+  <label class="check" style="margin:0"><input type="checkbox" name="archived" value="1" {{ 'checked' if archived }}> {{ _("Include archived") }}</label>
+  <button type="submit">{{ _("Search") }}</button>
 </form>
 <div class="card">
-  <p class="muted small">{{ total }} found</p>
+  <p class="muted small">{{ _("%(n)s found", n=total) }}</p>
   <div class="tbl-wrap"><table>
-    <tr><th>Name</th><th>Phone</th><th>Messages</th><th></th></tr>
+    <tr><th>{{ _("Name") }}</th><th>{{ _("Phone") }}</th><th>{{ _("Messages") }}</th><th></th></tr>
     {% for p in rows %}
     <tr>
       <td><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>
-        {% if p.status == 'archived' %}<span class="pill">Archived</span>{% endif %}</td>
+        {% if p.status == 'archived' %}<span class="pill">{{ _("Archived") }}</span>{% endif %}</td>
       <td>{{ p.phone|phone }}</td>
-      <td>{% if p.reminders_ok %}<span class="pill ok">Agreed</span>{% else %}<span class="pill">Not agreed</span>{% endif %}</td>
-      <td>{% if booking and p.status == 'active' %}<a class="btn primary" href="{{ url_for('views.appointment_new', patient_id=p.id) }}">Book</a>{% endif %}</td>
+      <td>{% if p.reminders_ok %}<span class="pill ok">{{ _("Agreed") }}</span>{% else %}<span class="pill">{{ _("Not agreed") }}</span>{% endif %}</td>
+      <td>{% if booking and p.status == 'active' %}<a class="btn primary" href="{{ url_for('views.appointment_new', patient_id=p.id) }}">{{ _("Book") }}</a>{% endif %}</td>
     </tr>
-    {% else %}<tr><td colspan="4" class="muted">No patients match. <a href="{{ url_for('views.patient_new') }}">Add one</a>.</td></tr>
+    {% else %}<tr><td colspan="4" class="muted">{{ _("No patients match.") }} <a href="{{ url_for('views.patient_new') }}">{{ _("Add one") }}</a>.</td></tr>
     {% endfor %}
   </table></div>
   <div class="row" style="margin-top:12px">
-    {% if page > 1 %}<a class="btn" href="{{ url_for('views.patients', q=q, page=page-1, archived='1' if archived, book='1' if booking) }}">Previous</a>{% endif %}
-    {% if page * per_page < total %}<a class="btn" href="{{ url_for('views.patients', q=q, page=page+1, archived='1' if archived, book='1' if booking) }}">Next</a>{% endif %}
+    {% if page > 1 %}<a class="btn" href="{{ url_for('views.patients', q=q, page=page-1, archived='1' if archived, book='1' if booking) }}">{{ _("Previous") }}</a>{% endif %}
+    {% if page * per_page < total %}<a class="btn" href="{{ url_for('views.patients', q=q, page=page+1, archived='1' if archived, book='1' if booking) }}">{{ _("Next") }}</a>{% endif %}
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_diary_tabs.html" import tabs with context %}
+{% block title %}{{ _("Appointment types") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Diary set-up") }}</h1>
+{{ tabs(active) }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">{% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+  <h2>{{ _("Change this type") if edit else _("New appointment type") }}</h2>
+  <p class="muted small">{{ _("A type sets the length, the colour in the diary and the reason. Any treatments you tick are planned for the patient when the type is booked, or linked if they are already planned.") }}</p>
+  <div class="grid three">
+    <div><label for="name">{{ _("Name") }}</label><input id="name" name="name" maxlength="60" value="{{ edit.name if edit else '' }}" required></div>
+    <div><label for="duration">{{ _("Length") }}</label><select id="duration" name="duration">{% for d in durations %}<option value="{{ d }}" {{ 'selected' if edit and edit.duration_min == d or (not edit and d == 30) }}>{{ d }} {{ _("minutes") }}</option>{% endfor %}</select></div>
+    <div><label for="colour">{{ _("Colour") }}</label><select id="colour" name="colour">{% for k, v in colours.items() %}<option value="{{ k }}" {{ 'selected' if edit and edit.colour == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="grid two">
+    <div><label for="category">{{ _("Reason") }}</label><select id="category" name="category">{% for c in categories %}<option value="{{ c }}" {{ 'selected' if edit and edit.category == c }}>{{ _(c) }}</option>{% endfor %}</select></div>
+    <div><label for="block_kind">{{ _("May use held-back time kept for") }}</label><select id="block_kind" name="block_kind"><option value="">{{ _("None") }}</option>{% for k in held %}<option value="{{ k }}" {{ 'selected' if edit and edit.block_kind == k }}>{{ _(block_kinds[k]) }}</option>{% endfor %}</select></div>
+  </div>
+  {% if codes %}<fieldset><legend>{{ _("Treatments to plan when booked") }}</legend><div class="row">
+    {% for c in codes %}<label class="check" style="margin:0 12px 0 0"><input type="checkbox" name="procedure_id" value="{{ c.id }}" {{ 'checked' if c.id in chosen }}> <span>{{ c.name }}</span></label>{% endfor %}
+  </div></fieldset>{% endif %}
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button>{% if edit %}<a class="btn" href="{{ url_for('diary.types') }}">{{ _("Cancel") }}</a>{% endif %}</p>
+</form>
+<section class="card">
+  <div class="row spread"><h2>{{ _("Types") }}</h2>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" name="action" value="starters">{{ _("Add the starter types") }}</button></form></div>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Name") }}</th><th>{{ _("Length") }}</th><th>{{ _("Reason") }}</th><th>{{ _("Treatments") }}</th><th></th></tr>
+  {% for r in rows %}<tr class="{{ 'muted' if not r.active }}"><td><span class="swatch c-{{ r.colour }}"></span> {{ r.name }}{% if r.block_kind %} <span class="pill warn small">{{ _(block_kinds[r.block_kind]) }}</span>{% endif %}</td>
+    <td class="nw">{{ r.duration_min }} {{ _("minutes") }}</td><td>{{ _(r.category) }}</td>
+    <td class="small">{% for i in (r.procedure_ids or '').split(',') if i %}{{ names.get(i|int, '') }}{{ ', ' if not loop.last }}{% endfor %}</td>
+    <td class="nw"><a href="{{ url_for('diary.types', edit=r.id) }}">{{ _("Edit") }}</a>
+      <form method="post" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ r.id }}"><button class="link" type="submit" name="action" value="toggle">{{ _("Switch off") if r.active else _("Switch on") }}</button></form></td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("No types yet. Add the starter types, then change them to fit the clinic.") }}</p>{% endif %}
+</section>
+{% endblock %}

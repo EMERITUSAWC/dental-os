@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _d("Receipt") }} R-{{ '%06d' % pay.receipt_no }}{% endblock %}
+{% block title %}{{ _(None) }}{% endblock %}
 {% block body %}
 <div class="receipt card">
   <h1>{{ clinic.name }}</h1>
@@ -18,13 +18,13 @@
   <p class="muted small">{{ _d("Thank you. This is a payment receipt.") }}</p>
 </div>
 <div class="row no-print">
-  <button class="primary" data-print>Print</button>
-  <a class="btn" href="{{ url_for('clinical.account', pid=pay.patient_id) }}">Back to account</a>
+  <button class="primary" data-print>{{ _("Print") }}</button>
+  <a class="btn" href="{{ url_for('clinical.account', pid=pay.patient_id) }}">{{ _("Back to account") }}</a>
   {% if user.role == 'manager' and not pay.voided %}
   <form method="post" action="{{ url_for('clinical.payment_void', pay_id=pay.id) }}" class="row">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-    <input name="reason" placeholder="Why void this payment?" required style="width:240px" aria-label="Reason">
-    <button class="danger" type="submit">Void payment</button>
+    <input name="reason" placeholder="{{ _('Why void this payment?') }}" required style="width:240px" aria-label="{{ _('Reason') }}">
+    <button class="danger" type="submit">{{ _("Void payment") }}</button>
   </form>{% endif %}
 </div>
 {% endblock %}

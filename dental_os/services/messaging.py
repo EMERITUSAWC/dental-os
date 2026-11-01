@@ -1,5 +1,5 @@
 """WhatsApp messages. Version 1 prepares the text and opens WhatsApp for a person to press send.
-The official WhatsApp Business API can replace `open_whatsapp` later without changing the screens."""
+The official WhatsApp Business API is the other way to send: see whatsapp.py."""
 from urllib.parse import quote
 
 from . import audit, i18n

@@ -1,0 +1,8 @@
+{% macro tabs(active) %}
+<nav class="tabs" aria-label="{{ _('Electronic claims') }}">
+  <a href="{{ url_for('edi.home') }}" class="{{ 'on' if active == 'home' }}">{{ _("Send claims") }}</a>
+  <a href="{{ url_for('edi.import_file') }}" class="{{ 'on' if active == 'import' }}">{{ _("Read a file from the clearinghouse") }}</a>
+  {% if user.role == 'manager' %}<a href="{{ url_for('edi.setup') }}" class="{{ 'on' if active == 'setup' }}">{{ _("Set up") }}</a>{% endif %}
+  <a href="{{ url_for('finance.claims_list') }}">{{ _("All claims") }}</a>
+</nav>
+{% endmacro %}

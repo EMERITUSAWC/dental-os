@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Health form{% endblock %}
+{% block title %}{{ _("Health form") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Health form: {{ s.first_name }} {{ s.last_name }}</h1><a href="{{ url_for('comms.forms') }}">All forms</a></div>
-<p class="muted">Sent {{ s.submitted_at[:16] }}. Compare it with what is on file, then accept or dismiss it. Accepting replaces the history on file and updates the alerts.</p>
+<div class="row spread"><h1>{{ _("Health form:") }} {{ s.first_name }} {{ s.last_name }}</h1><a href="{{ url_for('comms.forms') }}">{{ _("All forms") }}</a></div>
+<p class="muted">{{ _("Sent") }} {{ s.submitted_at[:16] }}{{ _(". Compare it with what is on file, then accept or dismiss it. Accepting replaces the history on file and updates the alerts.") }}</p>
 <div class="grid two">
-<section class="card"><h2>What they wrote</h2><dl class="facts">
-  <dt>Conditions</dt><dd>{{ a.conditions or 'None given' }}</dd><dt>Medicines</dt><dd>{{ a.medications or 'None given' }}</dd><dt>Allergies</dt><dd>{{ a.allergies or 'None given' }}</dd>
-  <dt>Blood thinners</dt><dd>{{ 'Yes' if a.blood_thinners else 'No' }}</dd><dt>Pregnant</dt><dd>{{ a.pregnant or 'Not answered' }}</dd><dt>Smoker</dt><dd>{{ a.smoker or 'Not answered' }}</dd>
-  <dt>Other</dt><dd>{{ a.notes or '' }}</dd><dt>Messages</dt><dd>{{ 'Agreed to appointment messages' if a.agrees_messages else 'Not ticked' }}</dd></dl></section>
-<section class="card"><h2>On file now</h2>{% if old %}<dl class="facts">
-  <dt>Conditions</dt><dd>{{ old.conditions or 'None given' }}</dd><dt>Medicines</dt><dd>{{ old.medications or 'None given' }}</dd><dt>Allergies</dt><dd>{{ old.allergies or 'None given' }}</dd>
-  <dt>Blood thinners</dt><dd>{{ 'Yes' if old.blood_thinners else 'No' }}</dd><dt>Reviewed</dt><dd>{{ old.reviewed_on|date if old.reviewed_on else 'Not yet' }}</dd></dl>{% else %}<p class="muted">Nothing on file yet.</p>{% endif %}</section>
+<section class="card"><h2>{{ _("What they wrote") }}</h2><dl class="facts">
+  <dt>{{ _("Conditions") }}</dt><dd>{{ a.conditions or _('None given') }}</dd><dt>{{ _("Medicines") }}</dt><dd>{{ a.medications or _('None given') }}</dd><dt>{{ _("Allergies") }}</dt><dd>{{ a.allergies or _('None given') }}</dd>
+  <dt>{{ _("Blood thinners") }}</dt><dd>{{ _('Yes') if a.blood_thinners else _('No') }}</dd><dt>{{ _("Pregnant") }}</dt><dd>{{ a.pregnant or _('Not answered') }}</dd><dt>{{ _("Smoker") }}</dt><dd>{{ a.smoker or _('Not answered') }}</dd>
+  <dt>{{ _("Other") }}</dt><dd>{{ a.notes or '' }}</dd><dt>{{ _("Messages") }}</dt><dd>{{ _('Agreed to appointment messages') if a.agrees_messages else _('Not ticked') }}</dd></dl></section>
+<section class="card"><h2>{{ _("On file now") }}</h2>{% if old %}<dl class="facts">
+  <dt>{{ _("Conditions") }}</dt><dd>{{ old.conditions or _('None given') }}</dd><dt>{{ _("Medicines") }}</dt><dd>{{ old.medications or _('None given') }}</dd><dt>{{ _("Allergies") }}</dt><dd>{{ old.allergies or _('None given') }}</dd>
+  <dt>{{ _("Blood thinners") }}</dt><dd>{{ _('Yes') if old.blood_thinners else _('No') }}</dd><dt>{{ _("Reviewed") }}</dt><dd>{{ old.reviewed_on|date if old.reviewed_on else _('Not yet') }}</dd></dl>{% else %}<p class="muted">{{ _("Nothing on file yet.") }}</p>{% endif %}</section>
 </div>
 {% if s.status == 'pending' %}
 <div class="row">
-  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="accept"><button class="primary" type="submit">Accept into the record</button></form>
-  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="dismiss"><button type="submit">Dismiss</button></form>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="accept"><button class="primary" type="submit">{{ _("Accept into the record") }}</button></form>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="dismiss"><button type="submit">{{ _("Dismiss") }}</button></form>
 </div>
 {% else %}<p><span class="pill">{{ s.status|capitalize }}</span></p>{% endif %}
 {% endblock %}

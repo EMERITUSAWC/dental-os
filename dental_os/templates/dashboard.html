@@ -1,35 +1,45 @@
 {% extends "base.html" %}
 {% from "_status.html" import conf, alert_mark %}
 {% block body %}
-<h1>Today, {{ today|day }}</h1>
+<h1>{{ _("Today,") }} {{ today|day }}</h1>
 <div class="stats">
-  <div class="card"><div class="stat">{{ stats.booked }}</div><div class="muted">booked today</div></div>
-  <div class="card"><div class="stat">{{ stats.confirmed }}</div><div class="muted">confirmed</div></div>
-  <div class="card"><div class="stat">{{ stats.done }}</div><div class="muted">done so far</div></div>
+  <div class="card"><div class="stat">{{ stats.booked }}</div><div class="muted">{{ _("booked today") }}</div></div>
+  <div class="card"><div class="stat">{{ stats.confirmed }}</div><div class="muted">{{ _("confirmed") }}</div></div>
+  <div class="card"><div class="stat">{{ stats.done }}</div><div class="muted">{{ _("done so far") }}</div></div>
 </div>
 
-{% if attn.total %}<section class="card"><div class="row spread"><h2>Needs attention</h2><a href="{{ url_for('comms.queue') }}">Open messages</a></div>
-  <p>{% if attn.queue %}<a href="{{ url_for('comms.queue') }}">{{ attn.queue }} message{{ '' if attn.queue == 1 else 's' }} to send</a>. {% endif %}
-  {% if attn.replies %}<a href="{{ url_for('comms.replies') }}">{{ attn.replies }} unread repl{{ 'y' if attn.replies == 1 else 'ies' }}</a>. {% endif %}
-  {% if attn.requests %}<a href="{{ url_for('comms.requests_list') }}">{{ attn.requests }} booking request{{ '' if attn.requests == 1 else 's' }}</a>. {% endif %}
-  {% if attn.intake %}<a href="{{ url_for('comms.forms') }}">{{ attn.intake }} health form{{ '' if attn.intake == 1 else 's' }} to check</a>.{% endif %}</p></section>{% endif %}
-
-{% if privacy and (privacy.requests_open or privacy.incidents_open) %}<section class="card"><h2>Privacy</h2>
-  <p>{% if privacy.requests_open %}<a href="{{ url_for('privacy.requests_list') }}">{{ privacy.requests_open }} data request{{ '' if privacy.requests_open == 1 else 's' }} open{% if privacy.requests_late %}, <strong>{{ privacy.requests_late }} late</strong>{% endif %}</a>. {% endif %}
-  {% if privacy.incidents_open %}<a href="{{ url_for('privacy.incidents_list') }}">{{ privacy.incidents_open }} incident{{ '' if privacy.incidents_open == 1 else 's' }} open{% if privacy.incidents_late %}, <strong>{{ privacy.incidents_late }} past the reporting clock</strong>{% endif %}</a>.{% endif %}</p>
+{% if equip and (equip.overdue or equip.faults) %}<section class="card"><div class="row spread"><h2>{{ _("Equipment") }}</h2><a href="{{ url_for('team.equipment') }}">{{ _("Open the register") }}</a></div>
+  <p>{% for x in equip.faults %}<span class="pill bad">{{ x.item.name }}: {{ _("fault") }}</span> {% endfor %}{% for x in equip.overdue %}<span class="pill warn">{{ x.item.name }}: {{ _("service due") }}</span> {% endfor %}</p></section>{% endif %}
+{% if steri and steri.warnings %}<section class="card"><div class="row spread"><h2>{{ _("Sterilisation") }}</h2><a href="{{ url_for('steri.home') }}">{{ _("Open sterilisation") }}</a></div>
+  <p>{% if steri.recalls %}<span class="pill bad">{{ _("Open recall") }}</span> {% endif %}{% for r in steri.rows %}{% if r.s.status == 'out' %}<span class="pill bad">{{ r.s.name }}: {{ _("out of service") }}</span> {% elif r.due %}<span class="pill warn">{{ r.s.name }}: {{ _("checks missing") }}</span> {% endif %}{% endfor %}{% if steri.expired %}<span class="pill bad">{{ _("%(n)s packs past their use-by date", n=steri.expired) }}</span>{% endif %}</p>
 </section>{% endif %}
-{% if lab.late or lab.ready or (stock and (stock.low or stock.expired)) %}<section class="card"><h2>Lab and stock</h2>
-  <p>{% if lab.late %}<a href="{{ url_for('ops.lab_board') }}">{{ lab.late }} lab case{{ '' if lab.late == 1 else 's' }} late</a>. {% endif %}
-  {% if lab.ready %}<a href="{{ url_for('ops.lab_board') }}">{{ lab.ready }} lab case{{ '' if lab.ready == 1 else 's' }} back, ready to fit</a>. {% endif %}
-  {% if stock and stock.low %}<a href="{{ url_for('ops.stock_order') }}">{{ stock.low }} item{{ '' if stock.low == 1 else 's' }} to reorder</a>. {% endif %}
-  {% if stock and stock.expired %}<a href="{{ url_for('ops.stock_expiry') }}">{{ stock.expired }} item{{ '' if stock.expired == 1 else 's' }} with expired stock</a>.{% endif %}</p></section>{% endif %}
+{% if attn.total %}<section class="card"><div class="row spread"><h2>{{ _("Needs attention") }}</h2><a href="{{ url_for('comms.queue') }}">{{ _("Open messages") }}</a></div>
+  <p>{% if attn.queue %}<a href="{{ url_for('comms.queue') }}">{{ _("%(n)s message to send", n=attn.queue) if attn.queue == 1 else _("%(n)s messages to send", n=attn.queue) }}</a>. {% endif %}
+  {% if attn.replies %}<a href="{{ url_for('comms.replies') }}">{{ _("%(n)s unread reply", n=attn.replies) if attn.replies == 1 else _("%(n)s unread replies", n=attn.replies) }}</a>. {% endif %}
+  {% if attn.requests %}<a href="{{ url_for('comms.requests_list') }}">{{ _("%(n)s booking request", n=attn.requests) if attn.requests == 1 else _("%(n)s booking requests", n=attn.requests) }}</a>. {% endif %}
+  {% if attn.intake %}<a href="{{ url_for('comms.forms') }}">{{ _("%(n)s health form to check", n=attn.intake) if attn.intake == 1 else _("%(n)s health forms to check", n=attn.intake) }}</a>.{% endif %}</p></section>{% endif %}
+
+{% if privacy and (privacy.requests_open or privacy.incidents_open) %}<section class="card"><h2>{{ _("Privacy") }}</h2>
+  <p>{% if privacy.requests_open %}<a href="{{ url_for('privacy.requests_list') }}">{{ _("%(n)s data request open", n=privacy.requests_open) if privacy.requests_open == 1 else _("%(n)s data requests open", n=privacy.requests_open) }}{% if privacy.requests_late %}, <strong>{{ _("%(n)s late", n=privacy.requests_late) }}</strong>{% endif %}</a>. {% endif %}
+  {% if privacy.incidents_open %}<a href="{{ url_for('privacy.incidents_list') }}">{{ _("%(n)s incident open", n=privacy.incidents_open) if privacy.incidents_open == 1 else _("%(n)s incidents open", n=privacy.incidents_open) }}{% if privacy.incidents_late %}, <strong>{{ _("%(n)s past the reporting clock", n=privacy.incidents_late) }}</strong>{% endif %}</a>.{% endif %}</p>
+</section>{% endif %}
+{% if lab.late or lab.ready or (stock and (stock.low or stock.expired)) %}<section class="card"><h2>{{ _("Lab and stock") }}</h2>
+  <p>{% if lab.late %}<a href="{{ url_for('ops.lab_board') }}">{{ _("%(n)s lab case late", n=lab.late) if lab.late == 1 else _("%(n)s lab cases late", n=lab.late) }}</a>. {% endif %}
+  {% if lab.ready %}<a href="{{ url_for('ops.lab_board') }}">{{ _("%(n)s lab case back, ready to fit", n=lab.ready) if lab.ready == 1 else _("%(n)s lab cases back, ready to fit", n=lab.ready) }}</a>. {% endif %}
+  {% if stock and stock.low %}<a href="{{ url_for('ops.stock_order') }}">{{ _("%(n)s item to reorder", n=stock.low) if stock.low == 1 else _("%(n)s items to reorder", n=stock.low) }}</a>. {% endif %}
+  {% if stock and stock.expired %}<a href="{{ url_for('ops.stock_expiry') }}">{{ _("%(n)s item with expired stock", n=stock.expired) if stock.expired == 1 else _("%(n)s items with expired stock", n=stock.expired) }}</a>.{% endif %}</p></section>{% endif %}
+
+{% if user.role in ('manager', 'front_desk') %}<p class="row no-print"><a class="btn" href="{{ url_for('diary.board') }}">{{ _("Check-in board") }}</a> <a class="btn" href="{{ url_for('practice.day_sheet') }}">{{ _("Day sheet") }}</a> <a class="btn" href="{{ url_for('practice.cashup') }}">{{ _("Cash-up") }}</a> <a class="btn" href="{{ url_for('practice.unscheduled') }}">{{ _("Treatment not booked") }}</a></p>{% endif %}
+{% if follow_ups %}<section class="card"><h2>{{ _("Follow-ups due") }}</h2>
+  {% for c in follow_ups %}<p><a href="{{ url_for('care.contacts', pid=c.patient_id) }}">{{ c.first_name }} {{ c.last_name }}</a>: {{ c.summary[:90] }} <span class="muted small">{{ c.follow_up_on|date }}</span></p>{% endfor %}
+</section>{% endif %}
 
 <div class="grid two">
   <section class="card">
-    <div class="row spread"><h2>Today's patients</h2><a href="{{ url_for('views.diary') }}">Open diary</a></div>
+    <div class="row spread"><h2>{{ _("Today's patients") }}</h2><a href="{{ url_for('views.diary') }}">{{ _("Open diary") }}</a></div>
     {% if todays %}
     <div class="tbl-wrap"><table>
-      <tr><th>Time</th><th>Patient</th><th class="hide-sm">Dentist</th><th>Status</th></tr>
+      <tr><th>{{ _("Time") }}</th><th>{{ _("Patient") }}</th><th class="hide-sm">{{ _("Dentist") }}</th><th>{{ _("Status") }}</th></tr>
       {% for a in todays %}
       <tr>
         <td class="nw">{{ a.start_at|time }}</td>
@@ -39,11 +49,11 @@
       </tr>
       {% endfor %}
     </table></div>
-    {% else %}<p class="muted">Nobody is booked today.</p>{% endif %}
+    {% else %}<p class="muted">{{ _("Nobody is booked today.") }}</p>{% endif %}
   </section>
 
   <section class="card">
-    <h2>To chase for tomorrow, {{ tomorrow|day }}</h2>
+    <h2>{{ _("To chase for tomorrow,") }} {{ tomorrow|day }}</h2>
     {% if to_chase %}
     <div class="tbl-wrap"><table>
       {% for a in to_chase %}
@@ -54,31 +64,32 @@
           {% if a.reminders_ok %}
           <form method="post" action="{{ url_for('views.appointment_whatsapp', aid=a.id) }}" target="_blank">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="reminder">
-            <button type="submit">WhatsApp</button>
+            <button type="submit">{{ _("WhatsApp") }}</button>
           </form>
-          {% else %}<span class="muted small">No consent</span>{% endif %}
+          {% else %}<span class="muted small">{{ _("No consent") }}</span>{% endif %}
         </td>
       </tr>
       {% endfor %}
     </table></div>
-    {% else %}<p class="muted">Everyone for tomorrow is confirmed, or nobody is booked.</p>{% endif %}
+    {% else %}<p class="muted">{{ _("Everyone for tomorrow is confirmed, or nobody is booked.") }}</p>{% endif %}
   </section>
 
   <section class="card">
-    <h2>Waiting list</h2>
+    <h2>{{ _("Waiting list") }}</h2>
     {% for a in waiting %}
       <p><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}
         {{ conf(a) }} <span class="muted small">{{ a.category }}</span></p>
-    {% else %}<p class="muted">Nobody is waiting for a slot.</p>{% endfor %}
+    {% else %}<p class="muted">{{ _("Nobody is waiting for a slot.") }}</p>{% endfor %}
   </section>
 
   <section class="card">
-    <h2>Birthdays in the next 7 days</h2>
-    <p class="muted small">Only patients who agreed to offers.</p>
+    <h2>{{ _("Birthdays in the next 7 days") }}</h2>
+    <p class="muted small">{{ _("Only patients who agreed to offers.") }}</p>
     {% for gap, when, p in birthdays %}
       <p><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>
         <span class="muted">{{ 'today' if gap == 0 else when|day }}</span></p>
-    {% else %}<p class="muted">None.</p>{% endfor %}
+    {% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}
   </section>
 </div>
+<p class="small muted no-print"><a href="{{ url_for('gov.complaint_new') }}">{{ _("Write down a complaint") }}</a> | <a href="{{ url_for('gov.incident_new') }}">{{ _("Report an incident") }}</a> | <a href="{{ url_for('cpd.mine') }}">{{ _("My CPD") }}</a></p>
 {% endblock %}

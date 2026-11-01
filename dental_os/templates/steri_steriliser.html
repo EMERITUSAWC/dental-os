@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ s.name }}{% endblock %}
+{% block body %}
+<h1>{{ s.name }} <span class="muted small">{{ _(kinds[s.kind]) }}{% if s.serial %}, {{ s.serial }}{% endif %}</span></h1>
+{{ tabs('') }}
+<section class="card">
+  {% if s.status == 'out' %}
+    <p><span class="pill bad">{{ _("Out of service") }}</span> {{ _("since") }} {{ s.out_since|date }}: {{ _(test_names[s.out_test]) }} {{ _("failed") }}.</p>
+    <p>{{ _("Passes recorded since then:") }} {{ s.passes_since }} / {{ need }}.
+      {% if need == 3 %}{{ _("After two failed spore tests in a row it needs three passing spore tests in a row, run on full loads, and a check by an engineer.") }}{% endif %}</p>
+    <form method="post" action="{{ url_for('steri.test_add') }}" class="row">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="sid" value="{{ s.id }}"><input type="hidden" name="kind" value="{{ s.out_test }}">
+      <input type="hidden" name="back" value="{{ url_for('steri.steriliser', sid=s.id) }}">
+      <label class="sr-only" for="lot">{{ _("Lot number (spore tests)") }}</label><input id="lot" name="lot" placeholder="{{ _('Lot number (spore tests)') }}" maxlength="40">
+      <button type="submit" name="result" value="pass">{{ _("Record a pass") }}</button><button type="submit" name="result" value="fail">{{ _("Record a fail") }}</button>
+      {% if s.out_test == 'spore' %}<button type="submit" name="result" value="pending">{{ _("Waiting for the result") }}</button>{% endif %}
+    </form>
+    {% if user.role == 'manager' %}<form method="post" action="{{ url_for('steri.back_in_service', sid=s.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <label for="note">{{ _("What was found and done") }}</label><input id="note" name="note" maxlength="500" required>
+      <p><button class="primary" type="submit" {{ 'disabled' if not can_return }}>{{ _("Put back in service") }}</button></p>
+    </form>{% endif %}
+  {% else %}<p><span class="pill ok">{{ _("In service") }}</span>{% if s.validated_on %} {{ _("Last yearly validation:") }} {{ s.validated_on|date }}{% endif %}</p>{% endif %}
+  {% if due %}<ul>{% for d in due %}<li>{{ _(test_names[d.kind]) }}</li>{% endfor %}</ul>{% endif %}
+</section>
+<section class="card"><h2>{{ _("Tests") }}</h2>
+  {% if tests %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Test") }}</th><th>{{ _("Result") }}</th><th>{{ _("Lot") }}</th><th>{{ _("By") }}</th></tr>
+  {% for t in tests %}<tr><td class="nw">{{ t.done_at|date }} {{ t.done_at[11:16] }}</td><td>{{ _(test_names[t.kind]) }}</td>
+    <td><span class="pill {{ 'ok' if t.result == 'pass' else ('bad' if t.result == 'fail' else 'warn') }}">{{ _(results[t.result]) }}</span></td><td>{{ t.lot or '' }}</td><td>{{ t.by_name or '' }}</td></tr>{% endfor %}</table></div>
+  {% else %}<p class="muted">{{ _("No tests yet.") }}</p>{% endif %}
+</section>
+<section class="card"><h2>{{ _("Cycles") }}</h2>
+  {% for c in cycles %}<p><a href="{{ url_for('steri.cycle_view', cycle_id=c.id) }}">{{ _("Cycle") }} {{ c.cycle_no }}</a>, {{ c.started_at|date }}: <span class="pill {{ 'ok' if c.result == 'pass' else ('bad' if c.result == 'fail' else 'warn') }}">{{ _(cycle_results[c.result]) }}</span></p>{% else %}<p class="muted">{{ _("No cycles yet.") }}</p>{% endfor %}
+</section>
+{% if log %}<section class="card"><h2>{{ _("Back in service") }}</h2>{% for l in log %}<p>{{ l.at|date }}, {{ l.by_name }}: {{ l.note }}</p>{% endfor %}</section>{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Patients in credit") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Patients in credit") }}</h1>
+<section class="card"><p class="muted small">{{ _("Patients who have paid more than their treatment so far. Keep it for work still to come, or refund it from their account.") }}</p>
+  <table><thead><tr><th>{{ _("Patient") }}</th><th>{{ _("Credit") }}</th></tr></thead><tbody>
+  {% for x in rows %}<tr><td><a href="{{ url_for('clinical.account', pid=x.p.id) }}">{{ x.p.first_name }} {{ x.p.last_name }}</a>{% if x.p.status != 'active' %} <span class="pill">{{ _("Archived") }}</span>{% endif %}</td><td class="nw">{{ x.credit|money }}</td></tr>
+  {% else %}<tr><td colspan="2" class="muted">{{ _("Nobody is in credit.") }}</td></tr>{% endfor %}</tbody></table>
+  {% if rows %}<p><strong>{{ _("Total") }}: {{ rows|sum(attribute='credit')|money }}</strong></p>{% endif %}</section>
+{% endblock %}

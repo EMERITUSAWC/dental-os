@@ -1,41 +1,67 @@
 {% extends "base.html" %}
 {% from "_status.html" import conf %}
-{% block title %}Appointment{% endblock %}
+{% block title %}{{ _("Appointment") }}{% endblock %}
 {% block body %}
 <div class="row spread">
   <h1><a href="{{ url_for('views.patient_view', pid=a.patient_id) }}">{{ a.first_name }} {{ a.last_name }}</a> {{ conf(a) }}
 </h1>
   {% if a.status in ('scheduled','asap','unscheduled','planned') %}
-  <a class="btn" href="{{ url_for('views.appointment_reschedule', aid=a.id) }}">{{ 'Move' if a.status == 'scheduled' else 'Give it a time' }}</a>{% endif %}
+  <a class="btn" href="{{ url_for('views.appointment_reschedule', aid=a.id) }}">{{ _('Move') if a.status == 'scheduled' else _('Give it a time') }}</a>{% endif %}
 </div>
 
 {% set al = alerts_for(a.patient_id) %}
-{% if al %}<div class="alertbar" role="note" aria-label="Alerts for this patient">{% for x in al %}<span class="alert {{ x.severity }}"><strong>{{ x.kind|capitalize }}:</strong> {{ x.text }}</span>{% endfor %}</div>{% endif %}
+{% if al %}<div class="alertbar" role="note" aria-label="{{ _('Alerts for this patient') }}">{% for x in al %}<span class="alert {{ x.severity }}"><strong>{{ {'allergy': _('Allergy'), 'medical': _('Medical'), 'medication': _('Medicine'), 'behaviour': _('Behaviour'), 'other': _('Note')}.get(x.kind, x.kind|capitalize) }}:</strong> {{ x.text }}</span>{% endfor %}</div>{% endif %}
 <section class="card">
   <dl class="facts">
-    <dt>When</dt><dd>{% if start %}{{ start|day }}, {{ start|time }} for {{ a.duration_min }} minutes{% else %}No time yet{% endif %}</dd>
-    <dt>Dentist</dt><dd>{{ a.provider_name or 'Any' }}</dd>
-    <dt>Chair</dt><dd>{{ a.chair_name or '' }}</dd>
-    <dt>Reason</dt><dd>{{ a.category }}</dd>
-    <dt>Note</dt><dd>{{ a.notes or 'None' }}</dd>
+    <dt>{{ _("When") }}</dt><dd>{% if start %}{{ start|day }}, {{ start|time }} {{ _("for %(n)s minutes", n=a.duration_min) }}{% else %}{{ _("No time yet") }}{% endif %}</dd>
+    <dt>{{ _("Dentist") }}</dt><dd>{{ a.provider_name or _('Any') }}</dd>
+    <dt>{{ _("Chair") }}</dt><dd>{{ a.chair_name or '' }}</dd>
+    <dt>{{ _("Reason") }}</dt><dd>{{ _(a.category) }}</dd>
+    {% if a.type_name %}<dt>{{ _("Appointment type") }}</dt><dd><span class="swatch c-{{ a.type_colour }}"></span> {{ a.type_name }}</dd>{% endif %}
+    {% if a.arrived_at %}<dt>{{ _("Checked in") }}</dt><dd>{{ a.arrived_at|time }}</dd>{% endif %}
+    {% if a.seated_at %}<dt>{{ _("Taken in") }}</dt><dd>{{ a.seated_at|time }}</dd>{% endif %}
+    {% if a.dismissed_at %}<dt>{{ _("Has left") }}</dt><dd>{{ a.dismissed_at|time }}</dd>{% endif %}
+    <dt>{{ _("Note") }}</dt><dd>{{ a.notes or _('None') }}</dd>
   </dl>
 </section>
 
+{% if is_today and a.status in ('scheduled', 'complete') %}
+<section class="card">
+  <h2>{{ _("Check-in") }}</h2>
+  {% set acts = {'expected': (('arrive', _('Check in')), ('seat', _('Take in'))), 'waiting': (('seat', _('Take in')), ('undo', _('Undo'))), 'in_chair': (('leave', _('Finished')), ('undo', _('Undo'))), 'left': (('undo', _('Undo')),)} %}
+  <div class="row">{% for act, label in acts[stage] %}
+    <form method="post" action="{{ url_for('diary.stage', aid=a.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ act }}"><input type="hidden" name="back" value="{{ url_for('views.appointment_view', aid=a.id) }}">
+      <button type="submit" class="{{ 'primary' if loop.first and act != 'undo' }}">{{ label }}</button></form>{% endfor %}
+    <a class="btn" href="{{ url_for('diary.board') }}">{{ _("Check-in board") }}</a></div>
+</section>
+{% endif %}
+
+{% if a.status == 'broken' and start %}
+<section class="card"><p><a class="btn" href="{{ url_for('diary.gap', aid=a.id) }}">{{ _("Fill the gap from the waiting list") }}</a></p></section>
+{% endif %}
+
 {% if a.status == 'scheduled' %}
 <section class="card">
-  <h2>Confirm with the patient</h2>
+  <h2>{{ _("Confirm with the patient") }}</h2>
   {% if can_message %}
   <div class="row">
-    {% for kind, label in (('confirmation', 'WhatsApp: confirm booking'), ('reminder', 'WhatsApp: reminder')) %}
+    {% for kind, label in (('confirmation', _('WhatsApp: confirm booking')), ('reminder', _('WhatsApp: reminder'))) %}
     <form method="post" action="{{ url_for('views.appointment_whatsapp', aid=a.id) }}" target="_blank">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="{{ kind }}">
       <button type="submit" class="{{ 'primary' if kind == 'confirmation' }}">{{ label }}</button>
     </form>{% endfor %}
   </div>
-  <p class="muted small">This opens WhatsApp with the message ready. You press send. The message is logged here.</p>
-  {% else %}<p class="muted">This patient has not agreed to WhatsApp messages. Tick it on their record once they agree.</p>{% endif %}
+  {% if api_on %}<div class="row">
+    {% for kind, label in (('confirmation', _('Send confirmation through the API')), ('reminder', _('Send reminder through the API'))) %}
+    <form method="post" action="{{ url_for('views.appointment_whatsapp_api', aid=a.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="{{ kind }}">
+      <button type="submit">{{ label }}</button>
+    </form>{% endfor %}
+  </div>{% endif %}
+  <p class="muted small">{{ _("This opens WhatsApp with the message ready. You press send. The message is logged here.") }}</p>
+  {% else %}<p class="muted">{{ _("This patient has not agreed to WhatsApp messages. Tick it on their record once they agree.") }}</p>{% endif %}
   <div class="row">
-    {% for v, t in (('confirmed', 'They confirmed'), ('declined', 'They declined'), ('failed', 'Message did not go through'), ('none', 'Reset')) %}
+    {% for v, t in (('confirmed', _('They confirmed')), ('declined', _('They declined')), ('failed', _('Message did not go through')), ('none', _('Reset'))) %}
     <form method="post" action="{{ url_for('views.appointment_confirmation', aid=a.id) }}">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="value" value="{{ v }}">
       <button type="submit">{{ t }}</button>
@@ -44,16 +70,16 @@
 </section>
 
 <section class="card">
-  <h2>After the visit</h2>
+  <h2>{{ _("After the visit") }}</h2>
   <div class="row">
     <form method="post" action="{{ url_for('views.appointment_status', aid=a.id) }}">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="status" value="complete">
-      <button class="primary" type="submit">Mark as done</button>
+      <button class="primary" type="submit">{{ _("Mark as done") }}</button>
     </form>
     <form method="post" action="{{ url_for('views.appointment_status', aid=a.id) }}" class="row">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="status" value="broken">
-      <select name="reason" aria-label="Why" style="width:auto"><option value="missed">Did not come</option><option value="cancelled">Cancelled</option></select>
-      <button class="danger" type="submit">Mark as missed or cancelled</button>
+      <select name="reason" aria-label="{{ _('Why') }}" style="width:auto"><option value="missed">{{ _("Did not come") }}</option><option value="cancelled">{{ _("Cancelled") }}</option></select>
+      <button class="danger" type="submit">{{ _("Mark as missed or cancelled") }}</button>
     </form>
   </div>
 </section>

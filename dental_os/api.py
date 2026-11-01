@@ -283,3 +283,37 @@ def appointment_status(aid):
         return fail(409, "cannot_change", str(exc))
     audit.log(db, clinic["id"], None, "api.write", "api_key", g.api_key["id"], f"POST /appointments/{aid}/status")
     return jsonify({"data": serialize.appointment(db.execute("SELECT * FROM appointments WHERE id = ?", (aid,)).fetchone())})
+
+
+# ---------------------------------------------------------------------------------------------- the imaging bridge (0.25)
+@bp.get("/imaging/next")
+def imaging_next():
+    """For the imaging agent: which patient, if any, is waiting for X-rays on this computer."""
+    from .services import imaging
+    try:
+        r = imaging.next_for(get_db(), g.clinic, request.args.get("station", ""))
+    except imaging.ImagingError as exc:
+        return fail(400, "bad_station", str(exc))
+    return jsonify({"data": r})
+
+
+@bp.post("/imaging/files")
+def imaging_file():
+    """For the imaging agent: one image, as base64 JSON. It is filed as an X-ray. Nothing clinical is sent back."""
+    from .record import _files_root
+    from .services import imaging
+    if g.api_key["access"] != "write":
+        return fail(403, "read_only_key", "This key can only read. Make a read and write key to change data.")
+    db, body = get_db(), _body()
+    kind = body.get("kind") or "xray"
+    try:
+        fid, pid = imaging.receive(db, g.clinic, g.api_key["created_by"], str(body.get("station") or ""), str(body.get("file_name") or "image"),
+                                   body.get("data_base64"), _files_root(), body.get("request_id"), kind if kind in ("xray", "photo") else "xray",
+                                   body.get("taken_on"))
+    except imaging.ImagingError as exc:
+        db.rollback()
+        return fail(422, "not_filed", str(exc))
+    audit.log(db, g.clinic["id"], None, "api.write", "api_key", g.api_key["id"], "POST /imaging/files")
+    resp = jsonify({"data": {"file_id": fid, "patient_id": pid}})
+    resp.status_code = 201
+    return resp

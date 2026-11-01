@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Phone calls") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Phone calls") }}</h1>
+<section class="card">
+  <p>{{ _("With a Twilio phone number, calls to the clinic ring the desk phone and every screen shows who is calling. A call nobody answers becomes a call-back task. Staff can call a patient from their record: the desk phone rings first, then the patient's, and the patient sees the clinic's number.") }}</p>
+  <p class="muted small">{{ _("Calls are not recorded. Recording needs the caller's consent, and the rules differ by country.") }}</p>
+  {% if a %}<p>{% if a.enabled %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill">{{ _("Off") }}</span>{% endif %}{% if a.auth_token %} {{ _("Auth token saved.") }}{% endif %}</p>{% endif %}
+</section>
+<form method="post" class="card" autocomplete="off">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid two">
+    <div><label for="account_sid">{{ _("Twilio Account SID") }}</label><input id="account_sid" name="account_sid" value="{{ a.account_sid or '' if a else '' }}" placeholder="AC..."></div>
+    <div><label for="auth_token">{{ _("Auth token (leave empty to keep the saved one)") }}</label><input id="auth_token" name="auth_token" type="password" autocomplete="off"></div>
+  </div>
+  <div class="grid three">
+    <div><label for="twilio_number">{{ _("The clinic's Twilio number") }}</label><input id="twilio_number" name="twilio_number" value="{{ a.twilio_number or '' if a else '' }}" placeholder="+233302123456"></div>
+    <div><label for="desk_number">{{ _("The desk phone that rings") }}</label><input id="desk_number" name="desk_number" value="{{ a.desk_number or '' if a else '' }}" placeholder="+233244123456"></div>
+    <div><label for="missed_task_to">{{ _("Call-back tasks go to") }}</label><select id="missed_task_to" name="missed_task_to"><option value="">{{ _("Everyone") }}</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if a and a.missed_task_to == u.id }}>{{ u.display_name }}</option>{% endfor %}</select></div>
+  </div>
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if a and a.enabled }}> <span>{{ _("Switch phone calls on") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% if hook %}<section class="card"><h2>{{ _("Address for Twilio") }}</h2>
+  <p class="muted small">{{ _("In Twilio, open the phone number and set A call comes in to Webhook, HTTP POST, this address:") }}</p>
+  <p class="keybox">{{ hook }}</p></section>{% endif %}
+{% endblock %}

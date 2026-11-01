@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Imaging bridge") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Imaging bridge") }}</h1>
+<section class="card">
+  <p>{{ _("The imaging agent is a small program for the computer the X-ray sensor is plugged into. It watches the folder where the sensor software saves images and files each new image on the patient staff picked with Take X-rays now. It works with any sensor software that saves PNG, JPEG or DICOM files into a folder.") }}</p>
+  <ol>
+    <li>{{ _("Add the X-ray computer below.") }}</li>
+    <li>{{ _("Make a read and write API key under Tools, API and webhooks.") }}</li>
+    <li>{{ _("On the X-ray computer, install Python 3 and copy tools/imaging_agent.py from this system's files.") }}</li>
+    <li>{{ _("Run it once with --setup to write its settings file, then run it with no options. It needs no other software.") }}</li>
+  </ol>
+  <p class="muted small">{{ _("It can also open the sensor software for the waiting patient, if that software accepts a patient on its command line. The settings file explains how.") }}</p>
+</section>
+<section class="card"><h2>{{ _("X-ray computers") }}</h2>
+  {% for s in rows %}<p><strong>{{ s.name }}</strong>: {% if s.last_seen and s.last_seen >= recent %}<span class="pill ok">{{ _("Agent running") }}</span>{% elif s.last_seen %}<span class="pill warn">{{ _("Agent last seen") }} {{ s.last_seen[:16] }} UTC</span>{% else %}<span class="pill">{{ _("Agent not seen yet") }}</span>{% endif %}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="name">{{ _("Name") }}</label><input id="name" name="name" placeholder="{{ _('For example Surgery 1') }}" maxlength="40" required>
+    <button class="primary" type="submit">{{ _("Add") }}</button></form>
+</section>
+{% endblock %}

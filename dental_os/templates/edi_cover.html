@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ _("US claim details") }}{% endblock %}
+{% block body %}
+<h1>{{ _("US claim details") }}: {{ p.first_name }} {{ p.last_name }}</h1>
+<p><a href="{{ url_for('finance.patient_insurance', pid=p.id) }}">{{ _("Back to insurance") }}</a></p>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="relationship">{{ _("Who holds the policy") }}</label>
+  <select id="relationship" name="relationship">{% for k, v in relations.items() %}<option value="{{ k }}" {{ 'selected' if c.relationship == k }}>{{ _(v) }}</option>{% endfor %}</select>
+  <div class="grid three">
+    <div><label for="holder_first">{{ _("Holder's first name") }}</label><input id="holder_first" name="holder_first" value="{{ c.holder_first or '' }}"></div>
+    <div><label for="holder_last">{{ _("Holder's last name") }}</label><input id="holder_last" name="holder_last" value="{{ c.holder_last or '' }}"></div>
+    <div><label for="group_no">{{ _("Group number") }}</label><input id="group_no" name="group_no" value="{{ c.group_no or '' }}"></div>
+    <div><label for="holder_dob">{{ _("Holder's date of birth") }}</label><input id="holder_dob" type="date" name="holder_dob" value="{{ c.holder_dob or '' }}"></div>
+    <div><label for="holder_gender">{{ _("Holder's sex, as the payer records it") }}</label><select id="holder_gender" name="holder_gender">{% for k, v in (('', ''), ('F', _('Female')), ('M', _('Male')), ('U', _('Unknown'))) %}<option value="{{ k }}" {{ 'selected' if (c.holder_gender or '') == k }}>{{ v }}</option>{% endfor %}</select></div>
+  </div>
+  <p class="muted small">{{ _("The address of the policy holder. When the patient holds the policy, it is the patient's address.") }}</p>
+  <label for="holder_address">{{ _("Street address") }}</label><input id="holder_address" name="holder_address" value="{{ c.holder_address or '' }}" maxlength="55">
+  <div class="grid three">
+    <div><label for="holder_city">{{ _("City") }}</label><input id="holder_city" name="holder_city" value="{{ c.holder_city or '' }}"></div>
+    <div><label for="holder_state">{{ _("State") }}</label><input id="holder_state" name="holder_state" value="{{ c.holder_state or '' }}" maxlength="2"></div>
+    <div><label for="holder_zip">{{ _("ZIP code") }}</label><input id="holder_zip" name="holder_zip" value="{{ c.holder_zip or '' }}" maxlength="10"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="check">
+  <p>{{ _("Ask the payer, through the clearinghouse, whether this cover is active and what it pays for dental care (270). Upload the answer (271) on the Electronic claims page.") }}</p>
+  <button type="submit">{{ _("Make a cover check file") }}</button></form>
+{% endblock %}

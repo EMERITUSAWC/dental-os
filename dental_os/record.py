@@ -7,7 +7,7 @@ from flask import (Blueprint, Response, abort, current_app, flash, g, redirect, 
 
 from .auth import clinical_required, manager_required, signer_required
 from .db import get_db
-from .services import audit, chart, consent, dataio, files, medical, notes, perio, permissions
+from .services import ainotes, audit, chart, consent, dataio, files, medical, notes, perio, permissions
 from .services.timeutil import now_local
 from .views import _document_for, _patient_or_404, _today
 
@@ -101,7 +101,13 @@ def condition_add(pid):
     except chart.ChartError as exc:
         db.rollback()
         flash(str(exc), "error")
-    return _back(pid, "record.chart_view", tooth=tooth, dentition="child" if request.form.get("child") else None)
+    return _back(pid, "record.chart_view", tooth=_fdi(tooth), dentition="child" if request.form.get("child") else None)
+
+
+def _fdi(typed):
+    """The chart's own links use FDI numbers. A tooth that came back from a form is in the clinic's numbering."""
+    from .services import teeth
+    return teeth.parse_or_none(typed)
 
 
 @bp.post("/chart/conditions/<int:cond_id>/remove")
@@ -113,7 +119,7 @@ def condition_remove(cond_id):
     except chart.ChartError as exc:
         abort(404, str(exc))
     flash("Removed from the chart. The history is kept.", "ok")
-    return _back(pid, "record.chart_view", tooth=request.form.get("tooth"),
+    return _back(pid, "record.chart_view", tooth=_fdi(request.form.get("tooth")),
                  dentition="child" if request.form.get("child") else None)
 
 
@@ -134,7 +140,8 @@ def perio_new(pid):
             db.rollback()
             flash(str(exc), "error")
     return render_template("perio_form.html", p=patient, missing=missing, upper=perio.UPPER, lower=perio.LOWER,
-                           order=perio.site_order, form=request.form)
+                           order=perio.site_order, form=request.form, voice_on=bool(g.clinic["voice_perio"]),
+                           voice_cloud=bool(g.clinic["voice_cloud"]))
 
 
 @bp.get("/patients/<int:pid>/perio")
@@ -195,10 +202,39 @@ def note_new(pid):
         except notes.NoteError as exc:
             db.rollback()
             flash(str(exc), "error")
+    from .services import teeth
+    tooth = request.form.get("tooth", "") if request.method == "POST" else teeth.show(request.args.get("tooth", type=int))
+    return _note_form(db, cid, patient, key, request.form, tooth)
+
+
+def _note_form(db, cid, patient, key, values, tooth, ai_draft=False, shorthand=""):
     visits = db.execute("SELECT id, start_at, category FROM appointments WHERE clinic_id=? AND patient_id=? "
-                        "AND status IN ('scheduled','complete') ORDER BY start_at DESC LIMIT 10", (cid, pid)).fetchall()
-    return render_template("note_form.html", p=patient, key=key, templates=notes.TEMPLATES, values=request.form,
-                           note=None, visits=visits, tooth=request.values.get("tooth", ""))
+                        "AND status IN ('scheduled','complete') ORDER BY start_at DESC LIMIT 10", (cid, patient["id"])).fetchall()
+    return render_template("note_form.html", p=patient, key=key, templates=notes.TEMPLATES, values=values,
+                           note=None, visits=visits, tooth=tooth, ai_on=ainotes.is_on(db, cid, current_app.config["SECRET_KEY"]),
+                           ai_draft=ai_draft, shorthand=shorthand, ai_max=ainotes.MAX_INPUT)
+
+
+@bp.route("/patients/<int:pid>/notes/ai-draft", methods=["POST"])
+@clinical_required
+def note_ai(pid):
+    """Ask the AI for a draft. Nothing is saved: the boxes come back filled in for the dentist to read, change and save."""
+    db, cid = get_db(), g.clinic["id"]
+    patient = _patient_or_404(pid)
+    key = request.form.get("template", "exam")
+    if key not in notes.TEMPLATES:
+        key = "exam"
+    shorthand = request.form.get("shorthand", "")
+    tooth = request.form.get("tooth", "")
+    try:
+        values = ainotes.draft(db, g.clinic, g.user, current_app.config["SECRET_KEY"], patient, key, shorthand)
+        db.commit()                                                     # keep the record that a draft was asked for
+        flash("This is an AI draft. Read every line and fix it before you save.", "ok")
+        return _note_form(db, cid, patient, key, values, tooth, ai_draft=True, shorthand=shorthand)
+    except ainotes.AIError as exc:
+        db.commit()
+        flash(str(exc), "error")
+    return _note_form(db, cid, patient, key, {}, tooth, shorthand=shorthand)
 
 
 @bp.route("/notes/<int:note_id>/edit", methods=["GET", "POST"])
@@ -219,7 +255,12 @@ def note_edit(note_id):
             flash(str(exc), "error")
     values = request.form if request.method == "POST" else notes.split_body(note["template"], note["body"])
     return render_template("note_form.html", p=patient, key=note["template"], templates=notes.TEMPLATES, values=values,
-                           note=note, visits=[], tooth=note["tooth"] or "")
+                           note=note, visits=[], tooth=(request.form.get("tooth", "") if request.method == "POST" else _show_tooth(note["tooth"])), ai_on=False)
+
+
+def _show_tooth(fdi):
+    from .services import teeth
+    return teeth.show(fdi)
 
 
 def _note_action(fn, ok_message):
@@ -343,8 +384,9 @@ def files_view(pid):
             db.rollback()
             flash(str(exc), "error")
         return _back(pid, "record.files_view")
+    from .services import imaging
     return render_template("files.html", p=patient, rows=files.list_for_patient(db, cid, pid), kinds=files.KINDS,
-                           inline=files.INLINE, today=_today())
+                           inline=files.INLINE, today=_today(), stations=imaging.stations(db, cid), sessions=imaging.for_patient(db, cid, pid))
 
 
 @bp.get("/files/<int:file_id>")
@@ -361,6 +403,24 @@ def file_get(file_id):
     inline = row["mime"] in files.INLINE
     resp = send_file(path, mimetype=row["mime"], as_attachment=not inline, download_name=row["original_name"])
     resp.headers["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
+    return resp
+
+
+@bp.get("/files/<int:file_id>/preview.png")
+@clinical_required
+def file_preview(file_id):
+    """A DICOM X-ray as a PNG, so the browser can show it. The original file is never changed."""
+    from .services import dicom
+    db = get_db()
+    row = files.get(db, g.clinic["id"], file_id)
+    if not row or row["mime"] != "application/dicom":
+        abort(404)
+    try:
+        path = files.preview_png(_files_root(), row)
+    except (dicom.DicomError, OSError) as exc:
+        return Response(str(exc), status=415, mimetype="text/plain")
+    resp = send_file(path, mimetype="image/png", max_age=0)
+    resp.headers["Content-Security-Policy"] = "default-src 'none'; sandbox"
     return resp
 
 

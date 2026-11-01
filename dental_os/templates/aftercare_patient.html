@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("Aftercare") }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }}</h1>
+{{ tabs(p, 'aftercare') }}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("Print aftercare sheets") }}</h2>
+  {% for s in sheets %}<label class="check"><input type="checkbox" name="sheet" value="{{ s.id }}" {{ 'checked' if s.id in suggested }}> <span>{{ s.title }}{% if s.id in suggested %} <span class="pill">{{ _("for this patient's treatment") }}</span>{% endif %}</span></label>
+  {% else %}<p class="muted">{{ _("No approved sheets yet.") }} <a href="{{ url_for('aftercare.home') }}">{{ _("Aftercare sheets") }}</a></p>{% endfor %}
+  {% if sheets %}<p><button class="primary" type="submit">{{ _("Print") }}</button></p>{% endif %}</form>
+<section class="card"><h2>{{ _("Given") }}</h2>{% for x in given %}<p class="small">{{ x.given_at[:10]|date }}: {{ x.title }}{% if x.display_name %}, {{ x.display_name }}{% endif %}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+{% endblock %}

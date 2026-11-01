@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("Forms") }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }}</h1>
+{{ tabs(p, 'forms') }}
+{% if link %}<section class="card"><h2>{{ _("The form link") }}</h2>
+  <p class="keybox">{{ link }}</p>
+  <div class="row">{% if wa %}<a class="btn primary" href="{{ wa }}">{{ _("Send by WhatsApp") }}</a>{% endif %}<a class="btn" href="{{ link }}" target="_blank" rel="noopener">{{ _("Open it here, to fill in at the desk") }}</a></div>
+  <div class="qr">{{ qr_svg|safe }}</div><p class="muted small">{{ _("This link is shown once. It works one time only.") }}</p></section>{% endif %}
+{% if forms %}<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="form_id">{{ _("Send a form") }}</label><select id="form_id" name="form_id">{% for f in forms %}<option value="{{ f.id }}">{{ f.title }}</option>{% endfor %}</select>
+  <label for="days">{{ _("Link lasts (days)") }}</label><input id="days" name="days" type="number" min="1" max="60" value="14" class="narrow">
+  <button class="primary" type="submit">{{ _("Make the link") }}</button></form>
+{% else %}<p class="muted card">{{ _("The clinic has no forms yet.") }}{% if user.role == 'manager' %} <a href="{{ url_for('cforms.builder') }}">{{ _("Make one") }}</a>{% endif %}</p>{% endif %}
+<section class="card"><h2>{{ _("Forms for this patient") }}</h2>
+  {% for r in rows %}<p><a href="{{ url_for('cforms.response_view', rid=r.id) }}">{{ r.title }}</a> {{ r.created_at[:10]|date }} <span class="pill {{ 'ok' if r.status == 'filed' else ('warn' if r.status == 'submitted' else '') }}">{{ _(statuses[r.status]) }}</span></p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+{% endblock %}

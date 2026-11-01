@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Patient forms") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Patient forms") }}</h1><div class="row"><a class="btn" href="{{ url_for('cforms.review_list') }}">{{ _("Filled in, to review") }}</a><a class="btn primary" href="{{ url_for('cforms.builder') }}">{{ _("New form") }}</a></div></div>
+<section class="card"><p class="muted small">{{ _("Make the clinic's own forms: registration, questionnaires, feedback, anything. Send one to a patient from their Forms tab; they fill it in on their phone or on the check-in tablet.") }}</p>
+  {% for f in rows %}<p><a href="{{ url_for('cforms.builder', form_id=f.id) }}">{{ f.title }}</a> <span class="muted small">{{ _("version") }} {{ f.version }}{% if not f.active %}, {{ _("not in use") }}{% endif %}</span></p>{% else %}<p class="muted">{{ _("No forms yet.") }}</p>{% endfor %}</section>
+{% endblock %}

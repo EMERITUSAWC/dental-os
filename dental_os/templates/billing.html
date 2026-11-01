@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Billing") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Billing") }}</h1>
+<section class="card"><dl class="facts"><dt>{{ _("State") }}</dt><dd>{{ _(states[state]) }}{% if state == 'trial' and clinic.trial_ends_on %}, {{ _("until") }} {{ clinic.trial_ends_on|date }}{% endif %}</dd>
+  <dt>{{ _("Plan") }}</dt><dd>{{ plan.name if plan else _("None yet") }}</dd>{% if clinic.paid_until %}<dt>{{ _("Paid up to") }}</dt><dd>{{ clinic.paid_until|date }}</dd>{% endif %}</dl>
+  <p class="muted small">{{ _("If a bill is overdue for more than %(days)s days, the clinic can still look at everything and take a copy of its data, but cannot change anything until it is paid.", days=grace) }}</p></section>
+<section class="card"><h2>{{ _("Bills") }}</h2>
+  {% for b in bills %}<div class="row"><span>{{ b.number }}: {{ b.plan_name }}, {{ b.period_from|date }} {{ _("to") }} {{ b.period_to|date }}, <strong>{{ b.amount_p|money_in(b.currency) }}</strong>, {{ _("due") }} {{ b.due_on|date }}</span>
+    {% if b.status == 'paid' %}<span class="pill ok">{{ _("Paid") }}</span>{% elif online %}<form method="post" action="{{ url_for('billing.pay', bill_id=b.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input name="email" type="email" placeholder="{{ _('Email for the receipt') }}" aria-label="{{ _('Email for the receipt') }}" value="{{ clinic.email or '' }}"><button class="primary" type="submit">{{ _("Pay now") }}</button></form>
+    {% else %}<span class="pill warn">{{ _("Open") }}</span> <span class="small muted">{{ _("Pay by bank transfer with the bill number as the reference.") }}</span>{% endif %}</div>
+  {% else %}<p class="muted">{{ _("No bills yet.") }}</p>{% endfor %}</section>
+<p><a class="btn" href="{{ url_for('billing.support') }}">{{ _("Support access") }}</a></p>
+{% endblock %}

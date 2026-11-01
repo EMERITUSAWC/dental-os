@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ s.name }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ s.name }}</h1><a class="btn" href="{{ url_for('fees.schedules') }}">{{ _("Fee schedules") }}</a></div>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid three"><div><label for="name">{{ _("Name") }}</label><input id="name" name="name" value="{{ s.name }}" maxlength="80" required></div>
+  <div><label for="percent_off">{{ _("Percentage off the standard price, where no price is written (optional)") }}</label><input id="percent_off" name="percent_off" inputmode="decimal" class="narrow" value="{{ '%g'|format(s.discount_bp / 100) }}"></div>
+  <div><label class="check"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" {{ 'checked' if s.active }}> <span>{{ _("In use") }}</span></label></div></div>
+  <label for="notes">{{ _("Who it is for (optional)") }}</label><input id="notes" name="notes" value="{{ s.notes or '' }}" maxlength="500">
+  <p><button type="submit">{{ _("Save") }}</button></p></form>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="prices">
+  <h2>{{ _("Prices") }}</h2><p class="muted small">{{ _("Leave a price empty to use the standard price less the percentage above.") }}</p>
+  <table><thead><tr><th>{{ _("Treatment") }}</th><th>{{ _("Standard") }}</th><th>{{ _("This schedule") }}</th><th>{{ _("Charged") }}</th></tr></thead><tbody>
+  {% for x in rows %}<tr><td>{{ x.r.name }}<br><span class="muted small">{{ x.r.code }}, {{ x.r.category }}</span></td><td class="nw">{{ x.r.standard_p|money }}</td>
+    <td><label for="fee_{{ x.r.id }}" class="sr-only">{{ x.r.name }}</label><input id="fee_{{ x.r.id }}" name="fee_{{ x.r.id }}" inputmode="decimal" class="narrow" value="{{ x.r.own_p|plain if x.r.own_p is not none else '' }}"></td>
+    <td class="nw">{{ x.price|money }}</td></tr>{% endfor %}</tbody></table>
+  <p><button class="primary" type="submit">{{ _("Save the prices") }}</button></p></form>
+{% endblock %}

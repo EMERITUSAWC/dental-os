@@ -6,6 +6,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
+from tests import dbmeta
 from dental_os import db as dbmod
 from dental_os.services import billing, instalments as INS, memberships as MEM, plans as PL, treatment as TR
 from dental_os.services.timeutil import add_months, now_local
@@ -484,6 +485,7 @@ class InstalmentTests(Money):
 
 
 class UpgradeTests(unittest.TestCase):
+    @dbmeta.sqlite_only
     def test_old_payments_table_gains_the_new_columns(self):
         tmp = tempfile.TemporaryDirectory()
         path = str(Path(tmp.name) / "old.sqlite")

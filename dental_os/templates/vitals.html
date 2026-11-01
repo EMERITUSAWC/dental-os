@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Vital signs") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("vital signs") }}</h1>
+{{ tabs(p, 'vitals') }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Take readings") }}</h2>
+  <div class="grid three">
+    <div><label>{{ _("Blood pressure") }}</label><div class="row"><input name="bp_systolic" inputmode="numeric" maxlength="3" style="width:80px" aria-label="{{ _('Blood pressure, top number') }}"> / <input name="bp_diastolic" inputmode="numeric" maxlength="3" style="width:80px" aria-label="{{ _('Blood pressure, bottom number') }}"> mmHg</div></div>
+    <div><label for="pulse">{{ _("Pulse (beats a minute)") }}</label><input id="pulse" name="pulse" inputmode="numeric" maxlength="3"></div>
+    <div><label for="spo2">{{ _("Oxygen (%)") }}</label><input id="spo2" name="spo2" inputmode="numeric" maxlength="3"></div>
+  </div>
+  <div class="grid three">
+    <div><label for="temperature_c">{{ _("Temperature (°C)") }}</label><input id="temperature_c" name="temperature_c" inputmode="decimal" maxlength="5"></div>
+    <div><label for="glucose_mmol">{{ _("Blood sugar (mmol/L)") }}</label><input id="glucose_mmol" name="glucose_mmol" inputmode="decimal" maxlength="5"></div>
+    <div><label for="appointment_id">{{ _("Visit (optional)") }}</label><select id="appointment_id" name="appointment_id"><option value="">{{ _("Not linked") }}</option>{% for v in visits %}<option value="{{ v.id }}">{{ v.start_at|date }}, {{ _(v.category) }}</option>{% endfor %}</select></div>
+  </div>
+  <label for="note">{{ _("Note") }}</label><input id="note" name="note" maxlength="300">
+  <p><button class="primary" type="submit">{{ _("Save readings") }}</button></p>
+  <p class="muted small">{{ _("Blood pressure from %(amber)s: put off planned treatment and refer to a doctor. From %(red)s: no treatment of any kind without a doctor's advice. A manager can change these levels under Settings.", amber=clinic.bp_amber, red=clinic.bp_red) }}</p>
+</form>
+<section class="card"><h2>{{ _("Earlier readings") }}</h2>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Blood pressure") }}</th><th>{{ _("Pulse") }}</th><th>{{ _("Oxygen") }}</th><th>{{ _("Temperature") }}</th><th>{{ _("Blood sugar") }}</th><th>{{ _("By") }}</th></tr>
+  {% for x in rows %}{% set v = x.row %}<tr><td class="nw">{{ v.taken_at[:10]|date }} {{ v.taken_at|time }}</td>
+    <td>{% if v.bp_systolic %}<span class="pill {{ {'red': 'bad', 'amber': 'warn', 'low': 'warn', 'ok': 'ok'}[x.grade] }}" title="{{ _(grades[x.grade]) }}">{{ v.bp_systolic }}/{{ v.bp_diastolic }}</span>{% endif %}</td>
+    <td>{{ v.pulse or '' }}</td><td>{{ (v.spo2 ~ '%') if v.spo2 else '' }}</td><td>{{ (v.temperature_c ~ ' °C') if v.temperature_c else '' }}</td><td>{{ v.glucose_mmol or '' }}</td>
+    <td class="small">{{ v.by_name or '' }}{% if v.note %}<br>{{ v.note }}{% endif %}</td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("No readings yet.") }}</p>{% endif %}
+</section>
+{% endblock %}

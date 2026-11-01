@@ -263,6 +263,8 @@ STARTERS_FR = {
     "review_request": "Bonjour {first_name}, merci de votre visite chez {clinic}. Si vous avez été satisfait de votre visite, "
                       "pourriez-vous nous laisser un court avis ? {review_link}",
     "birthday": "Joyeux anniversaire {first_name}, de la part de toute l'équipe de {clinic}.",
+    "reactivation": "Bonjour {first_name}, ici {clinic}. Cela fait un moment que nous ne vous avons pas vu. "
+                    "Si vous souhaitez un contrôle, répondez à ce message et nous trouverons un horaire qui vous convient.",
     "portal_link": "Bonjour {first_name}, voici votre lien privé vers {clinic} : {link} Il affiche vos rendez-vous et vous permet "
                    "de remplir votre questionnaire de santé. Merci de ne pas le partager.",
 }
@@ -273,6 +275,176 @@ def _typography(text):
     text = re.sub(r" ([?!:;])", " \\1", text)
     return text.replace("« ", "« ").replace(" »", " »")
 
+
+from .i18n_fr_staff import STAFF as _STAFF  # noqa: E402
+_clash = sorted(k for k in _STAFF if k in _FR and _FR[k] != _STAFF[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF)
+from .i18n_fr_staff2 import STAFF2 as _STAFF2  # noqa: E402
+_clash = sorted(k for k in _STAFF2 if k in _FR and _FR[k] != _STAFF2[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF2)
+from .i18n_fr_staff3 import STAFF3 as _STAFF3  # noqa: E402
+_clash = sorted(k for k in _STAFF3 if k in _FR and _FR[k] != _STAFF3[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF3)
+from .i18n_fr_staff4 import STAFF4 as _STAFF4  # noqa: E402
+_clash = sorted(k for k in _STAFF4 if k in _FR and _FR[k] != _STAFF4[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF4)
+from .i18n_fr_staff5 import STAFF5 as _STAFF5  # noqa: E402
+_clash = sorted(k for k in _STAFF5 if k in _FR and _FR[k] != _STAFF5[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF5)
+from .i18n_fr_staff6 import STAFF6 as _STAFF6  # noqa: E402
+_clash = sorted(k for k in _STAFF6 if k in _FR and _FR[k] != _STAFF6[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF6)
+from .i18n_fr_staff7 import MESSAGES as _STAFF7  # noqa: E402
+_clash = sorted(k for k in _STAFF7 if k in _FR and _FR[k] != _STAFF7[k])
+if _clash:
+    raise RuntimeError("French wording given twice with different text: %s" % _clash)
+_FR.update(_STAFF7)
+from .i18n_fr_staff8 import STAFF8 as _STAFF8, MESSAGES8 as _MESSAGES8  # noqa: E402
+for _part in (_STAFF8, _MESSAGES8):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff9 import STAFF9 as _STAFF9, MESSAGES9 as _MESSAGES9  # noqa: E402
+for _part in (_STAFF9, _MESSAGES9):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff10 import STAFF10 as _STAFF10, MESSAGES10 as _MESSAGES10  # noqa: E402
+for _part in (_STAFF10, _MESSAGES10):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff11 import STAFF11 as _STAFF11, MESSAGES11 as _MESSAGES11  # noqa: E402
+for _part in (_STAFF11, _MESSAGES11):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff12 import STAFF12 as _STAFF12, MESSAGES12 as _MESSAGES12  # noqa: E402
+for _part in (_STAFF12, _MESSAGES12):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff13 import STAFF13 as _STAFF13, MESSAGES13 as _MESSAGES13  # noqa: E402
+for _part in (_STAFF13, _MESSAGES13):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff14 import STAFF14 as _STAFF14, MESSAGES14 as _MESSAGES14  # noqa: E402
+for _part in (_STAFF14, _MESSAGES14):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff15 import STAFF15 as _STAFF15, MESSAGES15 as _MESSAGES15  # noqa: E402
+for _part in (_STAFF15, _MESSAGES15):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff16 import STAFF16 as _STAFF16, MESSAGES16 as _MESSAGES16  # noqa: E402
+for _part in (_STAFF16, _MESSAGES16):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff17 import STAFF17 as _STAFF17, MESSAGES17 as _MESSAGES17  # noqa: E402
+for _part in (_STAFF17, _MESSAGES17):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff18 import STAFF18 as _STAFF18, MESSAGES18 as _MESSAGES18  # noqa: E402
+for _part in (_STAFF18, _MESSAGES18):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff19 import STAFF19 as _STAFF19, MESSAGES19 as _MESSAGES19  # noqa: E402
+for _part in (_STAFF19, _MESSAGES19):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff20 import STAFF20 as _STAFF20, MESSAGES20 as _MESSAGES20  # noqa: E402
+for _part in (_STAFF20, _MESSAGES20):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff21 import STAFF21 as _STAFF21, MESSAGES21 as _MESSAGES21  # noqa: E402
+for _part in (_STAFF21, _MESSAGES21):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff22 import STAFF22 as _STAFF22, MESSAGES22 as _MESSAGES22  # noqa: E402
+for _part in (_STAFF22, _MESSAGES22):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff23 import STAFF23 as _STAFF23, MESSAGES23 as _MESSAGES23  # noqa: E402
+for _part in (_STAFF23, _MESSAGES23):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff24 import STAFF24 as _STAFF24, MESSAGES24 as _MESSAGES24  # noqa: E402
+for _part in (_STAFF24, _MESSAGES24):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff25 import STAFF25 as _STAFF25, MESSAGES25 as _MESSAGES25  # noqa: E402
+for _part in (_STAFF25, _MESSAGES25):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff26 import STAFF26 as _STAFF26, MESSAGES26 as _MESSAGES26  # noqa: E402
+for _part in (_STAFF26, _MESSAGES26):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff27 import STAFF27 as _STAFF27, MESSAGES27 as _MESSAGES27  # noqa: E402
+for _part in (_STAFF27, _MESSAGES27):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff28 import STAFF28 as _STAFF28, MESSAGES28 as _MESSAGES28  # noqa: E402
+for _part in (_STAFF28, _MESSAGES28):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+from .i18n_fr_staff29 import STAFF29 as _STAFF29, MESSAGES29 as _MESSAGES29  # noqa: E402
+for _part in (_STAFF29, _MESSAGES29):
+    _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
+    if _clash:
+        raise RuntimeError("French wording given twice with different text: %s" % _clash)
+    _FR.update(_part)
+# Plain messages and errors raised in the code (not in templates). tests.test_v10 checks each is still in the code.
+MESSAGE_KEYS = set(_STAFF7) | set(_MESSAGES8) | set(_MESSAGES9) | set(_MESSAGES10) | set(_MESSAGES11) | set(_MESSAGES12) | set(_MESSAGES13) | set(_MESSAGES14) | set(_MESSAGES15) | set(_MESSAGES16) | set(_MESSAGES17) | set(_MESSAGES18) | set(_MESSAGES19) | set(_MESSAGES20) | set(_MESSAGES21) | set(_MESSAGES22) | set(_MESSAGES23) | set(_MESSAGES24) | set(_MESSAGES25) | set(_MESSAGES26) | set(_MESSAGES27) | set(_MESSAGES28) | set(_MESSAGES29)
 
 FR = {k: _typography(v) for k, v in _FR.items()}
 STARTERS_FR = {k: _typography(v) for k, v in STARTERS_FR.items()}

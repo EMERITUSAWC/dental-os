@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ m.title or _(layout_name) }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ m.title or _(layout_name) }}</h1>
+<p class="row no-print"><a class="btn" href="{{ url_for('care.images', pid=p.id) }}">{{ _("All layouts") }}</a> <a class="btn" href="{{ url_for('record.files_view', pid=p.id) }}">{{ _("Files") }}</a></p>
+<div class="mountgrid">
+  {% for row in grid %}<div class="mrow">{% for cell in row %}
+    {% if cell is none %}<div class="mcell gap"></div>
+    {% else %}{% set f = placed.get(cell.slot) %}
+    <div class="mcell">
+      {% if f %}<a href="{{ url_for('care.viewer', file_id=f.id) }}"><img src="{{ url_for('record.file_preview', file_id=f.id) if f.mime == 'application/dicom' else url_for('record.file_get', file_id=f.id) }}" alt="{{ _(cell.label) }}"></a>{% else %}<div class="empty">{{ _("Empty") }}</div>{% endif %}
+      <div class="small">{{ _(cell.label) }}</div>
+      <form method="post" class="no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="slot" value="{{ cell.slot }}">
+        <select name="file_id" aria-label="{{ _('Picture for %(place)s', place=_(cell.label)) }}"><option value="">{{ _("Empty") }}</option>{% for pic in pictures %}<option value="{{ pic.id }}" {{ 'selected' if f and f.id == pic.id }}>{{ (pic.taken_on or pic.created_at[:10]) }} {{ pic.original_name[:24] }}</option>{% endfor %}</select>
+        <button type="submit" class="small">{{ _("Put here") }}</button></form>
+    </div>{% endif %}
+  {% endfor %}</div>{% endfor %}
+</div>
+{% if not pictures %}<p class="muted">{{ _("This patient has no pictures yet. Upload them under Files.") }}</p>{% endif %}
+{% endblock %}

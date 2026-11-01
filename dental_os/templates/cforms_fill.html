@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<div class="pub">
+  <h1>{{ clinic.name }}</h1>
+  <form method="post" class="card">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <h2>{{ title }}</h2>
+    {% if first_name %}<p>{{ _d("For %(name)s", name=first_name) }}</p>{% endif %}
+    {% if intro %}<p>{{ intro }}</p>{% endif %}
+    {% for q in fields %}{% set k = q.key %}{% set wrong = q.label in bad %}
+      {% if q.kind == 'heading' %}<h3>{{ q.label }}</h3>
+      {% else %}<div class="{{ 'flash error' if wrong }}" style="margin:10px 0">
+        <label for="{{ k }}">{{ q.label }}{% if q.required %} <span aria-hidden="true">*</span><span class="sr-only">{{ _d("(must be answered)") }}</span>{% endif %}</label>
+        {% if q.kind == 'text' %}<input id="{{ k }}" name="{{ k }}" value="{{ answers.get(k, '') }}" maxlength="300" {{ 'required' if q.required }}>
+        {% elif q.kind == 'long' %}<textarea id="{{ k }}" name="{{ k }}" rows="4" {{ 'required' if q.required }}>{{ answers.get(k, '') }}</textarea>
+        {% elif q.kind == 'yesno' %}<div class="row" id="{{ k }}">{% for v, t in (('yes', _d('Yes')), ('no', _d('No'))) %}<label class="check"><input type="radio" name="{{ k }}" value="{{ v }}" {{ 'checked' if answers.get(k) == v }} {{ 'required' if q.required }}> <span>{{ t }}</span></label>{% endfor %}</div>
+        {% elif q.kind == 'choice' %}<div id="{{ k }}">{% for o in q.options %}<label class="check"><input type="radio" name="{{ k }}" value="{{ o }}" {{ 'checked' if answers.get(k) == o }} {{ 'required' if q.required }}> <span>{{ o }}</span></label>{% endfor %}</div>
+        {% elif q.kind == 'multi' %}<div id="{{ k }}">{% for o in q.options %}<label class="check"><input type="checkbox" name="{{ k }}" value="{{ o }}" {{ 'checked' if answers.getlist and o in answers.getlist(k) }}> <span>{{ o }}</span></label>{% endfor %}</div>
+        {% elif q.kind == 'date' %}<input id="{{ k }}" type="date" name="{{ k }}" value="{{ answers.get(k, '') }}" {{ 'required' if q.required }}>
+        {% elif q.kind == 'number' %}<input id="{{ k }}" name="{{ k }}" inputmode="decimal" value="{{ answers.get(k, '') }}" {{ 'required' if q.required }}>
+        {% elif q.kind == 'signature' %}<input id="{{ k }}" name="{{ k }}" value="{{ answers.get(k, '') }}" maxlength="120" autocomplete="name" {{ 'required' if q.required }}>
+          <p class="small muted">{{ _d("Type your full name. This counts as your signature.") }}</p>{% endif %}
+      </div>{% endif %}
+    {% endfor %}
+    {% if preview %}<p class="muted">{{ _("This is how patients will see it. Nothing can be sent from here.") }}</p>
+    {% else %}<p><button class="primary" type="submit">{{ _d("Send to the clinic") }}</button></p>{% endif %}
+  </form>
+</div>
+{% endblock %}

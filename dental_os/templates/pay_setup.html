@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Online payments") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Online payments") }}</h1>
+<section class="card">
+  <p>{{ _("Patients can pay by card or mobile money from a link on their phone. The money goes straight to the clinic's own account with the payment company; this system never holds it. Open the account with the company first, then paste the secret key here.") }}</p>
+  <p class="muted small">{{ _("A test key (it starts sk_test_) uses the company's test system, so you can try the whole thing with test cards before any real money moves.") }}</p>
+  {% if a %}<p>{% if a.enabled %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill">{{ _("Off") }}</span>{% endif %}
+    {% if a.key_hint %} {{ _("Key saved: %(hint)s", hint=a.key_hint) }}{% endif %}{% if test %} <span class="pill warn">{{ _("Test mode") }}</span>{% endif %}</p>{% endif %}
+</section>
+<form method="post" class="card" autocomplete="off">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="provider">{{ _("Payment company") }}</label>
+  <select id="provider" name="provider">{% for k, v in providers.items() %}<option value="{{ k }}" {{ 'selected' if a and a.provider == k }}>{{ _(v) }}</option>{% endfor %}</select>
+  {% if not paystack_ok %}<p class="muted small">{{ _("Paystack does not take this clinic's currency, so use Stripe.") }}</p>{% endif %}
+  <label for="api_key">{{ _("Secret key (leave empty to keep the saved one)") }}</label><input id="api_key" name="api_key" type="password" autocomplete="off">
+  <label for="webhook_secret">{{ _("Stripe only: signing secret for the webhook (whsec_...)") }}</label><input id="webhook_secret" name="webhook_secret" type="password" autocomplete="off">
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if a and a.enabled }}> <span>{{ _("Switch online payments on") }}</span></label>
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button>{% if a and a.secret_key %}<button type="submit" name="action" value="check">{{ _("Check the key works") }}</button>{% endif %}</p>
+</form>
+{% if hook %}<section class="card"><h2>{{ _("Webhook address") }}</h2>
+  <p class="muted small">{{ _("Paste this address into the payment company's dashboard as the webhook (Paystack: Settings, API keys and webhooks. Stripe: Developers, Webhooks, event checkout.session.completed). It lets the company tell us at once when a patient has paid, even if they close the page.") }}</p>
+  <p class="keybox">{{ hook }}</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="provider" value="{{ a.provider }}"><input type="hidden" name="enabled" value="{{ '1' if a.enabled }}">
+    <button type="submit" name="new_hook" value="1" class="small">{{ _("Make a new address (the old one stops working)") }}</button></form></section>{% endif %}
+{% if a %}<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="allow_save">
+  <h2>{{ _("Saved cards") }}</h2>
+  <p class="muted small">{{ _("Patients can choose, on the pay page, to keep their card with the payment company, and separately to have their monthly ortho or membership fees charged to it. Only the company's token is kept here, never the card. Check your payment company's terms and local law before switching this on.") }}</p>
+  <label class="check"><input type="checkbox" name="allow_save" value="1" {{ 'checked' if a.allow_save }}> <span>{{ _("Let patients keep a card on file") }}</span></label>
+  <p><button type="submit">{{ _("Save") }}</button></p></form>{% endif %}
+{% endblock %}

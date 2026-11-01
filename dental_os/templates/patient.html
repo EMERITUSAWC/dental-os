@@ -4,60 +4,88 @@
 {% block title %}{{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
 <div class="row spread">
-  <h1>{{ p.first_name }} {{ p.last_name }} {% if p.status == 'archived' %}<span class="pill">Archived</span>{% endif %}</h1>
+  <h1>{{ p.first_name }} {{ p.last_name }} {% if p.status == 'archived' %}<span class="pill">{{ _("Archived") }}</span>{% endif %}{% if p.merged_into %} <a class="pill warn" href="{{ url_for('views.patient_view', pid=p.merged_into) }}">{{ _("Merged into another record") }}</a>{% endif %}</h1>
   <div class="row">
-    {% if p.status == 'active' %}<a class="btn primary" href="{{ url_for('views.appointment_new', patient_id=p.id) }}">Book appointment</a>{% endif %}
-    <a class="btn" href="{{ url_for('clinical.account', pid=p.id) }}">Account{% if bal.balance != 0 %}: {{ bal.balance|money }}{% endif %}</a>
-    <a class="btn" href="{{ url_for('views.patient_edit', pid=p.id) }}">Edit</a>
+    {% if p.status == 'active' %}<a class="btn primary" href="{{ url_for('views.appointment_new', patient_id=p.id) }}">{{ _("Book appointment") }}</a>{% endif %}
+    <a class="btn" href="{{ url_for('clinical.account', pid=p.id) }}">{{ _("Account") }}{% if bal.balance != 0 %}: {{ bal.balance|money }}{% endif %}</a>
+    <a class="btn" href="{{ url_for('views.patient_edit', pid=p.id) }}">{{ _("Edit") }}</a>
+    {% if phone_on and p.status == 'active' and p.phone %}<form method="post" action="{{ url_for('voice.call', pid=p.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="btn" type="submit">{{ _("Call") }}</button></form>{% endif %}
+    <details class="inline"><summary class="btn">{{ _("More") }}</summary><p><a href="{{ url_for('gov.complaint_new', pid=p.id) }}">{{ _("Write down a complaint") }}</a><br><a href="{{ url_for('gov.incident_new', pid=p.id) }}">{{ _("Report an incident") }}</a></p></details>
   </div>
 </div>
 {{ tabs(p, 'overview') }}
 
 <div class="grid two">
   <section class="card">
-    <h2>Details</h2>
+    <h2>{{ _("Details") }}</h2>
     <dl class="facts">
-      <dt>Phone</dt><dd>{{ p.phone|phone }}</dd>
-      <dt>Email</dt><dd>{{ p.email or 'None' }}</dd>
-      <dt>Born</dt><dd>{{ p.dob|date if p.dob else 'Not given' }}</dd>
-      <dt>Address</dt><dd>{{ p.address or 'Not given' }}</dd>
-      <dt>Reach by</dt><dd>{{ p.preferred_contact|capitalize }}</dd>
-      <dt>Messages</dt><dd>{{ 'Agreed' if p.reminders_ok else 'Not agreed' }}</dd>
-      <dt>Offers</dt><dd>{{ 'Agreed' if p.offers_ok else 'Not agreed' }}</dd>
-      <dt>Notes</dt><dd>{{ p.notes or 'None' }}</dd>
+      <dt>{{ _("Phone") }}</dt><dd>{{ p.phone|phone }}</dd>
+      <dt>{{ _("Email") }}</dt><dd>{{ p.email or _('None') }}</dd>
+      <dt>{{ _("Born") }}</dt><dd>{{ p.dob|date if p.dob else _('Not given') }}</dd>
+      <dt>{{ _("Address") }}</dt><dd>{{ p.address or _('Not given') }}</dd>
+      <dt>{{ _("Reach by") }}</dt><dd>{% if p.prefers_sms %}{{ _("SMS") }}{% else %}{{ {'whatsapp': _('WhatsApp'), 'call': _('Phone call'), 'email': _('Email')}.get(p.preferred_contact, p.preferred_contact|capitalize) }}{% endif %}</dd>
+      <dt>{{ _("Price list") }}</dt><dd>{{ fee_schedule_name(p.fee_schedule_id) or _("Standard prices") }}{% if user.role == 'manager' %} <a class="small" href="{{ url_for('fees.patient', pid=p.id) }}">{{ _("Change") }}</a>{% endif %}</dd>
+      <dt>{{ _("Messages") }}</dt><dd>{{ _('Agreed') if p.reminders_ok else _('Not agreed') }}</dd>
+      <dt>{{ _("Offers") }}</dt><dd>{{ _('Agreed') if p.offers_ok else _('Not agreed') }}</dd>
+      <dt>{{ _("Notes") }}</dt><dd>{{ p.notes or _('None') }}</dd>
     </dl>
   </section>
   <section class="card">
-    <h2>Family</h2>
-    {% if head %}<p>Family head: <a href="{{ url_for('views.patient_view', pid=head.id) }}">{{ head.first_name }} {{ head.last_name }}</a></p>{% endif %}
+    <h2>{{ _("Family") }}</h2>
+    {% if head %}<p>{{ _("Family head:") }} <a href="{{ url_for('views.patient_view', pid=head.id) }}">{{ head.first_name }} {{ head.last_name }}</a></p>{% endif %}
     {% for d in dependants %}<p><a href="{{ url_for('views.patient_view', pid=d.id) }}">{{ d.first_name }} {{ d.last_name }}</a></p>{% endfor %}
-    {% if not head and not dependants %}<p class="muted">No family links.</p>{% endif %}
+    {% if not head and not dependants %}<p class="muted">{{ _("No family links.") }}</p>{% else %}<p><a class="btn" href="{{ url_for('diary.family_book', pid=p.id) }}">{{ _("Book the family together") }}</a></p>{% endif %}
+    <h3>{{ _("How they came to us") }}</h3>
+    <form method="post" action="{{ url_for('care.referral_source', pid=p.id) }}" class="row">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <select name="referrer_id" aria-label="{{ _('Sent by') }}" style="width:auto"><option value="">{{ _("Not sent by anyone") }}</option>{% for r in referrers %}<option value="{{ r.id }}" {{ 'selected' if p.referrer_id == r.id }}>{{ r.name }}</option>{% endfor %}</select>
+      <select name="source" aria-label="{{ _('How they heard of us') }}" style="width:auto">{% for k, v in sources.items() %}<option value="{{ k }}" {{ 'selected' if (p.referral_source or '') == k }}>{{ _(v) }}</option>{% endfor %}</select>
+      <button type="submit">{{ _("Save") }}</button>
+    </form>
     <form method="post" action="{{ url_for('views.patient_archive', pid=p.id) }}">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      {% if p.status == 'active' %}<button class="danger" type="submit">Archive patient</button>
-        <span class="muted small">Hides them from searches. Nothing is deleted.</span>
-      {% else %}<input type="hidden" name="restore" value="1"><button type="submit">Restore patient</button>{% endif %}
+      {% if p.status == 'active' %}<button class="danger" type="submit">{{ _("Archive patient") }}</button>
+        <span class="muted small">{{ _("Hides them from searches. Nothing is deleted.") }}</span>
+      {% else %}<input type="hidden" name="restore" value="1"><button type="submit">{{ _("Restore patient") }}</button>{% endif %}
     </form>
   </section>
 </div>
 
 <section class="card">
-  <h2>Appointments</h2>
+  <div class="row spread"><h2>{{ _("Team messages about this patient") }}</h2><a href="{{ url_for('team.inbox') }}">{{ _("All team messages") }}</a></div>
+  {% for m in team_notes %}<p class="small"><strong>{{ m.from_name }}</strong> {{ _("to") }} {{ m.to_name or _("everyone") }}: {{ m.body }} <span class="muted">{{ m.created_at[:16] }} UTC</span></p>{% endfor %}
+  <form method="post" action="{{ url_for('team.inbox') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="patient_id" value="{{ p.id }}"><input type="hidden" name="back" value="{{ url_for('views.patient_view', pid=p.id) }}">
+    <input name="body" maxlength="2000" required placeholder="{{ _('For example: please call about the lab work') }}" aria-label="{{ _('Message') }}" style="flex:1">
+    <select name="to_user" aria-label="{{ _('To') }}" style="width:auto"><option value="">{{ _("Everyone") }}</option>{% for u in staff if u.id != user.id %}<option value="{{ u.id }}">{{ u.display_name }}</option>{% endfor %}</select>
+    <button type="submit">{{ _("Send") }}</button></form>
+</section>
+
+<section class="card">
+  <div class="row spread"><h2>{{ _("Tasks") }}</h2><a href="{{ url_for('practice.tasks', view='all') }}">{{ _("All tasks") }}</a></div>
+  {% for x in ptasks %}<p class="small"><strong>{{ x.t.title }}</strong>{% if x.t.due_on %}, {{ _("due") }} {{ x.t.due_on|date }}{% if x.late %} <span class="pill bad">{{ _("late") }}</span>{% endif %}{% endif %} · {{ x.t.assigned_name or _('No one yet') }}</p>{% endfor %}
+  <form method="post" action="{{ url_for('practice.tasks') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="patient_id" value="{{ p.id }}"><input type="hidden" name="back" value="{{ url_for('views.patient_view', pid=p.id) }}">
+    <input name="title" maxlength="150" required placeholder="{{ _('For example: call about the crown quote') }}" aria-label="{{ _('New task') }}" style="flex:1">
+    <select name="assigned_to" aria-label="{{ _('Who') }}" style="width:auto"><option value="">{{ _("Me") }}</option>{% for u in staff %}<option value="{{ u.id }}">{{ u.display_name }}</option>{% endfor %}</select>
+    <input type="date" name="due_on" aria-label="{{ _('By when (optional)') }}" style="width:auto"><button type="submit">{{ _("Add task") }}</button></form>
+</section>
+
+<section class="card">
+  <h2>{{ _("Appointments") }}</h2>
   <div class="tbl-wrap"><table>
-    <tr><th>When</th><th>Dentist</th><th>Reason</th><th>Status</th></tr>
+    <tr><th>{{ _("When") }}</th><th>{{ _("Dentist") }}</th><th>{{ _("Reason") }}</th><th>{{ _("Status") }}</th></tr>
     {% for a in appts %}
     <tr>
-      <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{% if a.start_at %}{{ a.start_at[:10]|date }}, {{ a.start_at|time }}{% else %}No time yet{% endif %}</a></td>
-      <td>{{ a.provider_name or '' }}</td><td>{{ a.category }}</td><td>{{ conf(a) }}</td>
+      <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{% if a.start_at %}{{ a.start_at[:10]|date }}, {{ a.start_at|time }}{% else %}{{ _("No time yet") }}{% endif %}</a></td>
+      <td>{{ a.provider_name or '' }}</td><td>{{ _(a.category) }}</td><td>{{ conf(a) }}</td>
     </tr>
-    {% else %}<tr><td colspan="4" class="muted">No appointments yet.</td></tr>{% endfor %}
+    {% else %}<tr><td colspan="4" class="muted">{{ _("No appointments yet.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
 
 <section class="card">
-  <h2>WhatsApp messages</h2>
+  <h2>{{ _("WhatsApp messages") }}</h2>
   {% for m in msgs %}
     <p class="small"><span class="muted">{{ m.created_at }} UTC, {{ m.user_name }}, {{ m.kind }}</span><br>{{ m.body }}</p>
-  {% else %}<p class="muted">None yet.</p>{% endfor %}
+  {% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}
 </section>
 {% endblock %}

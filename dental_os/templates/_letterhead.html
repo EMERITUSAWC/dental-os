@@ -1,0 +1,7 @@
+{% macro letterhead() %}
+<header class="letterhead">
+  <h1>{{ clinic.name }}</h1>
+  {% if clinic.address %}<p class="lh-addr">{{ clinic.address }}</p>{% endif %}
+  <p class="muted small">{% if clinic.phone %}{{ clinic.phone|phone }}{% endif %}{% if clinic.phone and clinic.email %} · {% endif %}{% if clinic.email %}{{ clinic.email }}{% endif %}</p>
+</header>
+{% endmacro %}

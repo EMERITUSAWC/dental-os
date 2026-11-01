@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Invoices, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Invoices,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: invoices</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": invoices") }}</h1>
 {{ tabs(p, 'invoices') }}
-<section class="card"><h2>Issue an invoice</h2>
+<section class="card"><h2>{{ _("Issue an invoice") }}</h2>
   {% if open_work %}
   <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
-    {% for r in open_work %}<label class="check"><input type="checkbox" name="procedure_id" value="{{ r.id }}" checked><span>{{ r.done_on|date }}: {{ r.code_name }}{% if r.tooth %}, tooth {{ r.tooth }}{% endif %} ({{ r.fee_p|money }})</span></label>{% endfor %}
-    <label for="note">Note on the invoice</label><input id="note" name="note" maxlength="200">
-    <p><button class="primary" type="submit">Issue invoice</button></p></form>
-  <p class="muted small">Tax is added from the clinic's settings{% if clinic.tax_rate_bp %}: {{ clinic.tax_name }} at {{ '%g'|format(clinic.tax_rate_bp / 100) }}%, {{ 'already included in prices' if clinic.tax_inclusive else 'added on top' }}{% else %}: none set{% endif %}.</p>
-  {% else %}<p class="muted">All finished work is already on an invoice.</p>{% endif %}
+    {% for r in open_work %}<label class="check"><input type="checkbox" name="procedure_id" value="{{ r.id }}" checked><span>{{ r.done_on|date }}: {{ r.code_name }}{% if r.tooth %}{{ _(", tooth") }} {{ r.tooth|tooth }}{% endif %} ({{ r.fee_p|money }})</span></label>{% endfor %}
+    <label for="note">{{ _("Note on the invoice") }}</label><input id="note" name="note" maxlength="200">
+    <p><button class="primary" type="submit">{{ _("Issue invoice") }}</button></p></form>
+  <p class="muted small">{% if clinic.tax_rate_bp %}{{ _("Tax is added from the clinic's settings: %(name)s at %(rate)s%%, %(how)s.", name=clinic.tax_name, rate='%g'|format(clinic.tax_rate_bp / 100), how=_('already included in prices') if clinic.tax_inclusive else _('added on top')) }}{% else %}{{ _("Tax is added from the clinic's settings: none set.") }}{% endif %}</p>
+  {% else %}<p class="muted">{{ _("All finished work is already on an invoice.") }}</p>{% endif %}
 </section>
-<section class="card"><h2>Issued</h2><div class="tbl-wrap"><table>
-  <tr><th>No.</th><th>Date</th><th>Total</th><th>Status</th></tr>
-  {% for i in rows %}<tr><td><a href="{{ url_for('finance.invoice_show', invoice_id=i.id) }}">{{ i.invoice_no }}</a></td><td>{{ i.issued_on|date }}</td><td class="nw">{{ i.total_p|money }}</td><td>{% if i.status == 'void' %}<span class="pill bad">Void</span>{% else %}Issued{% endif %}</td></tr>
-  {% else %}<tr><td colspan="4" class="muted">No invoices yet.</td></tr>{% endfor %}
+<section class="card"><h2>{{ _("Issued") }}</h2><div class="tbl-wrap"><table>
+  <tr><th>{{ _("No.") }}</th><th>{{ _("Date") }}</th><th>{{ _("Total") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for i in rows %}<tr><td><a href="{{ url_for('finance.invoice_show', invoice_id=i.id) }}">{{ i.invoice_no }}</a></td><td>{{ i.issued_on|date }}</td><td class="nw">{{ i.total_p|money }}</td><td>{% if i.status == 'void' %}<span class="pill bad">{{ _("Void") }}</span>{% else %}{{ _("Issued") }}{% endif %}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No invoices yet.") }}</td></tr>{% endfor %}
 </table></div>
-<p><a href="{{ url_for('finance.statement', pid=p.id) }}">Print a statement</a></p></section>
+<p><a href="{{ url_for('finance.statement', pid=p.id) }}">{{ _("Print a statement") }}</a></p></section>
 {% endblock %}

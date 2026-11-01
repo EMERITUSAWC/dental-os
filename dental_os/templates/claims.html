@@ -1,17 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Claims{% endblock %}
+{% block title %}{{ _("Claims") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Claims</h1>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('finance.payers') }}">Payers</a>{% endif %}</div>
-<div class="stats" style="grid-template-columns: repeat(2, 1fr)"><div class="card"><div class="stat">{{ awaiting|money }}</div><div class="muted">still owed by payers on sent claims</div></div>
-  <div class="card"><div class="stat">{{ rows|length }}</div><div class="muted">claims in this list</div></div></div>
-<p class="row">{% for k, label in (('open', 'Open'), ('draft', 'Not sent'), ('submitted', 'Sent, waiting'), ('partly_paid', 'Part paid'), ('rejected', 'Rejected'), ('paid', 'Paid'), ('all', 'All')) %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('finance.claims_list', status=k) }}">{{ label }}</a>{% endfor %}</p>
+<div class="row spread"><h1>{{ _("Claims") }}</h1><div class="row">{% if clinic.country == 'US' %}<a class="btn" href="{{ url_for('edi.home') }}">{{ _("Electronic claims") }}</a>{% endif %}<a class="btn" href="{{ url_for('ghclaims.batches') }}">{{ _("Monthly batches") }}</a><a class="btn" href="{{ url_for('statements.home') }}">{{ _("Statements") }}</a><a class="btn" href="{{ url_for('finance.payer_payments') }}">{{ _("Payments from payers") }}</a>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('finance.payers') }}">{{ _("Payers") }}</a><a class="btn" href="{{ url_for('ghclaims.diagnoses') }}">{{ _("Diagnoses") }}</a>{% endif %}</div></div>
+<div class="stats" style="grid-template-columns: repeat(2, 1fr)"><div class="card"><div class="stat">{{ awaiting|money }}</div><div class="muted">{{ _("still owed by payers on sent claims") }}</div></div>
+  <div class="card"><div class="stat">{{ rows|length }}</div><div class="muted">{{ _("claims in this list") }}</div></div></div>
+<p class="row">{% for k, label in (('open', _('Open')), ('draft', _('Not sent')), ('submitted', _('Sent, waiting')), ('partly_paid', _('Part paid')), ('rejected', _('Rejected')), ('paid', _('Paid')), ('all', _('All'))) %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('finance.claims_list', status=k) }}">{{ label }}</a>{% endfor %}</p>
+{% if by_payer and status == 'open' %}<section class="card"><h2>{{ _("What each payer owes, by how long ago it was sent") }}</h2><div class="tbl-wrap"><table>
+  <tr><th>{{ _("Payer") }}</th><th>{{ _("Claims") }}</th><th>{{ _("0 to 30 days") }}</th><th>{{ _("31 to 60") }}</th><th>{{ _("61 to 90") }}</th><th>{{ _("Over 90") }}</th><th>{{ _("Total") }}</th></tr>
+  {% for r in by_payer %}<tr><td>{{ r.payer }}</td><td>{{ r.claims }}</td><td class="nw">{{ r['0_30']|money }}</td><td class="nw">{{ r['31_60']|money }}</td><td class="nw">{{ r['61_90']|money }}</td><td class="nw {{ 'down' if r.over_90 }}">{{ r.over_90|money }}</td><td class="nw"><strong>{{ r.total|money }}</strong></td></tr>{% endfor %}
+</table></div></section>{% endif %}
 <section class="card"><div class="tbl-wrap"><table>
-  <tr><th>No.</th><th>Patient</th><th>Payer</th><th>Total</th><th>Expected</th><th>Paid</th><th>Status</th><th>Waiting</th></tr>
+  <tr><th>{{ _("No.") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Payer") }}</th><th>{{ _("Total") }}</th><th>{{ _("Expected") }}</th><th>{{ _("Paid") }}</th><th>{{ _("Status") }}</th><th>{{ _("Waiting") }}</th></tr>
   {% for r in rows %}{% set c = r.claim %}
   <tr><td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a></td><td>{{ c.first_name }} {{ c.last_name }}</td><td>{{ c.payer_name }}</td>
     <td class="nw">{{ c.total_fee_p|money }}</td><td class="nw">{{ c.estimate_p|money }}</td><td class="nw">{{ c.paid_p|money }}</td>
-    <td><span class="pill {{ 'ok' if c.status in ('paid', 'approved') else 'bad' if c.status == 'rejected' else 'warn' if c.status in ('submitted', 'partly_paid') else '' }}">{{ statuses[c.status] }}</span>{% if c.kind == 'preauth' %} <span class="muted small">pre-auth</span>{% endif %}</td>
-    <td class="nw">{% if r.age is not none %}{{ r.age }} days{% endif %}</td></tr>
-  {% else %}<tr><td colspan="8" class="muted">Nothing here.</td></tr>{% endfor %}
+    <td><span class="pill {{ 'ok' if c.status in ('paid', 'approved') else 'bad' if c.status == 'rejected' else 'warn' if c.status in ('submitted', 'partly_paid') else '' }}">{{ _(statuses[c.status]) }}</span>{% if c.kind == 'preauth' %} <span class="muted small">{{ _("pre-auth") }}</span>{% endif %}</td>
+    <td class="nw">{% if r.age is not none %}{{ r.age }} {{ _("days") }}{% endif %}</td></tr>
+  {% else %}<tr><td colspan="8" class="muted">{{ _("Nothing here.") }}</td></tr>{% endfor %}
 </table></div></section>
 {% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Forms to review") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Forms to review") }}</h1>
+<section class="card">{% for r in rows %}<p><a href="{{ url_for('cforms.response_view', rid=r.id) }}">{{ r.title }}</a>: {{ r.first_name }} {{ r.last_name }}, {{ r.submitted_at[:16] }} UTC</p>{% else %}<p class="muted">{{ _("Nothing waiting.") }}</p>{% endfor %}</section>
+{% endblock %}

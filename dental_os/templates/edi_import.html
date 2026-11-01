@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_edi_tabs.html" import tabs with context %}
+{% block title %}{{ _("Read a file from the clearinghouse") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Read a file from the clearinghouse") }}</h1>
+{{ tabs('import') }}
+<form method="post" enctype="multipart/form-data" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p>{{ _("A remittance (835) is shown for checking before anything is posted. A cover check answer (271) is saved on the patient's cover. A receipt (999) marks the claim file it is for as accepted or rejected.") }}</p>
+  <label for="file">{{ _("File") }}</label><input id="file" type="file" name="file" accept=".x12,.edi,.txt,.835,.271,.999,text/plain">
+  <label for="text">{{ _("Or paste the file's text") }}</label><textarea id="text" name="text" rows="6"></textarea>
+  <p><button class="primary" type="submit">{{ _("Read it") }}</button></p>
+</form>
+{% endblock %}

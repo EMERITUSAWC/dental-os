@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Medicines list") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Medicines list") }}</h1>
+<section class="card">
+  <p class="muted">{{ _("The medicines your dentists can prescribe, with the usual way to take them. The starter antibiotics follow published UK dental guidance; painkillers and the rest come without a dose for your dentists to fill in. Check every entry against your national formulary before use.") }}</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" name="action" value="starters">{{ _("Add the starter medicines") }}</button></form>
+</section>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">{% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+  <h2>{{ _("Change this medicine") if edit else _("Add a medicine") }}</h2>
+  <div class="grid three">
+    <div><label for="name">{{ _("Generic name") }}</label><input id="name" name="name" maxlength="80" required value="{{ edit.name if edit else '' }}"></div>
+    <div><label for="strength">{{ _("Strength") }}</label><input id="strength" name="strength" maxlength="30" value="{{ edit.strength if edit else '' }}" placeholder="{{ _('for example 500 mg') }}"></div>
+    <div><label for="form">{{ _("Form") }}</label><input id="form" name="form" maxlength="30" value="{{ edit.form if edit else '' }}" placeholder="{{ _('tablets, capsules') }}"></div>
+  </div>
+  <div class="grid three">
+    <div><label for="dose">{{ _("Usual way to take it") }}</label><input id="dose" name="dose" maxlength="200" value="{{ edit.dose if edit else '' }}"></div>
+    <div><label for="days">{{ _("Usual days") }}</label><input id="days" name="days" inputmode="numeric" value="{{ edit.days if edit and edit.days else '' }}"></div>
+    <div><label for="quantity">{{ _("Usual supply") }}</label><input id="quantity" name="quantity" maxlength="40" value="{{ edit.quantity if edit else '' }}"></div>
+  </div>
+  <div class="grid two">
+    <div><label for="drug_class">{{ _("Kind, for allergy checks") }}</label><select id="drug_class" name="drug_class">{% for k, v in classes.items() %}<option value="{{ k }}" {{ 'selected' if edit and edit.drug_class == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="warnings">{{ _("Advice printed for the patient") }}</label><input id="warnings" name="warnings" maxlength="300" value="{{ edit.warnings if edit else '' }}"></div>
+  </div>
+  <label class="check"><input type="checkbox" name="controlled" value="1" {{ 'checked' if edit and edit.controlled }}> <span>{{ _("Controlled drug (extra legal rules apply)") }}</span></label>
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button>{% if edit %}<a class="btn" href="{{ url_for('care.drugs') }}">{{ _("Cancel") }}</a>{% endif %}</p>
+</form>
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>{{ _("Medicine") }}</th><th>{{ _("Usual way to take it") }}</th><th>{{ _("Kind") }}</th><th></th></tr>
+  {% for d in rows %}<tr class="{{ 'muted' if not d.active }}"><td>{{ d.name }} {{ d.strength }} {{ d.form }}{% if d.controlled %} <span class="pill warn">{{ _("controlled") }}</span>{% endif %}{% if d.source %}<br><span class="muted small">{{ d.source }}</span>{% endif %}</td>
+    <td>{{ d.dose or _('Not set: the dentist writes it each time') }}{% if d.days %}, {{ _("%(n)s days", n=d.days) }}{% endif %}{% if d.quantity %}, {{ d.quantity }}{% endif %}</td>
+    <td>{{ _(classes.get(d.drug_class, d.drug_class)) }}</td>
+    <td class="nw"><a href="{{ url_for('care.drugs', edit=d.id) }}">{{ _("Edit") }}</a>
+      <form method="post" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ d.id }}"><button class="link" type="submit" name="action" value="toggle">{{ _("Switch off") if d.active else _("Switch on") }}</button></form></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No medicines yet.") }}</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

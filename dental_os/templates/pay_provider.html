@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }}: {{ _("Associate pay") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ p.name }}</h1><a class="btn" href="{{ url_for('pay.home') }}">{{ _("Associate pay") }}</a></div>
+<div class="grid two">
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="run">
+  <h2>{{ _("New pay run") }}</h2>
+  <label for="start">{{ _("From") }}</label><input id="start" type="date" name="start" value="{{ start }}" required>
+  <label for="end">{{ _("To") }}</label><input id="end" type="date" name="end" value="{{ end }}" required>
+  <p class="muted small">{{ _("The terms in force on the last day of the period are used.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Work it out") }}</button></p></form>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Set new terms") }}</h2>
+  <label for="basis">{{ _("Share worked out on") }}</label><select id="basis" name="basis">{% for k, v in bases.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+  <label for="percent">{{ _("Share (%)") }}</label><input id="percent" name="percent" inputmode="decimal" class="narrow" value="{{ (terms[0].percent_bp / 100) if terms else '' }}">
+  <label for="lab_percent">{{ _("Part of lab bills they bear (%)") }}</label><input id="lab_percent" name="lab_percent" inputmode="decimal" class="narrow" value="{{ (terms[0].lab_bp / 100) if terms else '0' }}">
+  <label for="daily">{{ _("Fixed amount per day worked (optional)") }}</label><input id="daily" name="daily" inputmode="decimal" class="narrow" value="{{ terms[0].daily_p|plain if terms and terms[0].daily_p else '' }}">
+  <label for="effective_from">{{ _("Starting on") }}</label><input id="effective_from" type="date" name="effective_from" value="{{ today }}" required>
+  <p class="muted small">{{ _("New terms never change a pay run already approved. A day worked is a day with completed work for this provider.") }}</p>
+  <p><button type="submit">{{ _("Save the terms") }}</button></p></form>
+</div>
+<section class="card"><h2>{{ _("Terms over time") }}</h2>
+  {% for t in terms %}<p>{{ t.effective_from|date }}: {{ '%g'|format(t.percent_bp / 100) }}% {{ _("of") }} {{ _(bases[t.basis])|lower }}, {{ _("lab") }} {{ '%g'|format(t.lab_bp / 100) }}%{% if t.daily_p %}, {{ t.daily_p|money }} {{ _("a day") }}{% endif %}</p>{% else %}<p class="muted">{{ _("Not set") }}</p>{% endfor %}</section>
+<section class="card"><h2>{{ _("Pay runs") }}</h2>
+  {% for r in runs %}<p><a href="{{ url_for('pay.run_view', rid=r.id) }}">{{ r.period_from|date }} {{ _("to") }} {{ r.period_to|date }}</a> {{ r.total_p|money }} <span class="pill">{{ _(statuses[r.status]) }}</span></p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+{% endblock %}

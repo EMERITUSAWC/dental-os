@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Letters") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("letters") }}</h1>
+{{ tabs(p, 'letters') }}
+<form method="get" class="card">
+  <h2>{{ _("Write a letter") }}</h2>
+  <div class="grid two">
+    <div><label for="template_id">{{ _("Start from") }}</label><select id="template_id" name="template_id">{% for t in templates %}<option value="{{ t.id }}" {{ 'selected' if draft and draft.template.id == t.id }}>{{ t.name }}</option>{% endfor %}</select></div>
+    <div><label for="provider_id">{{ _("Signed by") }}</label><select id="provider_id" name="provider_id"><option value="">{{ _("The clinic") }}</option>{% for pr in providers %}<option value="{{ pr.id }}" {{ 'selected' if draft and draft.provider_id == pr.id }}>{{ pr.name }}</option>{% endfor %}</select></div>
+  </div>
+  <p class="row"><button type="submit">{{ _("Fill in from the record") }}</button>{% if user.role == 'manager' %}<a href="{{ url_for('care.letter_templates') }}">{{ _("Change the letters") }}</a>{% endif %}</p>
+</form>
+{% if draft %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="template_id" value="{{ draft.template.id }}">
+  {% if draft.provider_id %}<input type="hidden" name="provider_id" value="{{ draft.provider_id }}">{% endif %}
+  <label for="title">{{ _("Title") }}</label><input id="title" name="title" maxlength="120" value="{{ draft.title }}" required>
+  <label for="addressee">{{ _("To (optional, printed at the top)") }}</label><textarea id="addressee" name="addressee" rows="2" maxlength="300"></textarea>
+  <label for="body">{{ _("Wording: change anything before you save") }}</label><textarea id="body" name="body" rows="14" maxlength="8000" required>{{ draft.body }}</textarea>
+  <p><button class="primary" type="submit">{{ _("Save and print") }}</button></p>
+</form>
+{% endif %}
+<section class="card"><h2>{{ _("Letters on this record") }}</h2>
+  {% for l in rows %}<p><a href="{{ url_for('care.letter_print', lid=l.id) }}">{{ l.title }}</a> <span class="muted small">{{ l.created_at[:10]|date }}, {{ l.by_name or '' }}</span></p>
+  {% else %}<p class="muted">{{ _("No letters yet.") }}</p>{% endfor %}
+</section>
+{% endblock %}

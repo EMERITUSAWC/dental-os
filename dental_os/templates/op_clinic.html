@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ x.c.name }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ x.c.name }} <span class="pill">{{ _(states[x.state]) }}</span></h1>
+<div class="grid two">
+<section class="card"><dl class="facts"><dt>{{ _("Country") }}</dt><dd>{{ x.c.country }}, {{ x.c.currency }}</dd><dt>{{ _("Patients") }}</dt><dd>{{ x.patients }}</dd><dt>{{ _("Staff") }}</dt><dd>{{ x.staff }}</dd>
+  <dt>{{ _("Plan") }}</dt><dd>{{ x.plan.name if x.plan else _("None yet") }}</dd><dt>{{ _("Paid up to") }}</dt><dd>{{ x.c.paid_until or '' }}</dd>
+  {% if x.c.trial_ends_on %}<dt>{{ _("Trial ends") }}</dt><dd>{{ x.c.trial_ends_on }}</dd>{% endif %}{% if x.c.state_reason %}<dt>{{ _("Reason") }}</dt><dd>{{ x.c.state_reason }}</dd>{% endif %}</dl>
+  {% if grant %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="support"><p class="small">{{ _("The clinic granted support access until") }} {{ grant.until_at }} UTC{% if grant.why %}: {{ grant.why }}{% endif %}</p><button class="primary" type="submit">{{ _("Look at the clinic (read only)") }}</button></form>
+  {% else %}<p class="muted small">{{ _("No support access granted. The clinic's manager grants it under Settings, Support access.") }}</p>{% endif %}</section>
+<div>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="state"><h2>{{ _("State") }}</h2>
+  <select name="state" aria-label="{{ _('State') }}">{% for k, v in states.items() %}<option value="{{ k }}" {{ 'selected' if k == x.c.plan_state }}>{{ _(v) }}</option>{% endfor %}</select>
+  <label for="reason">{{ _("Reason (needed to pause or close; the manager sees it)") }}</label><input id="reason" name="reason" maxlength="300">
+  <label for="trial_days">{{ _("Trial days, when starting a trial") }}</label><input id="trial_days" name="trial_days" type="number" min="1" max="365" class="narrow">
+  <p><button type="submit">{{ _("Save") }}</button></p></form>
+<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="plan">
+  <label for="plan_id">{{ _("Plan") }}</label><select id="plan_id" name="plan_id">{% for p in plans %}<option value="{{ p.id }}" {{ 'selected' if p.id == x.c.plan_id }}>{{ p.name }}</option>{% endfor %}</select>
+  <label for="start">{{ _("Billing starts") }}</label><input id="start" type="date" name="start"><button type="submit">{{ _("Put on the plan") }}</button></form>
+</div></div>
+<section class="card"><h2>{{ _("Bills") }}</h2>
+  {% for b in bills %}<div class="row small"><span>{{ b.number }}: {{ b.period_from }} {{ _("to") }} {{ b.period_to }}, {{ b.amount_p|money_in(b.currency) }}, {{ _("due") }} {{ b.due_on }}</span> <span class="pill {{ 'ok' if b.status == 'paid' else 'warn' }}">{{ b.status }}</span>{% if b.paid_ref %} {{ b.paid_method }} {{ b.paid_ref }}{% endif %}
+    {% if b.status == 'open' %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="paid"><input type="hidden" name="bill_id" value="{{ b.id }}">
+      <select name="method" aria-label="{{ _('How it was paid') }}"><option value="bank_transfer">{{ _("Bank transfer") }}</option><option value="mobile_money">{{ _("Mobile money") }}</option><option value="cash">{{ _("Cash") }}</option><option value="card">{{ _("Card") }}</option></select>
+      <input name="reference" maxlength="120" placeholder="{{ _('Reference') }}" aria-label="{{ _('Reference') }}"><button type="submit">{{ _("Mark paid") }}</button></form>{% endif %}</div>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+<section class="card"><h2>{{ _("What was done") }}</h2>{% for l in log %}<p class="small">{{ l.at }} {{ l.display_name or '' }}: {{ l.action }}{% if l.detail %}, {{ l.detail }}{% endif %}</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% endblock %}

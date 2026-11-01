@@ -1,26 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Set up two-step login{% endblock %}
+{% block title %}{{ _("Set up two-step login") }}{% endblock %}
 {% block body %}
-<h1>Set up two-step login</h1>
-{% if required and not user.totp_enabled %}<div class="flash error" role="alert">Your clinic requires two-step login. Set it up to carry on.</div>{% endif %}
-{% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+<h1>{{ _("Set up two-step login") }}</h1>
+{% if required and not user.totp_enabled %}<div class="flash error" role="alert">{{ _("Your clinic requires two-step login. Set it up to carry on.") }}</div>{% endif %}
+{% if error %}<div class="flash error" role="alert">{{ _(error) }}</div>{% endif %}
 <div class="grid two">
   <section class="card">
-    <h2>1. Add this login to your authenticator app</h2>
-    <p class="muted small">Any standard authenticator app works, for example Google Authenticator, Microsoft Authenticator or Authy. Scan the picture with the app.</p>
+    <h2>{{ _("1. Add this login to your authenticator app") }}</h2>
+    <p class="muted small">{{ _("Any standard authenticator app works, for example Google Authenticator, Microsoft Authenticator or Authy. Scan the picture with the app.") }}</p>
     {% if svg %}<div style="background:#fff;display:inline-block;padding:4px;border-radius:8px">{{ svg|safe }}</div>{% endif %}
-    <p class="muted small">Cannot scan? In the app choose "enter a setup key" and type this key. Time based, 6 digits.</p>
+    <p class="muted small">{{ _('Cannot scan? In the app choose "enter a setup key" and type this key. Time based, 6 digits.') }}</p>
     <p class="keybox">{{ secret }}</p>
   </section>
   <section class="card">
-    <h2>2. Type the code it shows</h2>
+    <h2>{{ _("2. Type the code it shows") }}</h2>
     <form method="post" autocomplete="off">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      <label for="code">6-digit code</label>
+      <label for="code">{{ _("6-digit code") }}</label>
       <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="8" autofocus>
-      <p><button class="primary" type="submit">Turn on two-step login</button></p>
+      <p><button class="primary" type="submit">{{ _("Turn on two-step login") }}</button></p>
     </form>
-    <p class="muted small">You will then be given recovery codes. Keep them somewhere safe and away from your phone.</p>
+    <p class="muted small">{{ _("You will then be given recovery codes. Keep them somewhere safe and away from your phone.") }}</p>
   </section>
 </div>
 {% endblock %}

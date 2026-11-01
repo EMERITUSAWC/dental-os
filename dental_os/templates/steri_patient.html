@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("Instruments") }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }}</h1>
+{{ tabs(p, 'instruments') }}
+<form method="post" class="card row">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="code">{{ _("Scan or type the pack code") }}</label><input id="code" name="code" autofocus autocomplete="off" required>
+  {% if visits %}<label class="sr-only" for="appointment_id">{{ _("Visit") }}</label><select id="appointment_id" name="appointment_id">{% for v in visits %}<option value="{{ v.id }}">{{ v.start_at|time }}</option>{% endfor %}<option value="">{{ _("No visit") }}</option></select>{% endif %}
+  <button class="primary" type="submit">{{ _("Record pack used") }}</button>
+</form>
+<section class="card"><h2>{{ _("Instrument packs used on this patient") }}</h2>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Pack") }}</th><th>{{ _("Steriliser and cycle") }}</th><th>{{ _("By") }}</th></tr>
+  {% for k in rows %}<tr><td class="nw">{{ k.used_at|date }} {{ k.used_at[11:16] }}</td><td><a href="{{ url_for('steri.pack_find', code=k.code) }}">{{ k.code }}</a>: {{ k.contents }}</td>
+    <td>{{ k.steriliser }}, {{ k.cycle_no }}{% if k.recall_id %} <span class="pill bad">{{ _("Recalled") }}</span>{% endif %}</td><td>{{ k.by_name or '' }}</td></tr>{% endfor %}</table></div>
+  {% else %}<p class="muted">{{ _("None recorded.") }}</p>{% endif %}</section>
+{% endblock %}

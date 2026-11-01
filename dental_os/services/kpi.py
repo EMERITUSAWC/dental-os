@@ -127,6 +127,9 @@ def period(db, clinic, start, end):
     collected = _one(db, "SELECT SUM(amount_p) FROM payments WHERE clinic_id=? AND voided=0 AND received_on BETWEEN ? AND ?", cid, s, e)
     treat = _one(db, """SELECT SUM(amount_p) FROM payments WHERE clinic_id=? AND voided=0 AND purpose='treatment'
                         AND received_on BETWEEN ? AND ?""", cid, s, e)
+    from . import refunds
+    back = sum(refunds.by_method(db, cid, s, e).values())
+    collected, treat = collected - back, treat - back                    # refunds come out of treatment money
     v = visits(db, cid, s, e)
     new_patients = _one(db, "SELECT COUNT(*) FROM patients WHERE clinic_id=? AND date(created_at) BETWEEN ? AND ?", cid, s, e)
     lab_spend = _one(db, """SELECT SUM(cost_p) FROM lab_cases WHERE clinic_id=? AND status != 'cancelled' AND sent_on BETWEEN ? AND ?""",

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
 {% from "_lab_rows.html" import rows as lab_rows %}
-{% block title %}Lab, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Lab,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
 <h1>{{ p.first_name }} {{ p.last_name }}</h1>
 {{ tabs(p, 'lab') }}
-<div class="row spread"><h2>Lab cases</h2><a class="btn primary" href="{{ url_for('ops.lab_new', patient_id=p.id) }}">New lab case</a></div>
+<div class="row spread"><h2>{{ _("Lab cases") }}</h2><a class="btn primary" href="{{ url_for('ops.lab_new', patient_id=p.id) }}">{{ _("New lab case") }}</a></div>
 <section class="card">{{ lab_rows(rows, labels, today) }}</section>
 {% endblock %}

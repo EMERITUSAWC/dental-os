@@ -36,18 +36,28 @@ def _today(clinic):
 # ============================================================================================ a full copy of one record
 # Every table that has a patient_id column belongs here, unless it is listed in NOT_RECORDS. A test checks this against the schema,
 # so a table added later cannot be forgotten by mistake.
-DIRECT = ["appointments", "messages", "procedures", "payments", "adjustments", "recalls", "medical_history", "patient_alerts",
+DIRECT = ["aftercare_given", "refunds", "reactivation_holds", "complaints", "safety_incidents", "implant_items", "material_recall_patients", "appointments", "messages", "procedures", "payments", "adjustments", "recalls", "medical_history", "patient_alerts",
           "tooth_conditions", "perio_charts", "clinical_notes", "consents", "patient_files", "treatment_plans", "memberships",
           "payment_plans", "patient_cover", "claims", "invoices", "outbox", "booking_requests", "intake_submissions", "lab_cases",
-          "data_requests"]
+          "data_requests", "prescriptions", "referrals_out", "vitals", "letters", "contact_log", "image_mounts", "tasks", "pay_links",
+          "calls", "steri_packs", "nhs_courses", "imaging_requests", "ortho_cases", "statement_items", "staff_messages", "saved_cards", "card_charges", "form_responses"]
 # child table -> (column that points at the parent, parent table). Rows are found through the parent.
-CHILD = {"perio_readings": ("chart_id", "perio_charts"), "plan_items": ("plan_id", "treatment_plans"),
+CHILD = {"kit_uses": ("procedure_id", "procedures"), "complaint_steps": ("complaint_id", "complaints"), "perio_readings": ("chart_id", "perio_charts"), "plan_items": ("plan_id", "treatment_plans"),
          "plan_events": ("plan_id", "treatment_plans"), "membership_charges": ("membership_id", "memberships"),
-         "membership_uses": ("membership_id", "memberships"), "instalments": ("plan_id", "payment_plans"),
+         "membership_uses": ("membership_id", "memberships"), "instalments": ("payment_plan_id", "payment_plans"),
          "claim_items": ("claim_id", "claims"), "invoice_lines": ("invoice_id", "invoices"), "invoice_tax": ("invoice_id", "invoices"),
-         "lab_events": ("case_id", "lab_cases")}
-NOT_RECORDS = {"patient_links": "access links; only a hash of the secret is kept, and it says nothing about the person"}
-HIDE_COLUMNS = {"patient_files": {"stored_name"}}                  # the private name a file has on disk
+         "lab_events": ("case_id", "lab_cases"), "prescription_items": ("prescription_id", "prescriptions"),
+         "image_mount_slots": ("mount_id", "image_mounts"), "cover_benefits": ("cover_id", "patient_cover"),
+         "cover_limits": ("cover_id", "patient_cover"), "ortho_visits": ("case_id", "ortho_cases"),
+         "ortho_contracts": ("case_id", "ortho_cases"), "ortho_charges": ("contract_id", "ortho_contracts")}
+NOT_RECORDS = {"aftercare_sheets": "the clinic's own printed advice for each kind of treatment; nothing about any patient",
+               "patient_merges": "which duplicate record was merged into which, and how many rows moved; no details about the person",
+               "patient_not_duplicates": "two record numbers a manager marked as different people; nothing else",
+               "patient_links": "access links; only a hash of the secret is kept, and it says nothing about the person",
+               "staff_message_reads": "who has read a staff message, and when; it holds nothing about the patient",
+               "custom_forms": "the clinic's own blank forms; the answers are in form_responses",
+               "edi_files": "US claim files as sent and received; one file can carry several patients, and the claims in it are in the copy"}
+HIDE_COLUMNS = {"patient_files": {"stored_name"}, "saved_cards": {"token"}, "form_responses": {"token_hash"}}                  # the private name a file has on disk
 
 
 def _clean(row, table):
@@ -66,6 +76,7 @@ def record_data(db, cid, pid):
                          WHERE pr.clinic_id = ? AND pr.patient_id = ? ORDER BY pr.id""",
         "appointments": """SELECT a.*, pv.name AS dentist FROM appointments a LEFT JOIN providers pv ON pv.id = a.provider_id
                            WHERE a.clinic_id = ? AND a.patient_id = ? ORDER BY a.id""",
+        "steri_packs": "SELECT * FROM steri_packs WHERE clinic_id = ? AND used_on = ? ORDER BY id",    # instrument packs used on them
     }
     for table in DIRECT:
         sql = extra.get(table) or f"SELECT * FROM {table} WHERE clinic_id = ? AND patient_id = ? ORDER BY id"
@@ -189,6 +200,10 @@ def anonymise(db, clinic, user_id, pid, reason, confirm, request_id=None):
                (f"#{pid}", dob, _today(clinic).isoformat(), pid, cid))
     db.execute("UPDATE appointments SET notes = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     db.execute("UPDATE messages SET body = '[removed]' WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
+    db.execute("UPDATE staff_messages SET body = '[removed]' WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
+    db.execute("UPDATE saved_cards SET status = 'removed', token = '', email = NULL, removed_reason = 'Record anonymised' WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
+    db.execute("UPDATE calls SET from_number = CASE WHEN direction = 'in' THEN '' ELSE from_number END, "
+               "to_number = CASE WHEN direction = 'out' THEN '' ELSE to_number END WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     db.execute("UPDATE consents SET signer_name = 'Anonymised' WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     db.execute("UPDATE patient_cover SET holder_name = NULL, member_no = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     db.execute("UPDATE treatment_plans SET signer_name = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
@@ -198,6 +213,9 @@ def anonymise(db, clinic, user_id, pid, reason, confirm, request_id=None):
     db.execute("UPDATE intake_submissions SET answers = '{}' WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     db.execute("UPDATE patient_links SET revoked = 1 WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     db.execute("UPDATE data_requests SET requester = 'Anonymised', details = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
+    db.execute("UPDATE letters SET body = '[removed]', addressee = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
+    db.execute("UPDATE contact_log SET summary = '[removed]', outcome = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
+    db.execute("UPDATE tasks SET title = '[removed]', detail = NULL, close_note = NULL WHERE clinic_id = ? AND patient_id = ?", (cid, pid))
     webhooks.redact_patient(db, cid, pid)
     audit.log(db, cid, user_id, "patient.anonymise", "patient", pid, reason[:120])
     if request_id:
@@ -242,7 +260,7 @@ def get_request(db, cid, rid):
 
 def list_requests(db, clinic, status=None):
     rows = db.execute("""SELECT r.*, p.first_name, p.last_name FROM data_requests r LEFT JOIN patients p ON p.id = r.patient_id
-                         WHERE r.clinic_id = ? AND (? IS NULL OR r.status = ?)
+                         WHERE r.clinic_id = ? AND (CAST(? AS TEXT) IS NULL OR r.status = ?)
                          ORDER BY CASE r.status WHEN 'open' THEN 0 ELSE 1 END, r.due_on, r.id DESC""",
                       (clinic["id"], status, status)).fetchall()
     today = _today(clinic).isoformat()
@@ -416,21 +434,29 @@ def retention_candidates(db, clinic, limit=300):
         cutoff = today.replace(year=today.year - years)
     except ValueError:
         cutoff = today.replace(year=today.year - years, day=28)
-    rows = db.execute(
-        """SELECT * FROM (
-             SELECT p.id, p.first_name, p.last_name, p.status, p.created_at,
-               MAX(COALESCE((SELECT MAX(substr(start_at,1,10)) FROM appointments WHERE patient_id = p.id AND start_at IS NOT NULL), '0000'),
-                   COALESCE((SELECT MAX(done_on) FROM procedures WHERE patient_id = p.id AND status = 'done'), '0000'),
-                   COALESCE((SELECT MAX(received_on) FROM payments WHERE patient_id = p.id), '0000'),
-                   COALESCE((SELECT MAX(substr(created_at,1,10)) FROM clinical_notes WHERE patient_id = p.id), '0000'),
-                   COALESCE((SELECT MAX(substr(created_at,1,10)) FROM messages WHERE patient_id = p.id), '0000'),
-                   substr(p.created_at,1,10)) AS last_on
-             FROM patients p WHERE p.clinic_id = ? AND p.anonymised_on IS NULL)
-           WHERE last_on < ? ORDER BY last_on LIMIT ?""", (clinic["id"], cutoff.isoformat(), limit)).fetchall()
+    cid = clinic["id"]
+    # 0.57: one grouped query per kind of activity instead of five lookups per patient (over four minutes at 20,000 patients).
+    last = {}
+    for sql in ("SELECT patient_id, MAX(substr(start_at, 1, 10)) FROM appointments WHERE clinic_id = ? AND start_at IS NOT NULL GROUP BY patient_id",
+                "SELECT patient_id, MAX(done_on) FROM procedures WHERE clinic_id = ? AND status = 'done' GROUP BY patient_id",
+                "SELECT patient_id, MAX(received_on) FROM payments WHERE clinic_id = ? GROUP BY patient_id",
+                "SELECT patient_id, MAX(substr(created_at, 1, 10)) FROM clinical_notes WHERE clinic_id = ? GROUP BY patient_id",
+                "SELECT patient_id, MAX(substr(created_at, 1, 10)) FROM messages WHERE clinic_id = ? GROUP BY patient_id"):
+        for pid, day in db.execute(sql, (cid,)):
+            if day and day > last.get(pid, ""):
+                last[pid] = day
+    found = []
+    for r in db.execute("""SELECT id, first_name, last_name, status, created_at FROM patients
+                           WHERE clinic_id = ? AND anonymised_on IS NULL""", (cid,)):
+        last_on = max(last.get(r["id"], "0000"), (r["created_at"] or "0000")[:10])
+        if last_on < cutoff.isoformat():
+            found.append((last_on, r))
+    found.sort(key=lambda t: (t[0], t[1]["id"]))
+    balances = billing.all_balances(db, cid)
     out = []
-    for r in rows:
-        bal = billing.totals(db, clinic["id"], r["id"])["balance"]
-        out.append(dict(r, balance=bal, ready=(bal == 0)))
+    for last_on, r in found[:limit]:
+        bal = balances.get(r["id"], (0, 0))[0]
+        out.append(dict(r, last_on=last_on, balance=bal, ready=(bal == 0)))
     return out, cutoff.isoformat()
 
 

@@ -26,6 +26,8 @@ def patient_ageing(db, cid, pid, today):
             credit += -r["amount_p"]
     credit += db.execute("SELECT COALESCE(SUM(amount_p),0) FROM payments WHERE clinic_id = ? AND patient_id = ? AND voided = 0 "
                          "AND purpose = 'treatment'", (cid, pid)).fetchone()[0]
+    from . import refunds
+    credit -= refunds.total(db, cid, pid)                # money given back is credit the patient no longer holds
     out = {name: 0 for name, _, _ in BUCKETS}
     for day, amount in sorted(charges):
         used = min(credit, amount)
@@ -46,7 +48,11 @@ def report(db, clinic):
     cid = clinic["id"]
     today = now_local(clinic["timezone"]).date()
     rows, totals = [], {name: 0 for name, _, _ in BUCKETS}
-    for p in db.execute("SELECT id, first_name, last_name, phone FROM patients WHERE clinic_id = ? AND status = 'active'", (cid,)):
+    from .billing import all_balances
+    owing = {pid for pid, (_b, unpaid) in all_balances(db, cid).items() if unpaid > 0}    # 0.57: skip everyone with nothing unpaid
+    for p in db.execute("SELECT id, first_name, last_name, phone FROM patients WHERE clinic_id = ? AND status = 'active'", (cid,)).fetchall():
+        if p["id"] not in owing:
+            continue
         b = patient_ageing(db, cid, p["id"], today)
         total = sum(b.values())
         if not total:

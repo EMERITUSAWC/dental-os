@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Implant card") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><a class="btn" href="{{ url_for('implants.patient', pid=p.id) }}">{{ _("Back") }}</a><button type="button" data-print>{{ _("Print") }}</button></div>
+<section class="card doc">
+  <h1>{{ _d("Implant card") }}</h1>
+  <p><strong>{{ p.first_name }} {{ p.last_name }}</strong>{% if p.dob %}, {{ p.dob|date }}{% endif %}</p>
+  <p>{{ g.clinic.name }}{% if g.clinic.phone %}, {{ g.clinic.phone|phone }}{% endif %}</p>
+  <p class="small">{{ _d("Keep this card. Show it to any dentist or doctor who treats you, and before a scan.") }}</p>
+  <table><thead><tr><th>{{ _d("Tooth") }}</th><th>{{ _d("Item") }}</th><th>{{ _d("Maker and product") }}</th><th>{{ _d("Lot") }}</th><th>{{ _d("Size") }}</th><th>{{ _d("Placed") }}</th></tr></thead><tbody>
+  {% for i in rows %}<tr><td>{{ i.tooth|tooth if i.tooth else '' }}</td><td>{{ _d(kinds[i.kind]) }}</td><td>{{ i.maker }}{% if i.product %}, {{ i.product }}{% endif %}{% if i.ref_code %} ({{ i.ref_code }}){% endif %}</td><td>{{ i.lot }}</td><td>{{ i.size or '' }}</td><td>{{ i.placed_on|date }}</td></tr>
+  {% else %}<tr><td colspan="6">{{ _d("No implants on record.") }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

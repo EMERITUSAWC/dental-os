@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Complaint") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><h1>{{ _("Complaint") }}: {% if k.patient_id %}<a href="{{ url_for('views.patient_view', pid=k.patient_id) }}">{{ k.first_name }} {{ k.last_name }}</a>{% endif %}{% if k.complainant %} {{ k.complainant }}{% endif %}</h1><button type="button" data-print>{{ _("Print") }}</button></div>
+<section class="card">
+  <p><span class="pill {{ 'ok' if k.status == 'closed' else 'warn' }}">{{ _(c_statuses[k.status]) }}</span> {{ _(categories[k.category]) }}, {{ _(channels[k.channel])|lower }}, {{ k.received_on|date }}{% if k.owner_name %}. {{ _("Handled by") }} {{ k.owner_name }}{% endif %}</p>
+  <dl class="facts">
+    <dt>{{ _("Acknowledgement due") }}</dt><dd>{{ k.ack_due|date }}{% if k.acknowledged_on %}, {{ _("done") }} {{ k.acknowledged_on|date }}{% if k.acknowledged_on > k.ack_due %} <span class="pill warn">{{ _("late") }}</span>{% endif %}{% endif %}</dd>
+    {% if k.response_due %}<dt>{{ _("Answer due (agreed)") }}</dt><dd>{{ k.response_due|date }}{% if k.responded_on %}, {{ _("done") }} {{ k.responded_on|date }}{% endif %}</dd>{% endif %}
+    {% if k.contact %}<dt>{{ _("How to reach them") }}</dt><dd>{{ k.contact }}</dd>{% endif %}
+    {% if k.about_staff %}<dt>{{ _("Staff named (optional)") }}</dt><dd>{{ k.about_staff }}</dd>{% endif %}
+    {% if k.outcome %}<dt>{{ _("Outcome") }}</dt><dd>{{ _(outcomes[k.outcome]) }}</dd>{% endif %}
+    {% if k.escalated_to %}<dt>{{ _("Taken further to") }}</dt><dd>{{ k.escalated_to }}</dd>{% endif %}
+  </dl>
+  <h2>{{ _("The complaint") }}</h2><p>{{ k.summary }}</p>
+  {% if k.wanted %}<p><strong>{{ _("What they would like") }}:</strong> {{ k.wanted }}</p>{% endif %}
+  {% if k.learning %}<h2>{{ _("What the clinic learned or changed") }}</h2><p>{{ k.learning }}</p>{% endif %}
+  <h2>{{ _("Steps") }}</h2>{% for s in steps %}<p class="small"><strong>{{ s.created_at[:10]|date }}</strong> {{ s.display_name or '' }}: {{ s.note or '' }}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}
+</section>
+{% if k.status == 'open' %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="ack"><h2>{{ _("Acknowledge it") }}</h2>
+  <div class="grid three"><div><label for="on">{{ _("Acknowledged on") }}</label><input id="on" type="date" name="on" value="{{ today }}"></div>
+  <div><label for="response_due">{{ _("Full answer by (agreed with them)") }}</label><input id="response_due" type="date" name="response_due" value="{{ suggest_due }}"></div></div>
+  <label for="ackn">{{ _("How, and what was said (optional)") }}</label><input id="ackn" name="note" maxlength="2000"><p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>{% endif %}
+{% if k.status in ('open', 'acknowledged') %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="respond"><h2>{{ _("Record the answer") }}</h2>
+  <div class="grid three"><div><label for="ron">{{ _("Answered on") }}</label><input id="ron" type="date" name="on" value="{{ today }}"></div>
+  <div><label for="outcome">{{ _("Outcome") }}</label><select id="outcome" name="outcome">{% for o, v in outcomes.items() %}<option value="{{ o }}">{{ _(v) }}</option>{% endfor %}</select></div></div>
+  <label for="rnote">{{ _("What the answer said, including any apology or offer") }}</label><textarea id="rnote" name="note" rows="3"></textarea><p><button type="submit">{{ _("Save") }}</button></p></form>{% endif %}
+{% if k.status == 'responded' %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="close"><h2>{{ _("Close it") }}</h2>
+  <label for="learning">{{ _("What the clinic learned or changed") }}</label><textarea id="learning" name="learning" rows="3"></textarea>
+  <label for="escalated_to">{{ _("Taken further to (optional)") }}</label><input id="escalated_to" name="escalated_to" maxlength="200"><p><button class="primary" type="submit">{{ _("Close the complaint") }}</button></p></form>{% endif %}
+{% if k.status != 'closed' %}<form method="post" class="card row no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="note"><label for="nnote">{{ _("Add a note") }}</label><input id="nnote" name="note" maxlength="4000"><button type="submit">{{ _("Add") }}</button></form>{% endif %}
+{% endblock %}

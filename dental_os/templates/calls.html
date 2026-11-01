@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Calls") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Calls") }}</h1>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('voice.setup') }}">{{ _("Phone set-up") }}</a>{% endif %}</div>
+{% if not on %}<p class="muted">{{ _("Phone calls are not switched on.") }}</p>{% endif %}
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Direction") }}</th><th>{{ _("Who") }}</th><th>{{ _("Status") }}</th><th>{{ _("Length") }}</th></tr>
+  {% for c in rows %}<tr><td class="nw">{{ c.started_at|date }} {{ c.started_at[11:16] }}</td><td>{{ _("In") if c.direction == 'in' else _("Out") }}</td>
+    <td>{% if c.patient_id %}<a href="{{ url_for('views.patient_view', pid=c.patient_id) }}">{{ c.first_name }} {{ c.last_name }}</a>{% else %}{{ (c.from_number if c.direction == 'in' else c.to_number)|phone }}{% endif %}{% if c.by_name %} <span class="muted small">({{ c.by_name }})</span>{% endif %}</td>
+    <td><span class="pill {{ 'bad' if c.status == 'missed' else ('ok' if c.status == 'completed' else '') }}">{{ _(statuses.get(c.status, c.status)) }}</span>{% if c.task_id %} <a class="small" href="{{ url_for('practice.tasks', view='all') }}">{{ _("call-back task") }}</a>{% endif %}</td>
+    <td class="nw">{% if c.duration_s %}{{ c.duration_s // 60 }}:{{ '%02d' % (c.duration_s % 60) }}{% endif %}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("No calls yet.") }}</p>{% endif %}</section>
+{% endblock %}

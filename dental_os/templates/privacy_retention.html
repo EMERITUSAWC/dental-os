@@ -1,26 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Retention review{% endblock %}
+{% block title %}{{ _("Retention review") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Records kept a long time</h1><a class="btn" href="{{ url_for('privacy.home') }}">Privacy home</a></div>
-<p class="muted">Clinics are usually allowed, and often required, to keep treatment and money records for a set number of years, and should not keep personal details longer than they need. How long differs by country and by kind of record. The number below is only a starting value. Ask your lawyer what applies, then set it.</p>
+<div class="row spread"><h1>{{ _("Records kept a long time") }}</h1><a class="btn" href="{{ url_for('privacy.home') }}">{{ _("Privacy home") }}</a></div>
+<p class="muted">{{ _("Clinics are usually allowed, and often required, to keep treatment and money records for a set number of years, and should not keep personal details longer than they need. How long differs by country and by kind of record. The number below is only a starting value. Ask your lawyer what applies, then set it.") }}</p>
 <section class="card">
   <form method="post" class="row">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-    <label for="years" style="margin:0">Review people not seen for</label>
-    <input id="years" name="years" type="number" min="1" max="60" value="{{ years }}" style="width:80px"> <span>years</span>
-    <button type="submit">Save</button>
+    <label for="years" style="margin:0">{{ _("Review people not seen for (years)") }}</label>
+    <input id="years" name="years" type="number" min="1" max="60" value="{{ years }}" style="width:80px"> 
+    <button type="submit">{{ _("Save") }}</button>
   </form>
 </section>
 <section class="card">
-  <p>People whose last visit, payment, note or message was before <strong>{{ cutoff|date }}</strong>: <strong>{{ rows|length }}</strong>. Nothing is removed automatically.</p>
+  <p>{{ _("People whose last visit, payment, note or message was before %(date)s: %(n)s. Nothing is removed automatically.", date=cutoff|date, n=rows|length) }}</p>
   <div class="tbl-wrap"><table>
-    <tr><th>Patient</th><th>Last activity</th><th>Account</th><th></th></tr>
+    <tr><th>{{ _("Patient") }}</th><th>{{ _("Last activity") }}</th><th>{{ _("Account") }}</th><th></th></tr>
     {% for r in rows %}
-    <tr><td><a href="{{ url_for('views.patient_view', pid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% if r.status == 'archived' %} <span class="pill">Archived</span>{% endif %}</td>
+    <tr><td><a href="{{ url_for('views.patient_view', pid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% if r.status == 'archived' %} <span class="pill">{{ _("Archived") }}</span>{% endif %}</td>
       <td class="nw">{{ r.last_on|date }}</td>
-      <td>{% if r.ready %}<span class="pill ok">Settled</span>{% else %}<span class="pill warn">{{ r.balance|money }}</span>{% endif %}</td>
-      <td><a class="btn" href="{{ url_for('privacy.patient_privacy', pid=r.id) }}">Privacy</a></td></tr>
-    {% else %}<tr><td colspan="4" class="muted">No one is past the period.</td></tr>{% endfor %}
+      <td>{% if r.ready %}<span class="pill ok">{{ _("Settled") }}</span>{% else %}<span class="pill warn">{{ r.balance|money }}</span>{% endif %}</td>
+      <td><a class="btn" href="{{ url_for('privacy.patient_privacy', pid=r.id) }}">{{ _("Privacy") }}</a></td></tr>
+    {% else %}<tr><td colspan="4" class="muted">{{ _("No one is past the period.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
 {% endblock %}

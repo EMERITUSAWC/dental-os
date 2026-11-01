@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Report an incident") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Report an incident") }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p class="muted small">{{ _("Anything that went wrong or nearly did. Reporting a near miss is how the next one is stopped; this is about fixing the system, not blaming a person.") }}</p>
+  {% if p %}<input type="hidden" name="patient_id" value="{{ p.id }}"><p>{{ _("Patient") }}: <strong>{{ p.first_name }} {{ p.last_name }}</strong></p>{% endif %}
+  <div class="grid three">
+    <div><label for="kind">{{ _("What kind") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="harm">{{ _("Harm done") }}</label><select id="harm" name="harm">{% for k, v in harm.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="occurred_on">{{ _("When") }}</label><input id="occurred_on" type="date" name="occurred_on" value="{{ today }}" max="{{ today }}"></div>
+    <div><label for="place">{{ _("Where (surgery, reception...)") }}</label><input id="place" name="place" maxlength="120"></div>
+    <div><label for="people">{{ _("Staff or others involved") }}</label><input id="people" name="people" maxlength="300"></div>
+  </div>
+  <label for="what_happened">{{ _("What happened") }}</label><textarea id="what_happened" name="what_happened" rows="5" required></textarea>
+  <label for="immediate_action">{{ _("What was done straight away") }}</label><textarea id="immediate_action" name="immediate_action" rows="3"></textarea>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% endblock %}

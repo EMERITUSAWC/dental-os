@@ -1,0 +1,9 @@
+{
+  "name": "Dental OS",
+  "short_name": "Dental OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8fa",
+  "theme_color": "#0b6e8a",
+  "icons": [{"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}

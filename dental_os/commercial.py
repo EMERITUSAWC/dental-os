@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
+from .safeurl import local_path
 from .auth import manager_required
 from .db import get_db
 from .services import billing, instalments as INS, memberships as MEM, money, plans as PL, treatment as TR
@@ -259,7 +260,7 @@ def _charge_action(charge_id, fn, ok):
         db.rollback()
         flash(str(exc), "error")
     target = request.form.get("back") or ""
-    if target.startswith("/") and not target.startswith("//"):
+    if local_path(target):
         return redirect(target)
     return redirect(url_for("commercial.patient_membership", pid=row["patient_id"]))
 

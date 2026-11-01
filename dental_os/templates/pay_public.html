@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ clinic.name }}{% endblock %}
+{% block body %}
+<div class="pub">
+  <h1>{{ clinic.name }}</h1>
+  <section class="card">
+    {% if came_back and result == 'paid' or link.status == 'paid' %}
+      <h2>{{ _d("Thank you. Your payment has been received.") }}</h2>
+      <p>{{ _d("Amount:") }} <strong>{{ link.amount_p|money_in(link.currency) }}</strong></p>
+      <p class="muted">{{ _d("The clinic has your receipt. You can close this page.") }}</p>
+    {% elif link.status == 'open' %}
+      {% if came_back %}<p class="pill warn">{{ _d("We have not received the payment yet. If you paid, wait a minute and open this page again.") }}</p>{% endif %}
+      <h2>{{ _d("Payment for %(name)s", name=link.first_name) }}</h2>
+      <p>{{ link.description }}</p>
+      <p class="stat">{{ link.amount_p|money_in(link.currency) }}</p>
+      {% if keep %}<form method="post" action="{{ url_for('paypub.pay_keep', ref=link.ref) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <label class="check"><input type="checkbox" name="save" value="1"> <span>{{ _d("Keep this card for later payments (optional).") }} <span class="small muted">{{ _d(consent_save)|replace('{clinic}', clinic.name) }}</span></span></label>
+        <label class="check"><input type="checkbox" name="auto" value="1"> <span>{{ _d("Also use it for my monthly fees as they fall due (optional).") }} <span class="small muted">{{ _d(consent_auto)|replace('{clinic}', clinic.name) }}</span></span></label>
+        <p class="muted small">{{ _d("The card is kept by the clinic's payment company, not by the clinic. You can ask the clinic to remove it at any time.") }}</p>
+        <p><button class="primary" type="submit">{{ _d("Pay now") }}</button></p></form>
+      {% else %}<p><a class="btn primary" href="{{ url_for('paypub.pay_go', ref=link.ref) }}">{{ _d("Pay now") }}</a></p>{% endif %}
+      <p class="muted small">{{ _d("You will go to the clinic's payment company to pay by card or mobile money, then come back here.") }}</p>
+    {% else %}
+      <h2>{{ _d("This link can no longer be used.") }}</h2><p class="muted">{{ _d("Please contact the clinic for a new one.") }}</p>
+    {% endif %}
+  </section>
+  {% if clinic.phone %}<p class="muted small">{{ clinic.phone|phone }}</p>{% endif %}
+</div>
+{% endblock %}

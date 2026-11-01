@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Registration and CPD") }}{% endblock %}
+{% macro hrs(t) %}{{ '%g'|format(t / 10) }}{% endmacro %}
+{% block body %}
+<h1>{{ _("Registration and CPD") }}</h1>
+<section class="card"><table><thead><tr><th>{{ _("Person") }}</th><th>{{ _("Registered with") }}</th><th>{{ _("Runs out") }}</th><th>{{ _("CPD") }}</th></tr></thead><tbody>
+{% for x in rows %}<tr><td><a href="{{ url_for('cpd.person', uid=x.u.id) }}">{{ x.u.display_name }}</a>{% if x.reg %} <span class="small muted">{{ _(titles[x.reg.title]) }}</span>{% endif %}</td>
+  <td>{% if x.reg and x.reg.body %}{{ x.reg.body }}{% if x.reg.reg_number %}, {{ x.reg.reg_number }}{% endif %}{% else %}<span class="muted">{{ _("Not entered") }}</span>{% endif %}</td>
+  <td>{% for label, what, day in x.warn %}<span class="pill warn">{{ _(label) }} {{ _(what) }} {{ day|date }}</span> {% endfor %}</td>
+  <td>{% if x.progress %}{{ hrs(x.progress.done) }} / {{ hrs(x.progress.target) }} {{ _("hours") }}{% if x.progress.met %} <span class="pill ok">{{ _("Met") }}</span>{% elif x.progress.behind %} <span class="pill warn">{{ _("Behind") }}</span>{% endif %}{% if x.progress.two_years_low %} <span class="pill warn">{{ _("Under 10 hours in two years") }}</span>{% endif %}{% else %}<span class="muted">{{ _("Not tracked") }}</span>{% endif %}</td></tr>
+{% endfor %}</tbody></table>
+<p class="muted small">{{ _("Registration and indemnity are flagged 60 days before they run out.") }}</p></section>
+{% endblock %}

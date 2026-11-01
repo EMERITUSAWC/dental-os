@@ -1,23 +1,36 @@
 {% extends "base.html" %}
 {% from "_msg_tabs.html" import tabs with context %}
-{% block title %}Messages to send{% endblock %}
+{% block title %}{{ _("Messages to send") }}{% endblock %}
 {% block body %}
-<h1>Messages</h1>
+<h1>{{ _("Messages") }}</h1>
 {{ tabs(active, attn) }}
-<p class="muted">These are ready for a person to send. Nothing goes out by itself: press the button, WhatsApp opens with the words ready, and you press send there. Reminders appear here when they fall due.</p>
-{% if built.no_consent %}<p class="small muted">{{ built.no_consent }} patient{{ '' if built.no_consent == 1 else 's' }} would have had a message but {{ 'has' if built.no_consent == 1 else 'have' }} not agreed to messages.</p>{% endif %}
+<p class="muted">{{ _("These are ready for a person to send. Nothing goes out by itself: press the button, WhatsApp opens with the words ready, and you press send there. Reminders appear here when they fall due.") }}</p>
+{% if built.no_consent %}<p class="small muted">{{ _("%(n)s patient would have had a message but has not agreed to messages.", n=built.no_consent) if built.no_consent == 1 else _("%(n)s patients would have had a message but have not agreed to messages.", n=built.no_consent) }}</p>{% endif %}
+{% if api_on %}<section class="card"><div class="row spread"><div><strong>{{ _("WhatsApp Business API is on.") }}</strong>
+  <div class="muted small">{{ _("The Send button sends from the clinic's WhatsApp number without opening WhatsApp. A message with no approved template stays here for a person.") }}</div>
+  {% if auto_on %}<div class="small">{{ _("Automatic sending is on: the server sends these by itself every few minutes.") }}</div>{% endif %}</div>
+  <form method="post" action="{{ url_for('comms.queue_send_all') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">{{ _("Send everything that can go") }}</button></form></div></section>{% endif %}
+{% if sms_on %}<section class="card"><div class="row spread"><div><strong>{{ _("SMS is on.") }}</strong>
+  <div class="muted small">{{ _("Patients whose preferred contact is SMS can be sent their messages by text.") }}</div></div>
+  <form method="post" action="{{ url_for('sms.queue_sms_all') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Text everyone who prefers SMS") }}</button></form></div></section>{% endif %}
+{% if mail_on %}<section class="card"><div class="row spread"><div><strong>{{ _("Email is on.") }}</strong>
+  <div class="muted small">{{ _("Patients whose preferred contact is email can be sent their messages by email.") }}</div></div>
+  <form method="post" action="{{ url_for('comms.queue_email_all') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Email everyone who prefers email") }}</button></form></div></section>{% endif %}
 <section class="card"><div class="tbl-wrap"><table>
-  <tr><th>Patient</th><th>Message</th><th></th></tr>
+  <tr><th>{{ _("Patient") }}</th><th>{{ _("Message") }}</th><th></th></tr>
   {% for r in rows %}{% set o = r.item %}
   <tr>
-    <td><a href="{{ url_for('comms.patient_messages', pid=o.patient_id) }}">{{ o.first_name }} {{ o.last_name }}</a><div class="muted small">{{ kinds[o.kind] }}</div></td>
-    <td>{% if r.text %}{{ r.text }}{% else %}<span class="pill bad">Cannot send</span> <span class="small">{{ r.error }}</span>{% endif %}</td>
+    <td><a href="{{ url_for('comms.patient_messages', pid=o.patient_id) }}">{{ o.first_name }} {{ o.last_name }}</a><div class="muted small">{{ _(kinds[o.kind]) }}</div></td>
+    <td>{% if r.text %}{{ r.text }}{% else %}<span class="pill bad">{{ _("Cannot send") }}</span> <span class="small">{{ r.error }}</span>{% endif %}</td>
     <td><div class="row">
-      {% if r.text %}<form method="post" action="{{ url_for('comms.queue_open', oid=o.id) }}" target="_blank"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">WhatsApp</button></form>{% endif %}
-      <form method="post" action="{{ url_for('comms.queue_skip', oid=o.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">Skip</button></form>
+      {% if r.text and api_on %}<form method="post" action="{{ url_for('comms.queue_send', oid=o.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">{{ _("Send") }}</button></form>{% endif %}
+      {% if r.text and sms_on and o.phone %}<form method="post" action="{{ url_for('sms.queue_sms', oid=o.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="{{ 'primary' if o.prefers_sms }}">{{ _("SMS") }}</button></form>{% endif %}
+      {% if r.text and mail_on and o.email %}<form method="post" action="{{ url_for('comms.queue_email', oid=o.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="{{ 'primary' if o.preferred_contact == 'email' }}">{{ _("Email") }}</button></form>{% endif %}
+      {% if r.text %}<form method="post" action="{{ url_for('comms.queue_open', oid=o.id) }}" target="_blank"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">{{ _("WhatsApp") }}</button></form>{% endif %}
+      <form method="post" action="{{ url_for('comms.queue_skip', oid=o.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Skip") }}</button></form>
     </div></td>
   </tr>
-  {% else %}<tr><td colspan="3" class="muted">Nothing is waiting to be sent.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="3" class="muted">{{ _("Nothing is waiting to be sent.") }}</td></tr>{% endfor %}
 </table></div>
-<p class="muted small">Sent so far: {{ counts.get('sent', 0) }}. Skipped: {{ counts.get('skipped', 0) }}.</p></section>
+<p class="muted small">{{ _("Sent so far:") }} {{ counts.get('sent', 0) }}. {{ _("Skipped:") }} {{ counts.get('skipped', 0) }}.</p></section>
 {% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Email") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Email") }}</h1>
+<section class="card"><p>{{ _("Email goes through the clinic's own mail account, the same one staff use. Your mail provider gives these details; many call them SMTP settings. Messages never carry treatment details or amounts, the same as WhatsApp.") }}</p>
+  {% if a %}<p>{% if a.enabled %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill">{{ _("Off") }}</span>{% endif %}{% if a.password %} {{ _("Password saved.") }}{% endif %}</p>{% endif %}</section>
+<form method="post" class="card" autocomplete="off"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid three">
+    <div><label for="host">{{ _("Mail server") }}</label><input id="host" name="host" value="{{ a.host or '' if a else '' }}" placeholder="smtp.example.com"></div>
+    <div><label for="port">{{ _("Port") }}</label><input id="port" name="port" type="number" value="{{ a.port if a else 587 }}"></div>
+    <div><label for="security">{{ _("Security") }}</label><select id="security" name="security">{% for k, v in security.items() %}<option value="{{ k }}" {{ 'selected' if a and a.security == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="username">{{ _("User name") }}</label><input id="username" name="username" value="{{ a.username or '' if a else '' }}" autocomplete="off"></div>
+    <div><label for="password">{{ _("Password (leave empty to keep the saved one)") }}</label><input id="password" name="password" type="password" autocomplete="new-password"></div>
+    <div></div>
+    <div><label for="from_addr">{{ _("Send from this address") }}</label><input id="from_addr" name="from_addr" value="{{ a.from_addr or '' if a else '' }}"></div>
+    <div><label for="from_name">{{ _("Sender name") }}</label><input id="from_name" name="from_name" value="{{ a.from_name or clinic.name if a else clinic.name }}"></div>
+    <div><label for="reply_to">{{ _("Replies go to (optional)") }}</label><input id="reply_to" name="reply_to" value="{{ a.reply_to or '' if a else '' }}"></div>
+  </div>
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if a and a.enabled }}> <span>{{ _("Switch email on") }}</span></label>
+  <label class="check"><input type="checkbox" name="auto_send" value="1" {{ 'checked' if a and a.auto_send }}> <span>{{ _("Let the server email the send list by itself, for patients who prefer email") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+{% if a and a.host %}<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="test">
+  <label for="to">{{ _("Send a test email to") }}</label><input id="to" name="to" type="email" required><button type="submit">{{ _("Send test") }}</button></form>{% endif %}
+{% endblock %}

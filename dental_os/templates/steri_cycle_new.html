@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Record a cycle") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Record a cycle") }}</h1>
+{{ tabs('new') }}
+{% if not rows %}<p class="muted">{{ _("No sterilisers yet.") }}</p>{% else %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid three">
+    <div><label for="sid">{{ _("Steriliser") }}</label><select id="sid" name="sid">{% for s in rows %}<option value="{{ s.id }}" {{ 'selected' if f.get('sid') == s.id|string }} {{ 'disabled' if s.status == 'out' }}>{{ s.name }}{% if s.status == 'out' %} ({{ _("out of service") }}){% endif %}</option>{% endfor %}</select></div>
+    <div><label for="program">{{ _("Programme (optional)") }}</label><input id="program" name="program" value="{{ f.get('program', '') }}" placeholder="{{ _('For example 134 °C wrapped') }}" maxlength="60"></div>
+    <div><label for="machine_cycle_no">{{ _("Machine's cycle number (optional)") }}</label><input id="machine_cycle_no" name="machine_cycle_no" value="{{ f.get('machine_cycle_no', '') }}" maxlength="30"></div>
+  </div>
+  <h2>{{ _("What the machine showed") }}</h2>
+  <div class="grid three">
+    <div><label for="temp_c">{{ _("Highest temperature, °C") }}</label><input id="temp_c" name="temp_c" inputmode="decimal" value="{{ f.get('temp_c', '') }}"></div>
+    <div><label for="pressure_kpa">{{ _("Pressure, kPa") }}</label><input id="pressure_kpa" name="pressure_kpa" inputmode="numeric" value="{{ f.get('pressure_kpa', '') }}"></div>
+    <div><label for="hold_min">{{ _("Holding time, minutes") }}</label><input id="hold_min" name="hold_min" inputmode="decimal" value="{{ f.get('hold_min', '') }}"></div>
+  </div>
+  <label class="check"><input type="checkbox" name="mechanical_ok" value="1" {{ 'checked' if f.get('mechanical_ok') }}> <span>{{ _("The cycle finished and reached its time, temperature and pressure") }}</span></label>
+  <label class="check"><input type="checkbox" name="indicator_ok" value="1" {{ 'checked' if f.get('indicator_ok') }}> <span>{{ _("The chemical indicators changed as they should") }}</span></label>
+  <label class="check"><input type="checkbox" name="implants" value="1" {{ 'checked' if f.get('implants') }}> <span>{{ _("This load has implants (hold the packs until its spore test passes)") }}</span></label>
+  <h2>{{ _("Packs in this load") }}</h2>
+  <p class="muted small">{{ _("One line for each kind of pack. Each pack gets its own label code.") }}</p>
+  <datalist id="sets">{% for x in sets %}<option value="{{ x }}">{% endfor %}</datalist>
+  {% for i in range(8) %}<div class="row">
+    <label class="sr-only" for="what{{ i }}">{{ _("What is in the pack") }}</label><input id="what{{ i }}" name="what{{ i }}" list="sets" value="{{ f.get('what%d' % i, '') }}" placeholder="{{ _('For example Exam kit') if i == 0 else '' }}" maxlength="120">
+    <label class="sr-only" for="count{{ i }}">{{ _("How many") }}</label><input id="count{{ i }}" name="count{{ i }}" type="number" min="1" max="100" value="{{ f.get('count%d' % i, '1') }}" class="narrow">
+  </div>{% endfor %}
+  <label for="notes">{{ _("Notes (optional)") }}</label><input id="notes" name="notes" value="{{ f.get('notes', '') }}" maxlength="500">
+  <p><button class="primary" type="submit">{{ _("Record cycle") }}</button></p>
+</form>{% endif %}
+{% endblock %}

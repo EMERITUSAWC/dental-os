@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("Price list") }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }}: {{ _("Price list") }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="schedule_id">{{ _("Price list") }}</label><select id="schedule_id" name="schedule_id"><option value="">{{ _("Standard prices") }}</option>{% for s in rows %}<option value="{{ s.id }}" {{ 'selected' if p.fee_schedule_id == s.id }}>{{ s.name }}</option>{% endfor %}</select>
+  <p class="muted small">{{ _("Treatment planned from now on uses this list. Prices already planned or done do not change.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button> <a class="btn" href="{{ url_for('views.patient_view', pid=p.id) }}">{{ _("Back") }}</a></p></form>
+{% endblock %}

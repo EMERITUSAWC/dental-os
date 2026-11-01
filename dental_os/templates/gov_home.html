@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Complaints and incidents") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Complaints and incidents") }}</h1><div class="row"><a class="btn" href="{{ url_for('gov.complaint_new') }}">{{ _("Write down a complaint") }}</a><a class="btn" href="{{ url_for('gov.incident_new') }}">{{ _("Report an incident") }}</a></div></div>
+{% if late %}<section class="card"><h2>{{ _("Late") }}</h2>{% for k in late %}<p class="flash error"><a href="{{ url_for('gov.complaint_view', kid=k.id) }}">{{ k.first_name or k.complainant }} {{ k.last_name or '' }}</a>: {% if k.status == 'open' %}{{ _("acknowledgement was due") }} {{ k.ack_due|date }}{% else %}{{ _("answer was due") }} {{ k.response_due|date }}{% endif %}</p>{% endfor %}</section>{% endif %}
+{% if regs %}<section class="card"><h2>{{ _("Registration and indemnity") }}</h2>{% for x in regs %}<p><a href="{{ url_for('cpd.person', uid=x.u.id) }}">{{ x.u.display_name }}</a>: {% for label, what, day in x.warn %}<span class="pill warn">{{ _(label) }} {{ _(what) }} {{ day|date }}</span> {% endfor %}</p>{% endfor %}</section>{% endif %}
+<div class="grid two">
+{% if user.role == 'manager' %}<section class="card"><h2>{{ _("Complaints not closed") }}</h2>
+  {% for k in open_c %}<p><a href="{{ url_for('gov.complaint_view', kid=k.id) }}">{{ k.first_name or k.complainant }} {{ k.last_name or '' }}</a>: {{ _(categories[k.category]) }}, {{ k.received_on|date }} <span class="pill">{{ _(c_statuses[k.status]) }}</span></p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}
+  <p><a href="{{ url_for('gov.complaints_list') }}">{{ _("All complaints") }}</a></p></section>{% endif %}
+<section class="card"><h2>{{ _("Incidents not closed") }}</h2>
+  {% for i in open_i %}<p><a href="{{ url_for('gov.incident_view', iid=i.id) }}">{{ _(kinds[i.kind]) }}</a>, {{ i.occurred_on|date }} <span class="pill {{ 'warn' if i.harm in ('moderate','severe','psychological','death') }}">{{ _(harm[i.harm]) }}</span></p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}
+  <p><a href="{{ url_for('gov.incidents_list') }}">{{ _("All incidents") }}</a></p></section>
+</div>
+<section class="card"><h2>{{ _("The last 12 months") }}</h2>
+  <div class="grid two">
+  {% if user.role == 'manager' %}<dl class="facts"><dt>{{ _("Complaints") }}</dt><dd>{{ cs.total }}</dd>
+    <dt>{{ _("Acknowledged within three working days") }}</dt><dd>{{ cs.ack_on_time }} / {{ cs.acknowledged }}</dd>
+    <dt>{{ _("Answered by the agreed date") }}</dt><dd>{{ cs.answered_on_time }} / {{ cs.answered }}</dd>
+    {% for k, n in cs.by_category.items() %}<dt>{{ _(categories[k]) }}</dt><dd>{{ n }}</dd>{% endfor %}
+    {% for k, n in cs.by_outcome.items() %}<dt>{{ _(outcomes[k]) }}</dt><dd>{{ n }}</dd>{% endfor %}</dl>{% endif %}
+  <dl class="facts"><dt>{{ _("Incidents") }}</dt><dd>{{ isum.total }}</dd>
+    {% for k, n in isum.by_kind.items() %}<dt>{{ _(kinds[k]) }}</dt><dd>{{ n }}</dd>{% endfor %}
+    {% for k, n in isum.by_harm.items() %}<dt>{{ _(harm[k]) }}</dt><dd>{{ n }}</dd>{% endfor %}</dl>
+  </div>
+  <p class="muted small">{{ _("Look at these with the team: the same kind of complaint or incident coming back is the thing to fix.") }}</p></section>
+{% endblock %}

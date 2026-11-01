@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ r.title }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><h1>{{ r.title }}: <a href="{{ url_for('cforms.patient_forms', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a></h1><button type="button" data-print>{{ _("Print") }}</button></div>
+<section class="card">
+  <p><span class="pill {{ 'ok' if r.status == 'filed' else ('warn' if r.status == 'submitted' else '') }}">{{ _(statuses[r.status]) }}</span> {{ _("version") }} {{ r.version }}{% if r.submitted_at %}, {{ _("filled in") }} {{ r.submitted_at[:16] }} UTC{% endif %}{% if r.reviewed_at %}, {{ _("filed") }} {{ r.reviewed_at[:16] }} UTC{% endif %}</p>
+  {% if r.review_note %}<p class="small">{{ r.review_note }}</p>{% endif %}
+  {% if r.answers %}<dl class="facts">{% for x in rows %}{% if x.f.kind == 'heading' %}<dt><strong>{{ x.f.label }}</strong></dt><dd></dd>{% else %}<dt>{{ x.f.label }}</dt><dd>{% if x.f.kind == 'yesno' and x.value %}{{ _("Yes") if x.value == 'yes' else _("No") }}{% else %}{{ x.value or '' }}{% endif %}</dd>{% endif %}{% endfor %}</dl>
+  {% else %}<p class="muted">{{ _("Not filled in yet.") }}</p>{% endif %}
+</section>
+{% if r.status == 'submitted' %}<form method="post" class="card row no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="note">{{ _("Note (optional)") }}</label><input id="note" name="note" maxlength="500"><button class="primary" type="submit">{{ _("Reviewed: file it on the record") }}</button></form>{% endif %}
+{% if r.status == 'sent' %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="cancel"><button type="submit">{{ _("Cancel the link") }}</button></form>{% endif %}
+{% endblock %}

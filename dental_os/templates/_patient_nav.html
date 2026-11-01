@@ -1,27 +1,41 @@
 {% macro tabs(p, active) %}
-<nav class="tabs" aria-label="This patient">
-  <a href="{{ url_for('views.patient_view', pid=p.id) }}" class="{{ 'on' if active == 'overview' }}">Overview</a>
+<nav class="tabs" aria-label="{{ _('This patient') }}">
+  <a href="{{ url_for('views.patient_view', pid=p.id) }}" class="{{ 'on' if active == 'overview' }}">{{ _("Overview") }}</a>
   {% if user.role in ('manager', 'dentist', 'assistant') %}
-  <a href="{{ url_for('record.medical_view', pid=p.id) }}" class="{{ 'on' if active == 'medical' }}">Medical</a>
-  <a href="{{ url_for('record.chart_view', pid=p.id) }}" class="{{ 'on' if active == 'chart' }}">Tooth chart</a>
-  <a href="{{ url_for('record.perio_list', pid=p.id) }}" class="{{ 'on' if active == 'perio' }}">Gums</a>
-  <a href="{{ url_for('record.notes_list', pid=p.id) }}" class="{{ 'on' if active == 'notes' }}">Notes</a>
-  <a href="{{ url_for('record.consents_view', pid=p.id) }}" class="{{ 'on' if active == 'consents' }}">Consents</a>
-  <a href="{{ url_for('record.files_view', pid=p.id) }}" class="{{ 'on' if active == 'files' }}">Files</a>
+  <a href="{{ url_for('record.medical_view', pid=p.id) }}" class="{{ 'on' if active == 'medical' }}">{{ _("Medical") }}</a>
+  <a href="{{ url_for('record.chart_view', pid=p.id) }}" class="{{ 'on' if active == 'chart' }}">{{ _("Tooth chart") }}</a>
+  <a href="{{ url_for('record.perio_list', pid=p.id) }}" class="{{ 'on' if active == 'perio' }}">{{ _("Gums") }}</a>
+  <a href="{{ url_for('record.notes_list', pid=p.id) }}" class="{{ 'on' if active == 'notes' }}">{{ _("Notes") }}</a>
+  <a href="{{ url_for('record.consents_view', pid=p.id) }}" class="{{ 'on' if active == 'consents' }}">{{ _("Consents") }}</a>
+  <a href="{{ url_for('record.files_view', pid=p.id) }}" class="{{ 'on' if active == 'files' }}">{{ _("Files") }}</a>
+  <a href="{{ url_for('care.images', pid=p.id) }}" class="{{ 'on' if active == 'images' }}">{{ _("X-ray layouts") }}</a>
+  <a href="{{ url_for('care.vitals', pid=p.id) }}" class="{{ 'on' if active == 'vitals' }}">{{ _("Vitals") }}</a>
+  <a href="{{ url_for('care.prescriptions', pid=p.id) }}" class="{{ 'on' if active == 'rx' }}">{{ _("Prescriptions") }}</a>
+  <a href="{{ url_for('care.patient_referrals', pid=p.id) }}" class="{{ 'on' if active == 'referrals' }}">{{ _("Referrals") }}</a>
+  {% if can('clinical') and user.role != 'front_desk' %}<a href="{{ url_for('aftercare.patient', pid=p.id) }}" class="{{ 'on' if active == 'aftercare' }}">{{ _("Aftercare") }}</a>{% endif %}
+  {% if can('clinical') and user.role != 'front_desk' %}<a href="{{ url_for('implants.patient', pid=p.id) }}" class="{{ 'on' if active == 'implants' }}">{{ _("Implants") }}</a>{% endif %}
+  {% if can('clinical') %}<a href="{{ url_for('ortho.patient', pid=p.id) }}" class="{{ 'on' if active == 'ortho' }}">{{ _("Ortho") }}</a>{% endif %}
+  {% if can('clinical') %}<a href="{{ url_for('steri.patient_instruments', pid=p.id) }}" class="{{ 'on' if active == 'instruments' }}">{{ _("Instruments") }}</a>{% endif %}
   {% endif %}
-  <a href="{{ url_for('commercial.patient_plans', pid=p.id) }}" class="{{ 'on' if active == 'plans' }}">Plans</a>
-  <a href="{{ url_for('clinical.treatment', pid=p.id) }}" class="{{ 'on' if active == 'treatment' }}">Treatment</a>
-  <a href="{{ url_for('clinical.account', pid=p.id) }}" class="{{ 'on' if active == 'account' }}">Account</a>
-  <a href="{{ url_for('finance.patient_invoices', pid=p.id) }}" class="{{ 'on' if active == 'invoices' }}">Invoices</a>
-  <a href="{{ url_for('finance.patient_insurance', pid=p.id) }}" class="{{ 'on' if active == 'insurance' }}">Insurance</a>
-  <a href="{{ url_for('commercial.patient_instalments', pid=p.id) }}" class="{{ 'on' if active == 'instalments' }}">Instalments</a>
-  <a href="{{ url_for('commercial.patient_membership', pid=p.id) }}" class="{{ 'on' if active == 'membership' }}">Membership</a>
-  <a href="{{ url_for('ops.patient_lab', pid=p.id) }}" class="{{ 'on' if active == 'lab' }}">Lab</a>
-  <a href="{{ url_for('comms.patient_messages', pid=p.id) }}" class="{{ 'on' if active == 'messages' }}">Messages</a>
-  {% if user.role == 'manager' %}<a href="{{ url_for('privacy.patient_privacy', pid=p.id) }}" class="{{ 'on' if active == 'privacy' }}">Privacy</a>{% endif %}
+  {% if can('plans') %}<a href="{{ url_for('commercial.patient_plans', pid=p.id) }}" class="{{ 'on' if active == 'plans' }}">{{ _("Plans") }}</a>{% endif %}
+  {% if can('clinical') %}<a href="{{ url_for('clinical.treatment', pid=p.id) }}" class="{{ 'on' if active == 'treatment' }}">{{ _("Treatment") }}</a>{% endif %}
+  {% if can('payments') %}<a href="{{ url_for('clinical.account', pid=p.id) }}" class="{{ 'on' if active == 'account' }}">{{ _("Account") }}</a>{% endif %}
+  {% if can('insurance') %}<a href="{{ url_for('finance.patient_invoices', pid=p.id) }}" class="{{ 'on' if active == 'invoices' }}">{{ _("Invoices") }}</a>{% endif %}
+  {% if can('nhs') %}{% if nhs_on %}<a href="{{ url_for('nhs.patient', pid=p.id) }}" class="{{ 'on' if active == 'nhs' }}">{{ _("NHS") }}</a>{% endif %}{% endif %}
+  {% if can('insurance') %}<a href="{{ url_for('finance.patient_insurance', pid=p.id) }}" class="{{ 'on' if active == 'insurance' }}">{{ _("Insurance") }}</a>{% endif %}
+  {% if can('memberships') %}<a href="{{ url_for('commercial.patient_instalments', pid=p.id) }}" class="{{ 'on' if active == 'instalments' }}">{{ _("Instalments") }}</a>{% endif %}
+  {% if can('memberships') %}<a href="{{ url_for('commercial.patient_membership', pid=p.id) }}" class="{{ 'on' if active == 'membership' }}">{{ _("Membership") }}</a>{% endif %}
+  {% if can('lab') %}<a href="{{ url_for('ops.patient_lab', pid=p.id) }}" class="{{ 'on' if active == 'lab' }}">{{ _("Lab") }}</a>{% endif %}
+  {% if can('patients') %}<a href="{{ url_for('cforms.patient_forms', pid=p.id) }}" class="{{ 'on' if active == 'forms' }}">{{ _("Forms") }}</a>{% endif %}
+  {% if can('messages') %}<a href="{{ url_for('comms.patient_messages', pid=p.id) }}" class="{{ 'on' if active == 'messages' }}">{{ _("Messages") }}</a>{% endif %}
+  {% if can('clinical') %}<a href="{{ url_for('care.contacts', pid=p.id) }}" class="{{ 'on' if active == 'contacts' }}">{{ _("Contact log") }}</a>{% endif %}
+  {% if can('clinical') %}<a href="{{ url_for('care.patient_letters', pid=p.id) }}" class="{{ 'on' if active == 'letters' }}">{{ _("Letters") }}</a>{% endif %}
+  {% if user.role == 'manager' %}<a href="{{ url_for('privacy.patient_privacy', pid=p.id) }}" class="{{ 'on' if active == 'privacy' }}">{{ _("Privacy") }}</a>{% endif %}
 </nav>
 {% set al = alerts_for(p.id) %}
-{% if al %}<div class="alertbar" role="note" aria-label="Alerts for this patient">
-  {% for a in al %}<span class="alert {{ a.severity }}"><strong>{{ {'allergy': 'Allergy', 'medical': 'Medical', 'medication': 'Medicine', 'behaviour': 'Behaviour', 'other': 'Note'}[a.kind] }}:</strong> {{ a.text }}</span>{% endfor %}
+{% set bp = bp_today(p.id) %}
+{% if bp and bp.grade in ('amber', 'red', 'low') %}<div class="alertbar" role="alert"><span class="alert {{ 'critical' if bp.grade == 'red' else 'warning' }}"><strong>{{ _("Blood pressure today") }}:</strong> {{ bp.row.bp_systolic }}/{{ bp.row.bp_diastolic }}. {{ _(bp_grades[bp.grade]) }}</span></div>{% endif %}
+{% if al %}<div class="alertbar" role="note" aria-label="{{ _('Alerts for this patient') }}">
+  {% for a in al %}<span class="alert {{ a.severity }}"><strong>{{ {'allergy': _('Allergy'), 'medical': _('Medical'), 'medication': _('Medicine'), 'behaviour': _('Behaviour'), 'other': _('Note')}[a.kind] }}:</strong> {{ a.text }}</span>{% endfor %}
 </div>{% endif %}
 {% endmacro %}

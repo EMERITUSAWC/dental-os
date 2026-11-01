@@ -12,6 +12,7 @@ MAX_BYTES = 10 * 1024 * 1024
 KINDS = {"xray": "X-ray", "photo": "Photo", "document": "Document", "referral": "Referral letter",
          "consent": "Scanned consent", "other": "Other"}
 INLINE = {"image/png", "image/jpeg", "image/webp"}      # shown in the page. Everything else downloads.
+VIEWABLE = INLINE | {"application/dicom"}                # can be opened in the viewer (DICOM through a PNG made from it)
 
 
 class FileError(Exception):
@@ -34,14 +35,18 @@ def detect(head):
 
 
 def save_upload(db, clinic, user, pid, storage, kind, note, taken_on, root):
+    if storage is None or not storage.filename:
+        raise FileError("Choose a file to upload.")
+    return save_bytes(db, clinic, user["id"], pid, storage.read(MAX_BYTES + 1), storage.filename, kind, note, taken_on, root)
+
+
+def save_bytes(db, clinic, user_id, pid, data, filename, kind, note, taken_on, root):
+    """Store one file on a patient's record. The type is read from the file's first bytes, never from its name."""
     cid = clinic["id"]
     if not db.execute("SELECT 1 FROM patients WHERE id = ? AND clinic_id = ?", (pid, cid)).fetchone():
         raise FileError("That patient was not found.")
     if kind not in KINDS:
         raise FileError("Pick what kind of file this is.")
-    if storage is None or not storage.filename:
-        raise FileError("Choose a file to upload.")
-    data = storage.read(MAX_BYTES + 1)
     if not data:
         raise FileError("That file is empty.")
     if len(data) > MAX_BYTES:
@@ -52,7 +57,7 @@ def save_upload(db, clinic, user, pid, storage, kind, note, taken_on, root):
     mime, ext = found
     if taken_on and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", taken_on):
         raise FileError("Use the date picker for the date.")
-    original = secure_filename(storage.filename) or "file"
+    original = secure_filename(filename or "") or "file"
     stored = uuid.uuid4().hex + ext
     folder = Path(root) / str(cid)
     folder.mkdir(parents=True, exist_ok=True)
@@ -63,11 +68,11 @@ def save_upload(db, clinic, user, pid, storage, kind, note, taken_on, root):
             """INSERT INTO patient_files(clinic_id, patient_id, kind, original_name, stored_name, mime, size_bytes, note,
                                          taken_on, uploaded_by) VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (cid, pid, kind, original[:120], stored, mime, len(data), (note or "").strip()[:200] or None,
-             taken_on or None, user["id"]))
+             taken_on or None, user_id))
     except Exception:
         path.unlink(missing_ok=True)
         raise
-    audit.log(db, cid, user["id"], "file.upload", "patient", pid, kind)
+    audit.log(db, cid, user_id, "file.upload", "patient", pid, kind)
     return cur.lastrowid
 
 
@@ -95,3 +100,25 @@ def archive(db, clinic, user, file_id):
     db.execute("UPDATE patient_files SET archived = 1 WHERE id = ?", (file_id,))
     audit.log(db, clinic["id"], user["id"], "file.archive", "patient", row["patient_id"])
     return row["patient_id"]
+
+
+def preview_png(root, row):
+    """A PNG made from a DICOM file, kept beside it so it is made only once. Raises dicom.DicomError when it cannot be shown."""
+    from . import dicom
+    src = path_for(root, row)
+    out = src.with_name(src.stem + ".preview.png")
+    if out.exists():
+        return out
+    png = dicom.to_png(src.read_bytes())
+    tmp = out.with_suffix(".tmp")
+    tmp.write_bytes(png)
+    tmp.replace(out)
+    return out
+
+
+def dicom_summary(root, row):
+    from . import dicom
+    try:
+        return dicom.summary(dicom.parse(path_for(root, row).read_bytes()))
+    except (dicom.DicomError, OSError):
+        return None

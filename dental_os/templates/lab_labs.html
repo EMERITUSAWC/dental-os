@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Labs{% endblock %}
+{% block title %}{{ _("Labs") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Dental laboratories</h1><a class="btn" href="{{ url_for('ops.lab_board') }}">Lab cases</a></div>
-{% if perf %}<section class="card"><h2>How they did, {{ start|date }} to {{ end|date }}</h2>
-  <div class="tbl-wrap"><table><tr><th>Lab</th><th>Sent</th><th>Back</th><th>Average days</th><th>On time</th><th>Remakes</th><th>Lab bills</th></tr>
+<div class="row spread"><h1>{{ _("Dental laboratories") }}</h1><a class="btn" href="{{ url_for('ops.lab_board') }}">{{ _("Lab cases") }}</a></div>
+{% if perf %}<section class="card"><h2>{{ _("How they did, %(start)s to %(end)s", start=start|date, end=end|date) }}</h2>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Lab") }}</th><th>{{ _("Sent") }}</th><th>{{ _("Back") }}</th><th>{{ _("Average days") }}</th><th>{{ _("On time") }}</th><th>{{ _("Remakes") }}</th><th>{{ _("Lab bills") }}</th></tr>
   {% for r in perf %}<tr><td>{{ r.lab.name }}</td><td>{{ r.sent }}</td><td>{{ r.back }}</td><td>{{ r.avg_days if r.avg_days is not none else '' }}</td>
     <td>{{ (r.on_time_rate|string ~ '%') if r.on_time_rate is not none else '' }}</td><td>{{ r.remakes }}</td><td class="nw">{{ r.spend_p|money }}</td></tr>{% endfor %}</table></div></section>{% endif %}
 {% for l in rows %}
 <section class="card"><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="lab_id" value="{{ l.id }}">
-  <div class="grid three"><div><label for="n{{ l.id }}">Name</label><input id="n{{ l.id }}" name="name" value="{{ l.name }}" maxlength="80"></div>
-    <div><label for="p{{ l.id }}">Phone</label><input id="p{{ l.id }}" name="phone" value="{{ l.phone or '' }}" maxlength="40"></div>
-    <div><label for="e{{ l.id }}">Email</label><input id="e{{ l.id }}" name="email" value="{{ l.email or '' }}" maxlength="120"></div></div>
-  <label for="o{{ l.id }}">Notes</label><input id="o{{ l.id }}" name="notes" value="{{ l.notes or '' }}" maxlength="500">
-  <p class="row"><label class="check" style="margin:0"><input type="checkbox" name="active" value="1" {{ 'checked' if l.active }}><span>In use</span></label><button type="submit">Save</button></p></form></section>
+  <div class="grid three"><div><label for="n{{ l.id }}">{{ _("Name") }}</label><input id="n{{ l.id }}" name="name" value="{{ l.name }}" maxlength="80"></div>
+    <div><label for="p{{ l.id }}">{{ _("Phone") }}</label><input id="p{{ l.id }}" name="phone" value="{{ l.phone or '' }}" maxlength="40"></div>
+    <div><label for="e{{ l.id }}">{{ _("Email") }}</label><input id="e{{ l.id }}" name="email" value="{{ l.email or '' }}" maxlength="120"></div></div>
+  <label for="o{{ l.id }}">{{ _("Notes") }}</label><input id="o{{ l.id }}" name="notes" value="{{ l.notes or '' }}" maxlength="500">
+  <p class="row"><label class="check" style="margin:0"><input type="checkbox" name="active" value="1" {{ 'checked' if l.active }}><span>{{ _("In use") }}</span></label><button type="submit">{{ _("Save") }}</button></p></form></section>
 {% endfor %}
-<section class="card"><h2>New lab</h2><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="active" value="1">
-  <div class="grid three"><div><label for="nn">Name</label><input id="nn" name="name" maxlength="80" required></div><div><label for="np">Phone</label><input id="np" name="phone" maxlength="40"></div><div><label for="ne">Email</label><input id="ne" name="email" maxlength="120"></div></div>
-  <label for="no">Notes</label><input id="no" name="notes" maxlength="500"><p><button class="primary" type="submit">Add lab</button></p></form></section>
+<section class="card"><h2>{{ _("New lab") }}</h2><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="active" value="1">
+  <div class="grid three"><div><label for="nn">{{ _("Name") }}</label><input id="nn" name="name" maxlength="80" required></div><div><label for="np">{{ _("Phone") }}</label><input id="np" name="phone" maxlength="40"></div><div><label for="ne">{{ _("Email") }}</label><input id="ne" name="email" maxlength="120"></div></div>
+  <label for="no">{{ _("Notes") }}</label><input id="no" name="notes" maxlength="500"><p><button class="primary" type="submit">{{ _("Add lab") }}</button></p></form></section>
 {% endblock %}

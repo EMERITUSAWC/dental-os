@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Contact log") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("contact log") }}</h1>
+{{ tabs(p, 'contacts') }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Add to the log") }}</h2>
+  <div class="grid two">
+    <div><label for="kind">{{ _("What it was") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="follow_up_on">{{ _("Follow up on (optional)") }}</label><input id="follow_up_on" type="date" name="follow_up_on" min="{{ today }}"></div>
+  </div>
+  <label for="summary">{{ _("What it was about") }}</label><textarea id="summary" name="summary" rows="3" maxlength="1000" required></textarea>
+  <label for="outcome">{{ _("Outcome (optional)") }}</label><input id="outcome" name="outcome" maxlength="300">
+  <p class="muted small">{{ _("Do not write clinical details here. They belong in the notes.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+<section class="card"><h2>{{ _("Log") }}</h2>
+  {% for c in rows %}<div class="logline"><p><strong>{{ _(kinds.get(c.kind, c.kind)) }}</strong> <span class="muted small">{{ c.created_at[:10]|date }}, {{ c.by_name or '' }}</span></p>
+    <p class="note-body">{{ c.summary }}</p>{% if c.outcome %}<p class="small">{{ _("Outcome:") }} {{ c.outcome }}</p>{% endif %}
+    {% if c.follow_up_on %}<p class="small">{{ _("Follow up on") }} {{ c.follow_up_on|date }}
+      {% if c.follow_up_done %}<span class="pill ok">{{ _("done") }}</span>{% else %}<form method="post" action="{{ url_for('care.contact_done', log_id=c.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="link" type="submit">{{ _("Mark as done") }}</button></form>{% endif %}</p>{% endif %}
+  </div>{% else %}<p class="muted">{{ _("Nothing logged yet.") }}</p>{% endfor %}
+</section>
+{% endblock %}

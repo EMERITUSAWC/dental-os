@@ -4,9 +4,11 @@ from datetime import timedelta
 from werkzeug.exceptions import HTTPException
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, session, url_for
 
+from .safeurl import local_path
 from .auth import manager_required
 from .db import get_db
 from .services import audit, billing, memberships, messaging, money, recalls, reports, treatment as TR
+from .services import refunds as RF
 from .services import patients as P
 from .services.timeutil import now_local, parse_date
 from .views import _document_for, _patient_or_404, _today
@@ -16,7 +18,7 @@ bp = Blueprint("clinical", __name__)
 
 def _back(default):
     target = request.form.get("back") or ""
-    return target if target.startswith("/") and not target.startswith("//") else default
+    return target if local_path(target) else default
 
 
 def _providers():
@@ -34,7 +36,9 @@ def treatment(pid):
     visits = db.execute(
         """SELECT id, start_at, category FROM appointments WHERE clinic_id=? AND patient_id=?
            AND status IN ('scheduled','complete') ORDER BY start_at DESC LIMIT 10""", (cid, pid)).fetchall()
-    return render_template("treatment.html", p=patient, rows=rows, codes=codes, visits=visits,
+    from .services import autocodes as AUTO
+    from .services import ghclaims as GC
+    return render_template("treatment.html", p=patient, rows=rows, codes=codes, visits=visits, autos=AUTO.groups(db, cid, True), dx=GC.diagnoses(db, cid),
                            providers=_providers(), sums=TR.summary(rows), teeth=TR.PERMANENT + TR.PRIMARY,
                            surfaces=TR.SURFACE_ORDER)
 
@@ -45,9 +49,20 @@ def treatment_add(pid):
     _patient_or_404(pid)
     try:
         fee = request.form.get("fee", "").strip()
-        TR.add_planned(db, g.clinic, g.user["id"], pid, request.form.get("code_id", type=int),
-                       tooth=TR.clean_tooth(request.form.get("tooth")),
-                       surfaces=TR.clean_surfaces(request.form.getlist("surfaces")),
+        tooth = TR.clean_tooth(request.form.get("tooth"))
+        surfaces = TR.clean_surfaces(request.form.getlist("surfaces"))
+        raw = request.form.get("code_id") or ""
+        if raw.startswith("auto:") and raw[5:].isdigit():
+            from .services import autocodes as AUTO
+            try:
+                code_id = AUTO.resolve(db, g.clinic["id"], int(raw[5:]), tooth, surfaces)
+            except AUTO.AutoError as exc:
+                raise TR.TreatmentError(str(exc))
+        else:
+            code_id = int(raw) if raw.isdigit() else None
+        TR.add_planned(db, g.clinic, g.user["id"], pid, code_id,
+                       tooth=tooth,
+                       surfaces=surfaces,
                        fee_p=money.parse_money(fee, g.clinic["currency"], allow_zero=True) if fee else None,
                        provider_id=request.form.get("provider_id", type=int),
                        notes=(request.form.get("notes") or "").strip() or None)
@@ -71,8 +86,10 @@ def procedure_action(proc_id, action):
     proc = _proc_or_404(proc_id)
     try:
         if action == "done":
-            TR.mark_done(db, g.clinic, uid, proc_id, request.form.get("appointment_id", type=int),
-                         request.form.get("provider_id", type=int))
+            short = TR.mark_done(db, g.clinic, uid, proc_id, request.form.get("appointment_id", type=int),
+                                 request.form.get("provider_id", type=int))
+            if short:
+                flash("The stock list shows too little for this treatment's kit. What was there was taken; the manager will see the rest under Stock, Kits.", "error")
             applied = memberships.apply_benefits(db, g.clinic, uid, proc_id)
             if applied:
                 flash(f"Membership applied: {applied}.", "ok")
@@ -102,8 +119,9 @@ def account(pid):
     audit.log(db, cid, g.user["id"], "account.view", "patient", pid)
     return render_template("account.html", p=patient, t=billing.totals(db, cid, pid),
                            family=billing.family_balance(db, cid, pid),
-                           events=list(reversed(billing.statement(db, cid, pid))),
-                           methods=billing.enabled_methods(g.clinic), reasons=billing.ADJUSTMENT_REASONS, today=_today())
+                           events=list(reversed(billing.statement(db, cid, pid, g.lang))),
+                           methods=billing.enabled_methods(g.clinic), reasons=billing.ADJUSTMENT_REASONS, today=_today(),
+                           all_methods=billing.METHODS, refund_reasons=RF.REASONS)
 
 
 @bp.post("/patients/<int:pid>/payments")
@@ -171,7 +189,16 @@ def payment_void(pay_id):
 def recall_list():
     today = _today()
     rows = recalls.upcoming(get_db(), g.clinic["id"], today)
-    return render_template("recalls.html", rows=rows, today=today.isoformat())
+    # 0.57: a long list comes in pages. Drawing 9,000 rows at once took a second and was no use to anyone.
+    page = max(request.args.get("page", 1, type=int), 1)
+    pages = max((len(rows) + RECALLS_PER_PAGE - 1) // RECALLS_PER_PAGE, 1)
+    page = min(page, pages)
+    first = (page - 1) * RECALLS_PER_PAGE
+    return render_template("recalls.html", rows=rows[first:first + RECALLS_PER_PAGE], today=today.isoformat(), total=len(rows),
+                           page=page, pages=pages, first=first + 1, last=min(first + RECALLS_PER_PAGE, len(rows)))
+
+
+RECALLS_PER_PAGE = 200
 
 
 @bp.post("/recalls/<int:rid>/whatsapp")

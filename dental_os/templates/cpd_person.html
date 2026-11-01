@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ person.display_name }}: {{ _("Registration and CPD") }}{% endblock %}
+{% macro hrs(t) %}{{ '%g'|format(t / 10) }}{% endmacro %}
+{% block body %}
+<div class="row spread"><h1>{{ person.display_name }}: {{ _("Registration and CPD") }}</h1>{% if user.role == 'manager' %}<a class="btn" href="{{ url_for('cpd.team') }}">{{ _("The whole team") }}</a>{% endif %}</div>
+<div class="grid two">
+<section class="card"><h2>{{ _("Registration") }}</h2>
+  {% if reg %}<dl class="facts"><dt>{{ _("Title") }}</dt><dd>{{ _(titles[reg.title]) }}</dd>
+    {% if reg.body %}<dt>{{ _("Registered with") }}</dt><dd>{{ reg.body }}{% if reg.reg_number %}, {{ reg.reg_number }}{% endif %}</dd>{% endif %}
+    {% if reg.reg_expires_on %}<dt>{{ _("Registration runs out") }}</dt><dd>{{ reg.reg_expires_on|date }}</dd>{% endif %}
+    {% if reg.indemnity_by %}<dt>{{ _("Indemnity") }}</dt><dd>{{ reg.indemnity_by }}{% if reg.indemnity_ref %}, {{ reg.indemnity_ref }}{% endif %}{% if reg.indemnity_expires_on %}, {{ _("to") }} {{ reg.indemnity_expires_on|date }}{% endif %}</dd>{% endif %}
+    <dt>{{ _("CPD measured by") }}</dt><dd>{{ _(schemes[reg.scheme]) }}</dd></dl>{% else %}<p class="muted">{{ _("Not entered yet.") }}{% if user.role != 'manager' %} {{ _("The manager enters this.") }}{% endif %}</p>{% endif %}
+  {% if progress %}<h2>{{ _("Progress") }}</h2><p><strong>{{ hrs(progress.done) }} / {{ hrs(progress.target) }}</strong> {{ _("hours") }}{% if progress.scheme == 'gdc' %} {{ _("of verifiable CPD") }}{% endif %}, {{ progress.start|date }} {{ _("to") }} {{ progress.end|date }}.
+    {% if progress.met %}<span class="pill ok">{{ _("Met") }}</span>{% else %}{{ hrs(progress.left) }} {{ _("to go") }}.{% if progress.behind %} <span class="pill warn">{{ _("Behind") }}</span>{% endif %}{% endif %}</p>
+    {% if progress.scheme == 'gdc' %}<p class="small">{{ _("Last two years") }}: {{ hrs(progress.two_years) }} {{ _("hours") }}{% if progress.two_years_low %} <span class="pill warn">{{ _("The GDC asks for at least 10 hours in any two years") }}</span>{% endif %}</p>{% endif %}{% endif %}
+</section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("Add CPD") }}</h2>
+  <label for="ctitle">{{ _("Course or activity") }}</label><input id="ctitle" name="title" maxlength="200" required>
+  <div class="grid three"><div><label for="done_on">{{ _("Done on") }}</label><input id="done_on" type="date" name="done_on" value="{{ today }}" max="{{ today }}"></div>
+  <div><label for="hours">{{ _("Hours") }}</label><input id="hours" name="hours" inputmode="decimal" class="narrow" required></div>
+  <div><label for="cprovider">{{ _("Given by") }}</label><input id="cprovider" name="provider" maxlength="120"></div></div>
+  <label class="check"><input type="checkbox" name="verifiable" value="1" checked> <span>{{ _("Verifiable (there is a certificate)") }}</span></label>
+  <label for="certificate_ref">{{ _("Certificate number or reference") }}</label><input id="certificate_ref" name="certificate_ref" maxlength="120">
+  <fieldset><legend class="small">{{ _("Development outcomes (GDC)") }}</legend>{% for k, v in outcomes.items() %}<label class="check"><input type="checkbox" name="outcomes" value="{{ k }}"> <span>{{ _(v) }}</span></label>{% endfor %}</fieldset>
+  <label for="cnotes">{{ _("What you learned, and how it changes your work (optional)") }}</label><textarea id="cnotes" name="notes" rows="2"></textarea>
+  <p><button class="primary" type="submit">{{ _("Add") }}</button></p></form>
+</div>
+<section class="card"><h2>{{ _("CPD record") }}</h2><table><thead><tr><th>{{ _("Done on") }}</th><th>{{ _("Course or activity") }}</th><th>{{ _("Hours") }}</th><th>{{ _("Outcomes") }}</th><th></th></tr></thead><tbody>
+{% for r in rows %}<tr class="{{ 'muted' if r.struck }}"><td>{{ r.done_on|date }}</td><td>{% if r.struck %}<s>{{ r.title }}</s> <span class="small">{{ r.struck_reason }}</span>{% else %}{{ r.title }}{% endif %}{% if r.provider %} <span class="small muted">{{ r.provider }}</span>{% endif %}{% if r.certificate_ref %} <span class="small muted">{{ r.certificate_ref }}</span>{% endif %}</td>
+  <td>{{ hrs(r.hours_tenths) }}{% if r.verifiable %} <span class="pill ok">{{ _("verifiable") }}</span>{% endif %}</td><td>{{ r.outcomes or '' }}</td>
+  <td>{% if not r.struck %}<details><summary>{{ _("Strike out") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="strike"><input type="hidden" name="record_id" value="{{ r.id }}"><label for="sr{{ r.id }}">{{ _("Why it is wrong") }}</label><input id="sr{{ r.id }}" name="reason" maxlength="300"><button type="submit">{{ _("Strike out") }}</button></form></details>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">{{ _("None yet.") }}</td></tr>{% endfor %}</tbody></table></section>
+{% if user.role == 'manager' %}<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="registration"><h2>{{ _("Update registration") }}</h2>
+  <div class="grid three">
+    <div><label for="title">{{ _("Title") }}</label><select id="title" name="title">{% for k, v in titles.items() %}<option value="{{ k }}" {{ 'selected' if reg and reg.title == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="body">{{ _("Registered with") }}</label><input id="body" name="body" list="bodies" value="{{ reg.body if reg and reg.body else '' }}" maxlength="120"><datalist id="bodies">{% for b in bodies %}<option value="{{ b }}">{% endfor %}</datalist></div>
+    <div><label for="reg_number">{{ _("Registration number") }}</label><input id="reg_number" name="reg_number" value="{{ reg.reg_number if reg and reg.reg_number else '' }}" maxlength="60"></div>
+    <div><label for="reg_expires_on">{{ _("Registration runs out") }}</label><input id="reg_expires_on" type="date" name="reg_expires_on" value="{{ reg.reg_expires_on if reg and reg.reg_expires_on else '' }}"></div>
+    <div><label for="indemnity_by">{{ _("Indemnity with") }}</label><input id="indemnity_by" name="indemnity_by" value="{{ reg.indemnity_by if reg and reg.indemnity_by else '' }}" maxlength="120"></div>
+    <div><label for="indemnity_ref">{{ _("Indemnity number") }}</label><input id="indemnity_ref" name="indemnity_ref" value="{{ reg.indemnity_ref if reg and reg.indemnity_ref else '' }}" maxlength="60"></div>
+    <div><label for="indemnity_expires_on">{{ _("Indemnity runs out") }}</label><input id="indemnity_expires_on" type="date" name="indemnity_expires_on" value="{{ reg.indemnity_expires_on if reg and reg.indemnity_expires_on else '' }}"></div>
+    <div><label for="scheme">{{ _("CPD measured by") }}</label><select id="scheme" name="scheme">{% for k, v in schemes.items() %}<option value="{{ k }}" {{ 'selected' if reg and reg.scheme == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="cycle_start">{{ _("Cycle started on") }}</label><input id="cycle_start" type="date" name="cycle_start" value="{{ reg.cycle_start if reg and reg.cycle_start else '' }}"></div>
+    <div><label for="yearly_target">{{ _("Yearly target (hours or points)") }}</label><input id="yearly_target" name="yearly_target" inputmode="decimal" class="narrow" value="{{ '%g'|format(reg.yearly_target_tenths / 10) if reg and reg.yearly_target_tenths else '' }}"></div>
+  </div>
+  <p class="muted small">{{ _("GDC hours per five-year cycle: dentists 100; dental therapists, hygienists, orthodontic therapists and clinical dental technicians 75; dental nurses and dental technicians 50. For other bodies, take the yearly figure from the body itself.") }}</p>
+  <p><button type="submit">{{ _("Save the registration") }}</button></p></form>{% endif %}
+{% endblock %}

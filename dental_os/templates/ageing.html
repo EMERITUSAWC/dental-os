@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Who owes what, and for how long{% endblock %}
+{% block title %}{{ _("Who owes what, and for how long") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Who owes what, and for how long</h1><a class="btn" href="{{ url_for('clinical.report_view') }}">Reports</a></div>
+<div class="row spread"><h1>{{ _("Who owes what, and for how long") }}</h1><a class="btn" href="{{ url_for('clinical.report_view') }}">{{ _("Reports") }}</a></div>
 <div class="stats" style="grid-template-columns: repeat(4, 1fr)">
-  {% for b in r.buckets %}<div class="card"><div class="stat">{{ r.totals[b]|money }}</div><div class="muted">{{ b }} days</div></div>{% endfor %}</div>
-<p class="muted">Payments and discounts are taken off the oldest charges first. The total owed is {{ r.grand|money }}. Of that, {{ r.insurers|money }} is expected from insurers on claims already sent. Across all patients, sent claims still owe {{ awaiting|money }}.</p>
+  {% for b in r.buckets %}<div class="card"><div class="stat">{{ r.totals[b]|money }}</div><div class="muted">{{ b }} {{ _("days") }}</div></div>{% endfor %}</div>
+<p class="muted">{{ _("Payments and discounts are taken off the oldest charges first. The total owed is %(total)s. Of that, %(ins)s is expected from insurers on claims already sent. Across all patients, sent claims still owe %(awaiting)s.", total=r.grand|money, ins=r.insurers|money, awaiting=awaiting|money) }}</p>
 <section class="card"><div class="tbl-wrap"><table>
-  <tr><th>Patient</th>{% for b in r.buckets %}<th>{{ b }}</th>{% endfor %}<th>Total</th><th>With insurers</th></tr>
+  <tr><th>{{ _("Patient") }}</th>{% for b in r.buckets %}<th>{{ b }}</th>{% endfor %}<th>{{ _("Total") }}</th><th>{{ _("With insurers") }}</th></tr>
   {% for x in r.rows %}<tr><td><a href="{{ url_for('clinical.account', pid=x.patient.id) }}">{{ x.patient.first_name }} {{ x.patient.last_name }}</a><br><span class="muted small">{{ x.patient.phone|phone }}</span></td>
     {% for b in r.buckets %}<td class="nw">{{ x.buckets[b]|money if x.buckets[b] else '' }}</td>{% endfor %}<td class="nw"><strong>{{ x.total|money }}</strong></td><td class="nw">{{ x.insurers|money if x.insurers else '' }}</td></tr>
-  {% else %}<tr><td colspan="7" class="muted">Nobody owes anything.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="7" class="muted">{{ _("Nobody owes anything.") }}</td></tr>{% endfor %}
 </table></div></section>
 {% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Closed days") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Closed days") }} {{ year }}</h1>
+  <div class="row"><a class="btn" href="{{ url_for('closed.home', year=year - 1) }}">{{ year - 1 }}</a><a class="btn" href="{{ url_for('closed.home', year=year + 1) }}">{{ year + 1 }}</a></div></div>
+<section class="card"><p class="muted small">{{ _("Public holidays and the clinic's own closures. Nobody can be booked on these days, online booking offers no times, and working-day counts skip them. Take public holidays from the official notice: some are declared only weeks ahead.") }}</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="copy"><input type="hidden" name="year" value="{{ year }}">
+  <table><thead><tr><th>{{ _("Copy") }}</th><th>{{ _("Date") }}</th><th>{{ _("Why") }}</th><th></th></tr></thead><tbody>
+  {% for r in rows %}<tr><td><label class="check"><input type="checkbox" name="pick" value="{{ r.id }}" aria-label="{{ r.name }}"></label></td><td>{{ r.day|day }}</td><td>{{ r.name }}</td>
+    <td><button type="submit" form="rm{{ r.id }}">{{ _("Remove") }}</button></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("None for this year yet.") }}</td></tr>{% endfor %}</tbody></table>
+  {% if rows %}<p><button type="submit">{{ _("Copy the ticked days to the same dates next year") }}</button> <span class="small muted">{{ _("Only for holidays on the same date every year. Easter and Eid move.") }}</span></p>{% endif %}</form>
+  {% for r in rows %}<form method="post" id="rm{{ r.id }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="remove"><input type="hidden" name="cd_id" value="{{ r.id }}"><input type="hidden" name="year" value="{{ year }}"></form>{% endfor %}
+</section>
+<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="year" value="{{ year }}">
+  <label for="day">{{ _("Date") }}</label><input id="day" type="date" name="day" required>
+  <label for="name">{{ _("Why") }}</label><input id="name" name="name" maxlength="80" placeholder="{{ _('Independence Day') }}" required>
+  <button class="primary" type="submit">{{ _("Add") }}</button></form>
+{% endblock %}

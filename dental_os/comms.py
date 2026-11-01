@@ -1,12 +1,13 @@
 """Messages (send list, replies, campaigns, templates), online booking requests, health forms to review, and each patient's link."""
 from datetime import datetime
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, url_for
 
 from .auth import clinical_required, manager_required
 from .db import get_db
+from .services import mailer as _mail, sms as _sms
 from .services import (booking, campaigns as CAMP, i18n, inbox, links, msgtemplates as MT, outbox, scheduling,
-                       timeutil)
+                       timeutil, whatsapp as WA)
 from .services.messaging import wa_link
 from .views import _patient_or_404, _today
 
@@ -20,7 +21,7 @@ def _guard(fn):
         fn()
         return True
     except (outbox.MessageError, inbox.InboxError, booking.BookingError, links.LinkError, CAMP.CampaignError, MT.TemplateError,
-            scheduling.SchedulingError, ValueError) as exc:
+            scheduling.SchedulingError, WA.WhatsAppError, ValueError) as exc:
         db.rollback()
         flash(str(exc), "error")
     return False
@@ -32,8 +33,42 @@ def queue():
     db = get_db()
     built = outbox.build(db, g.clinic)
     outbox.refresh(db, g.clinic)
-    return render_template("queue.html", rows=outbox.queue(db, g.clinic), built=built, counts=outbox.counts(db, g.clinic["id"]),
-                           kinds=outbox.KINDS, attn=outbox.attention(db, g.clinic, g.user), active="queue")
+    return render_template("queue.html", rows=outbox.queue(db, g.clinic), built=built, api_on=WA.is_on(db, g.clinic["id"], current_app.config["SECRET_KEY"]),
+                           auto_on=bool((WA.row(db, g.clinic["id"]) or {"auto_send": 0})["auto_send"]), counts=outbox.counts(db, g.clinic["id"]),
+                           kinds=outbox.KINDS, attn=outbox.attention(db, g.clinic, g.user), active="queue",
+                           mail_on=_mail.is_on(db, g.clinic["id"]), sms_on=_sms.is_on(db, g.clinic["id"]))
+
+
+@bp.post("/messages/queue/<int:oid>/email")
+def queue_email(oid):
+    """Send one message by email."""
+    db = get_db()
+    try:
+        _mail.deliver_outbox(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"], oid)
+        flash("Sent by email.", "ok")
+    except LookupError:
+        abort(404)
+    except outbox.MessageError as exc:
+        db.rollback()
+        flash(str(exc), "error")
+    return redirect(url_for("comms.queue"))
+
+
+@bp.post("/messages/queue/email-all")
+def queue_email_all():
+    db = get_db()
+    if not _mail.is_on(db, g.clinic["id"]):
+        flash("Email is not switched on.", "error")
+        return redirect(url_for("comms.queue"))
+    res = _mail.send_ready(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"])
+    flash(_res_text(res), "ok" if not res["stopped"] else "error")
+    return redirect(url_for("comms.queue"))
+
+
+def _res_text(res):
+    if res["stopped"]:
+        return res["stopped"]
+    return "Emails sent: %d. Left for a person: %d." % (res["sent"], res["left"])
 
 
 @bp.post("/messages/queue/<int:oid>/open")
@@ -49,6 +84,33 @@ def queue_open(oid):
         return redirect(url_for("comms.queue"))
     db.commit()
     return redirect(url)
+
+
+@bp.post("/messages/queue/<int:oid>/send")
+def queue_send(oid):
+    """Send one message through the WhatsApp Business API."""
+    db = get_db()
+    try:
+        WA.deliver_outbox(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"], oid)
+        flash("Sent by WhatsApp. Delivery news will show on the patient's messages.", "ok")
+    except LookupError:
+        abort(404)
+    except outbox.MessageError as exc:
+        db.rollback()
+        flash(str(exc), "error")
+    return redirect(url_for("comms.queue"))
+
+
+@bp.post("/messages/queue/send-all")
+def queue_send_all():
+    db = get_db()
+    if not WA.is_on(db, g.clinic["id"], current_app.config["SECRET_KEY"]):
+        flash("The WhatsApp API is not switched on.", "error")
+        return redirect(url_for("comms.queue"))
+    res = WA.send_ready(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"])
+    msg = f"{res['sent']} sent by WhatsApp. {res['left']} left in the list for a person."
+    flash(msg + (" Stopped: " + res["stopped"] if res["stopped"] else ""), "error" if res["stopped"] else "ok")
+    return redirect(url_for("comms.queue"))
 
 
 @bp.post("/messages/queue/<int:oid>/skip")
@@ -299,6 +361,22 @@ def setup():
                 ok = True
             except LookupError:
                 abort(404)
+        elif a == "wa_account":
+            ok = _guard(lambda: WA.save_account(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"], f.get("enabled"),
+                                                f.get("phone_number_id"), f.get("access_token"), f.get("app_secret"), f.get("api_version"),
+                                                f.get("auto_send"), bool(f.get("new_hook_key"))))
+        elif a == "wa_check":
+            try:
+                flash(WA.check_connection(db, g.clinic, current_app.config["SECRET_KEY"]), "ok")
+            except WA.WhatsAppError as exc:
+                flash(str(exc), "error")
+            return redirect(url_for("comms.setup"))
+        elif a == "wa_template":
+            try:
+                ok = _guard(lambda: WA.save_mapping(db, g.clinic, g.user["id"], f.get("kind"), f.get("lang"), f.get("template_name"),
+                                                    f.get("language_code"), f.get("params")))
+            except LookupError:
+                abort(404)
         elif a == "booking":
             ok = _guard(lambda: booking.save_settings(db, g.clinic, g.user["id"], f.get("booking_on"), f.get("days_ahead", type=int),
                                                       f.get("notice_hours", type=int), f.get("minutes", type=int), f.get("note"),
@@ -310,5 +388,15 @@ def setup():
         return redirect(url_for("comms.setup"))
     c = outbox.comms(db, cid)
     link = url_for("public.book", token=c["booking_token"], _external=True) if c["booking_token"] else None
-    return render_template("msg_setup.html", c=c, rules=outbox.rules(db, cid), templates=MT.list_for(db, cid), fields=MT.FIELDS,
+    acct = WA.ensure(db, cid)
+    maps = WA.mappings(db, cid)
+    wa_rows = []
+    for kind in WA.KINDS:
+        for lang in i18n.LANGS:
+            text, order = WA.suggestion(db, cid, kind, lang)
+            wa_rows.append({"kind": kind, "lang": lang, "lang_name": i18n.LANGS[lang], "map": maps.get((kind, lang)), "text": text, "order": order,
+                            "label": MT.KINDS[kind][0] if kind in MT.KINDS else "Campaign"})
+    wa = {"acct": acct, "url": url_for("wahook.verify", key=acct["hook_key"], _external=True), "rows": wa_rows,
+          "has_token": bool(acct["access_token"]), "has_secret": bool(acct["app_secret"]), "unmatched": WA.unmatched(db, cid), "fields": WA.PARAM_FIELDS}
+    return render_template("msg_setup.html", c=c, wa=wa, rules=outbox.rules(db, cid), templates=MT.list_for(db, cid), fields=MT.FIELDS,
                            booking_link=link, durations=scheduling.DURATIONS, active="setup", attn=outbox.attention(db, g.clinic, g.user))

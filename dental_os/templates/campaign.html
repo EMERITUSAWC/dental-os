@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 {% block title %}{{ c.name }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>{{ c.name }}</h1><a href="{{ url_for('comms.campaigns') }}">All campaigns</a></div>
-<section class="card"><dl class="facts"><dt>For</dt><dd>{{ kinds[c.kind][0] }}, {{ c.param_days }} days</dd>
-  <dt>Kind</dt><dd>{{ 'Care message' if c.purpose == 'care' else 'Offer or promotion' }}</dd><dt>Gap</dt><dd>Not sent to anyone messaged in the last {{ c.min_gap_days }} days</dd>
-  <dt>Message</dt><dd>{{ c.body }}</dd><dt>Status</dt><dd>{{ c.status|capitalize }}</dd></dl></section>
+<div class="row spread"><h1>{{ c.name }}</h1><a href="{{ url_for('comms.campaigns') }}">{{ _("All campaigns") }}</a></div>
+<section class="card"><dl class="facts"><dt>{{ _("For") }}</dt><dd>{{ _(kinds[c.kind][0]) }}, {{ _("%(n)s days", n=c.param_days) }}</dd>
+  <dt>{{ _("Kind") }}</dt><dd>{{ _('Care message') if c.purpose == 'care' else _('Offer or promotion') }}</dd><dt>{{ _("Gap") }}</dt><dd>{{ _("Not sent to anyone messaged in the last %(n)s days", n=c.min_gap_days) }}</dd>
+  <dt>{{ _("Message") }}</dt><dd>{{ c.body }}</dd><dt>{{ _("Status") }}</dt><dd>{{ c.status|capitalize }}</dd></dl></section>
 {% if aud is not none %}
-<section class="card"><h2>Who it would reach now</h2>
-  <p><strong>{{ aud.send|length }}</strong> to add to the send list.
-  {{ aud.no_consent }} left out because they have not agreed. {{ aud.too_soon }} left out because they were messaged recently. {{ aud.already }} already added.</p>
-  {% if aud.send %}<p class="small">{% for p in aud.send[:12] %}{{ p.first_name }} {{ p.last_name }}{{ ', ' if not loop.last }}{% endfor %}{% if aud.send|length > 12 %} and {{ aud.send|length - 12 }} more{% endif %}</p>{% endif %}
+<section class="card"><h2>{{ _("Who it would reach now") }}</h2>
+  <p>{{ _("%(n)s to add to the send list.", n=aud.send|length) }}
+  {{ _("%(n)s left out because they have not agreed.", n=aud.no_consent) }} {{ _("%(n)s left out because they were messaged recently.", n=aud.too_soon) }} {{ _("%(n)s already added.", n=aud.already) }}</p>
+  {% if aud.send %}<p class="small">{% for p in aud.send[:12] %}{{ p.first_name }} {{ p.last_name }}{{ ', ' if not loop.last }}{% endfor %}{% if aud.send|length > 12 %} {{ _("and %(n)s more", n=aud.send|length - 12) }}{% endif %}</p>{% endif %}
   <div class="row">
-    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="build"><button class="primary" type="submit" {{ 'disabled' if not aud.send }}>Add to the send list</button></form>
-    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="close"><button class="danger" type="submit">Close the campaign</button></form>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="build"><button class="primary" type="submit" {{ 'disabled' if not aud.send }}>{{ _("Add to the send list") }}</button></form>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="close"><button class="danger" type="submit">{{ _("Close the campaign") }}</button></form>
   </div>
 </section>{% endif %}
-<section class="card"><h2>What happened</h2><div class="stats" style="grid-template-columns: repeat(5, 1fr)">
-  <div><div class="stat">{{ res.queued }}</div><div class="muted small">waiting</div></div><div><div class="stat">{{ res.sent }}</div><div class="muted small">opened</div></div>
-  <div><div class="stat">{{ res.skipped }}</div><div class="muted small">skipped</div></div><div><div class="stat">{{ res.replied }}</div><div class="muted small">wrote back</div></div>
-  <div><div class="stat">{{ res.booked }}</div><div class="muted small">booked a visit</div></div></div>
-  <p class="small muted">Wrote back and booked look at the 30 days after the message was opened.</p></section>
+<section class="card"><h2>{{ _("What happened") }}</h2><div class="stats" style="grid-template-columns: repeat(5, 1fr)">
+  <div><div class="stat">{{ res.queued }}</div><div class="muted small">{{ _("waiting") }}</div></div><div><div class="stat">{{ res.sent }}</div><div class="muted small">{{ _("opened") }}</div></div>
+  <div><div class="stat">{{ res.skipped }}</div><div class="muted small">{{ _("skipped") }}</div></div><div><div class="stat">{{ res.replied }}</div><div class="muted small">{{ _("wrote back") }}</div></div>
+  <div><div class="stat">{{ res.booked }}</div><div class="muted small">{{ _("booked a visit") }}</div></div></div>
+  <p class="small muted">{{ _("Wrote back and booked look at the 30 days after the message was opened.") }}</p></section>
 {% endblock %}

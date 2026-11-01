@@ -1,51 +1,51 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Medical, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Medical,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: medical history</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": medical history") }}</h1>
 {{ tabs(p, 'medical') }}
 <div class="grid two">
   <section class="card">
-    <h2>Medical history</h2>
-    {% if h and h.reviewed_on %}<p class="muted small">Last reviewed with the patient on {{ h.reviewed_on|date }}.</p>{% elif not h %}<p class="muted small">Nothing recorded yet.</p>{% endif %}
+    <h2>{{ _("Medical history") }}</h2>
+    {% if h and h.reviewed_on %}<p class="muted small">{{ _("Last reviewed with the patient on") }} {{ h.reviewed_on|date }}.</p>{% elif not h %}<p class="muted small">{{ _("Nothing recorded yet.") }}</p>{% endif %}
     <form method="post">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="history">
-      <label for="conditions">Medical conditions</label><textarea id="conditions" name="conditions" rows="3" maxlength="2000">{{ h.conditions if h and h.conditions }}</textarea>
-      <label for="medications">Medicines taken</label><textarea id="medications" name="medications" rows="3" maxlength="2000">{{ h.medications if h and h.medications }}</textarea>
-      <label for="allergies">Allergies (medicines, latex, anything else)</label><textarea id="allergies" name="allergies" rows="2" maxlength="1000">{{ h.allergies if h and h.allergies }}</textarea>
+      <label for="conditions">{{ _("Medical conditions") }}</label><textarea id="conditions" name="conditions" rows="3" maxlength="2000">{{ h.conditions if h and h.conditions }}</textarea>
+      <label for="medications">{{ _("Medicines taken") }}</label><textarea id="medications" name="medications" rows="3" maxlength="2000">{{ h.medications if h and h.medications }}</textarea>
+      <label for="allergies">{{ _("Allergies (medicines, latex, anything else)") }}</label><textarea id="allergies" name="allergies" rows="2" maxlength="1000">{{ h.allergies if h and h.allergies }}</textarea>
       <div class="grid two">
-        <div><label for="smoker">Smoking</label>
-          <select id="smoker" name="smoker">{% for k, v in smoker.items() %}<option value="{{ k }}" {{ 'selected' if (h.smoker if h else '') == k }}>{{ v }}</option>{% endfor %}</select></div>
-        <div><label for="pregnant">Pregnant</label>
-          <select id="pregnant" name="pregnant"><option value="">Not asked or not applicable</option>
-            <option value="yes" {{ 'selected' if h and h.pregnant == 'yes' }}>Yes</option><option value="no" {{ 'selected' if h and h.pregnant == 'no' }}>No</option></select></div>
+        <div><label for="smoker">{{ _("Smoking") }}</label>
+          <select id="smoker" name="smoker">{% for k, v in smoker.items() %}<option value="{{ k }}" {{ 'selected' if (h.smoker if h else '') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+        <div><label for="pregnant">{{ _("Pregnant") }}</label>
+          <select id="pregnant" name="pregnant"><option value="">{{ _("Not asked or not applicable") }}</option>
+            <option value="yes" {{ 'selected' if h and h.pregnant == 'yes' }}>{{ _("Yes") }}</option><option value="no" {{ 'selected' if h and h.pregnant == 'no' }}>{{ _("No") }}</option></select></div>
       </div>
-      <label class="check"><input type="checkbox" name="blood_thinners" value="1" {{ 'checked' if h and h.blood_thinners }}><span>Takes blood thinners (for example warfarin or aspirin daily)</span></label>
-      <label for="notes">Other notes</label><textarea id="notes" name="notes" rows="2" maxlength="2000">{{ h.notes if h and h.notes }}</textarea>
-      <label class="check"><input type="checkbox" name="reviewed" value="1"><span>I went through this with the patient today</span></label>
-      <p class="muted small">Allergies, blood thinners and pregnancy create alerts automatically. They show on the patient, the diary and the appointment.</p>
-      <p><button class="primary" type="submit">Save history</button></p>
+      <label class="check"><input type="checkbox" name="blood_thinners" value="1" {{ 'checked' if h and h.blood_thinners }}><span>{{ _("Takes blood thinners (for example warfarin or aspirin daily)") }}</span></label>
+      <label for="notes">{{ _("Other notes") }}</label><textarea id="notes" name="notes" rows="2" maxlength="2000">{{ h.notes if h and h.notes }}</textarea>
+      <label class="check"><input type="checkbox" name="reviewed" value="1"><span>{{ _("I went through this with the patient today") }}</span></label>
+      <p class="muted small">{{ _("Allergies, blood thinners and pregnancy create alerts automatically. They show on the patient, the diary and the appointment.") }}</p>
+      <p><button class="primary" type="submit">{{ _("Save history") }}</button></p>
     </form>
   </section>
   <section class="card">
-    <h2>Alerts</h2>
+    <h2>{{ _("Alerts") }}</h2>
     {% for a in alerts %}
     <div class="row spread" style="margin-bottom:8px">
-      <span class="alert {{ a.severity }}"><strong>{{ kinds[a.kind] }}:</strong> {{ a.text }}</span>
-      <form method="post" action="{{ url_for('record.alert_resolve', alert_id=a.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">Resolve</button></form>
+      <span class="alert {{ a.severity }}"><strong>{{ _(kinds[a.kind]) }}:</strong> {{ a.text }}</span>
+      <form method="post" action="{{ url_for('record.alert_resolve', alert_id=a.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Resolve") }}</button></form>
     </div>
-    {% else %}<p class="muted">No active alerts.</p>{% endfor %}
-    <h2 style="margin-top:16px">Add an alert</h2>
+    {% else %}<p class="muted">{{ _("No active alerts.") }}</p>{% endfor %}
+    <h2 style="margin-top:16px">{{ _("Add an alert") }}</h2>
     <form method="post">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="alert">
       <div class="grid two">
-        <div><label for="kind">Type</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
-        <div><label for="severity">Level</label><select id="severity" name="severity">{% for k, v in severities.items() %}<option value="{{ k }}" {{ 'selected' if k == 'warning' }}>{{ v }}</option>{% endfor %}</select></div>
+        <div><label for="kind">{{ _("Type") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+        <div><label for="severity">{{ _("Level") }}</label><select id="severity" name="severity">{% for k, v in severities.items() %}<option value="{{ k }}" {{ 'selected' if k == 'warning' }}>{{ _(v) }}</option>{% endfor %}</select></div>
       </div>
-      <label for="text">What staff must know</label><input id="text" name="text" maxlength="300" required>
-      <p><button type="submit">Add alert</button></p>
+      <label for="text">{{ _("What staff must know") }}</label><input id="text" name="text" maxlength="300" required>
+      <p><button type="submit">{{ _("Add alert") }}</button></p>
     </form>
-    {% if resolved %}<h2 style="margin-top:16px">Resolved</h2>{% for a in resolved %}<p class="muted small">{{ a.text }} (resolved {{ a.resolved_at[:10]|date }})</p>{% endfor %}{% endif %}
+    {% if resolved %}<h2 style="margin-top:16px">{{ _("Resolved") }}</h2>{% for a in resolved %}<p class="muted small">{{ a.text }} {{ _("(resolved") }} {{ a.resolved_at[:10]|date }})</p>{% endfor %}{% endif %}
   </section>
 </div>
 {% endblock %}

@@ -1,0 +1,2 @@
+<div class="row spread no-print"><div class="row"><a class="btn" href="{{ url_for('operator.home') }}">{{ _("Clinics") }}</a><a class="btn" href="{{ url_for('operator.plans') }}">{{ _("Plans") }}</a></div>
+  <form method="post" action="{{ url_for('operator.logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><span class="small muted">{{ g.operator.display_name }}</span> <button type="submit" class="small">{{ _("Log out") }}</button></form></div>

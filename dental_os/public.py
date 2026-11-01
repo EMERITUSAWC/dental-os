@@ -76,7 +76,9 @@ def _resolve(token):
 @bp.get("/p/<token>")
 def portal(token):
     db, link, patient, clinic = _resolve(token)
-    return render_template("portal.html", p=patient, d=links.portal(db, clinic, patient, g.lang), token=token)
+    from .services import onlinepay
+    return render_template("portal.html", p=patient, d=links.portal(db, clinic, patient, g.lang), token=token,
+                           pay_online=onlinepay.is_on(db, clinic))
 
 
 @bp.post("/p/<token>/visit/<int:appt_id>")

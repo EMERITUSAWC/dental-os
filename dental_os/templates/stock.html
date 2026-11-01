@@ -1,27 +1,27 @@
 {% extends "base.html" %}
 {% from "_stock_tabs.html" import tabs with context %}
-{% block title %}Stock{% endblock %}
+{% block title %}{{ _("Stock") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Stock</h1>{% if user.role == 'manager' %}<a class="btn primary" href="{{ url_for('ops.stock_new') }}">Add an item</a>{% endif %}</div>
+<div class="row spread"><h1>{{ _("Stock") }}</h1>{% if user.role == 'manager' %}<a class="btn primary" href="{{ url_for('ops.stock_new') }}">{{ _("Add an item") }}</a>{% endif %}</div>
 {{ tabs('list') }}
 <div class="stats four">
-  <div class="card"><div class="stat">{{ summary['items'] }}</div><div class="muted">items</div></div>
-  <div class="card"><div class="stat">{{ summary.value_p|money }}</div><div class="muted">stock value at cost</div></div>
-  <div class="card"><div class="stat">{{ summary.low }}</div><div class="muted"><a href="{{ url_for('ops.stock_order') }}">to reorder</a></div></div>
-  <div class="card"><div class="stat">{{ summary.expired + summary.expiring }}</div><div class="muted"><a href="{{ url_for('ops.stock_expiry') }}">expired or expiring soon</a></div></div>
+  <div class="card"><div class="stat">{{ summary['items'] }}</div><div class="muted">{{ _("items") }}</div></div>
+  <div class="card"><div class="stat">{{ summary.value_p|money }}</div><div class="muted">{{ _("stock value at cost") }}</div></div>
+  <div class="card"><div class="stat">{{ summary.low }}</div><div class="muted"><a href="{{ url_for('ops.stock_order') }}">{{ _("to reorder") }}</a></div></div>
+  <div class="card"><div class="stat">{{ summary.expired + summary.expiring }}</div><div class="muted"><a href="{{ url_for('ops.stock_expiry') }}">{{ _("expired or expiring soon") }}</a></div></div>
 </div>
-<form method="get" class="row"><input type="search" name="q" value="{{ q }}" placeholder="Search by name or code" aria-label="Search" style="max-width:320px">
-  <select name="category" aria-label="Category" style="width:auto"><option value="">All categories</option>{% for c in categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}</select>
-  <label class="check" style="margin:0"><input type="checkbox" name="off" value="1" {{ 'checked' if off }}><span>Show switched-off items</span></label><button type="submit">Search</button></form>
+<form method="get" class="row"><input type="search" name="q" value="{{ q }}" placeholder="{{ _('Search by name or code') }}" aria-label="{{ _('Search') }}" style="max-width:320px">
+  <select name="category" aria-label="{{ _('Category') }}" style="width:auto"><option value="">{{ _("All categories") }}</option>{% for c in categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}</select>
+  <label class="check" style="margin:0"><input type="checkbox" name="off" value="1" {{ 'checked' if off }}><span>{{ _("Show switched-off items") }}</span></label><button type="submit">{{ _("Search") }}</button></form>
 <section class="card"><div class="tbl-wrap"><table>
-  <tr><th>Item</th><th>Category</th><th>In stock</th><th>Reorder at</th><th>Next expiry</th><th>Value</th></tr>
+  <tr><th>{{ _("Item") }}</th><th>{{ _("Category") }}</th><th>{{ _("In stock") }}</th><th>{{ _("Reorder at") }}</th><th>{{ _("Next expiry") }}</th><th>{{ _("Value") }}</th></tr>
   {% for r in rows %}{% set i = r.item %}
-  <tr><td><a href="{{ url_for('ops.stock_item', item_id=i.id) }}">{{ i.name }}</a>{% if i.sku %} <span class="muted small">{{ i.sku }}</span>{% endif %}{% if not i.active %} <span class="pill">off</span>{% endif %}</td>
+  <tr><td><a href="{{ url_for('ops.stock_item', item_id=i.id) }}">{{ i.name }}</a>{% if i.sku %} <span class="muted small">{{ i.sku }}</span>{% endif %}{% if not i.active %} <span class="pill">{{ _("off") }}</span>{% endif %}</td>
     <td>{{ i.category }}</td>
-    <td class="nw"><strong>{{ r.level }}</strong> {{ i.unit }} {% if r.low %}<span class="pill warn">low</span>{% endif %}</td>
+    <td class="nw"><strong>{{ r.level }}</strong> {{ i.unit }} {% if r.low %}<span class="pill warn">{{ _("low") }}</span>{% endif %}</td>
     <td>{{ i.reorder_level or '' }}</td>
-    <td class="nw">{% if r.next_expiry %}{{ r.next_expiry|date }}{% if r.expired %} <span class="pill bad">{{ r.expired }} expired</span>{% elif r.expiring %} <span class="pill warn">{{ r.expiring }} soon</span>{% endif %}{% endif %}</td>
+    <td class="nw">{% if r.next_expiry %}{{ r.next_expiry|date }}{% if r.expired %} <span class="pill bad">{{ r.expired }} {{ _("expired") }}</span>{% elif r.expiring %} <span class="pill warn">{{ r.expiring }} {{ _("soon") }}</span>{% endif %}{% endif %}</td>
     <td class="nw">{{ r.value_p|money }}</td></tr>
-  {% else %}<tr><td colspan="6" class="muted">No items yet.{% if user.role == 'manager' %} Use "Add an item".{% endif %}</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="6" class="muted">{{ _("No items yet.") }}{% if user.role == 'manager' %} {{ _('Use "Add an item".') }}{% endif %}</td></tr>{% endfor %}
 </table></div></section>
 {% endblock %}

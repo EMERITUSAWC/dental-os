@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ _("SMS") }}{% endblock %}
+{% block body %}
+<h1>{{ _("SMS") }}</h1>
+<section class="card">
+  <p>{{ _("Texts go through the clinic's own SMS account. Patients whose preferred contact is SMS get their reminders and other messages by text. Messages never carry treatment details or amounts, the same as WhatsApp and email.") }}</p>
+  <p class="muted small">{{ _("In many countries a sender name must be registered with the SMS company before it can be used. Ask your SMS company.") }}</p>
+  {% if a %}<p>{% if a.enabled %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill">{{ _("Off") }}</span>{% endif %}{% if a.api_secret %} {{ _("Key saved.") }}{% endif %}</p>{% endif %}
+</section>
+<form method="post" class="card" autocomplete="off">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="grid three">
+    <div><label for="provider">{{ _("SMS company") }}</label><select id="provider" name="provider">{% for k, v in providers.items() %}<option value="{{ k }}" {{ 'selected' if a and a.provider == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="sender">{{ _("Sender name or number") }}</label><input id="sender" name="sender" value="{{ a.sender or '' if a else '' }}" maxlength="16" placeholder="{{ _('For example SmileDent') }}"></div>
+    <div><label for="api_user">{{ _("Client ID, user name or Account SID") }}</label><input id="api_user" name="api_user" value="{{ a.api_user or '' if a else '' }}"></div>
+    <div><label for="api_secret">{{ _("Client secret, API key or auth token (leave empty to keep the saved one)") }}</label><input id="api_secret" name="api_secret" type="password" autocomplete="off"></div>
+  </div>
+  <label class="check"><input type="checkbox" name="sandbox" value="1" {{ 'checked' if a and a.sandbox }}> <span>{{ _("Africa's Talking test system (sandbox)") }}</span></label>
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if a and a.enabled }}> <span>{{ _("Switch SMS on") }}</span></label>
+  <label class="check"><input type="checkbox" name="auto_send" value="1" {{ 'checked' if a and a.auto_send }}> <span>{{ _("Let the server text the send list by itself, for patients who prefer SMS") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% if a and a.enabled %}<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="test">
+  <label for="to">{{ _("Send a test SMS to") }}</label><input id="to" name="to" placeholder="+233244123456" required><button type="submit">{{ _("Send test") }}</button></form>{% endif %}
+{% endblock %}

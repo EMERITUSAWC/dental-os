@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Sterilisation") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Sterilisation") }}</h1>
+{{ tabs('home') }}
+{% for r in ov.recalls %}<div class="flash error" role="alert">{{ _("A spore test failed on %(name)s. Every pack made on it since its last passing spore test is recalled.", name=r.steriliser) }} <a href="{{ url_for('steri.recall_view', rid=r.id) }}">{{ _("Open the recall") }}</a></div>{% endfor %}
+{% if not ov.rows %}<section class="card"><p class="muted">{{ _("No sterilisers yet.") }}{% if user.role == 'manager' %} <a href="{{ url_for('steri.setup') }}">{{ _("Add one") }}</a>{% endif %}</p></section>{% endif %}
+{% for r in ov.rows %}{% set s = r.s %}
+<section class="card">
+  <div class="row spread"><h2><a href="{{ url_for('steri.steriliser', sid=s.id) }}">{{ s.name }}</a> <span class="muted small">{{ _(kinds[s.kind]) }}</span></h2>
+    {% if s.status == 'out' %}<span class="pill bad">{{ _("Out of service") }}</span>{% elif r.due %}<span class="pill warn">{{ _("Checks missing") }}</span>{% else %}<span class="pill ok">{{ _("Ready") }}</span>{% endif %}</div>
+  {% if s.status == 'out' %}<p>{{ _("Failed test:") }} {{ _(tests[s.out_test]) }}, {{ s.out_since|date }}. <a href="{{ url_for('steri.steriliser', sid=s.id) }}">{{ _("What it needs") }}</a></p>{% endif %}
+  {% if r.due %}<ul>{% for d in r.due %}<li>{{ _(tests[d.kind]) }}: {{ _("not done today") if d.when == 'today' else (_("none passed in the last 7 days") if d.when == 'week' else _("due, or no date saved")) }}</li>{% endfor %}</ul>{% endif %}
+  <form method="post" action="{{ url_for('steri.test_add') }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="sid" value="{{ s.id }}">
+    <label class="sr-only" for="kind{{ s.id }}">{{ _("Test") }}</label>
+    <select id="kind{{ s.id }}" name="kind">{% for k, v in tests.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+    <label class="sr-only" for="res{{ s.id }}">{{ _("Result") }}</label>
+    <select id="res{{ s.id }}" name="result">{% for k, v in results.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+    <label class="sr-only" for="lot{{ s.id }}">{{ _("Lot number (spore tests)") }}</label>
+    <input id="lot{{ s.id }}" name="lot" placeholder="{{ _('Lot number (spore tests)') }}" maxlength="40">
+    <button class="primary" type="submit">{{ _("Record test") }}</button>
+  </form>
+</section>
+{% endfor %}
+{% if ov.pending %}<section class="card"><h2>{{ _("Spore tests waiting for a result") }}</h2>
+  {% for t in ov.pending %}<form method="post" action="{{ url_for('steri.test_result', tid=t.id) }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <span>{{ t.steriliser }}, {{ t.done_at|date }}, {{ _("lot") }} {{ t.lot }}{% if t.cycle_id %} ({{ _("with a load") }}){% endif %}</span>
+    <button type="submit" name="result" value="pass">{{ _("Passed") }}</button><button type="submit" name="result" value="fail">{{ _("Failed") }}</button>
+  </form>{% endfor %}</section>{% endif %}
+<section class="card">
+  <p>{% if ov.expired %}<span class="pill bad">{{ ov.expired }}</span> {{ _("packs on the shelf are past their use-by date.") }} {% endif %}
+     {% if ov.expiring %}<span class="pill warn">{{ ov.expiring }}</span> {{ _("packs reach their use-by date in the next 7 days.") }}{% endif %}
+     <a href="{{ url_for('steri.shelf') }}">{{ _("See the packs") }}</a></p>
+  <h2>{{ _("Latest cycles") }}</h2>
+  {% if cycles %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Steriliser") }}</th><th>{{ _("Cycle") }}</th><th>{{ _("Packs") }}</th><th>{{ _("Result") }}</th></tr>
+  {% for c in cycles %}<tr><td class="nw">{{ c.started_at|date }} {{ c.started_at[11:16] }}</td><td>{{ c.steriliser }}</td><td><a href="{{ url_for('steri.cycle_view', cycle_id=c.id) }}">{{ c.cycle_no }}</a></td><td>{{ c.packs }}</td>
+    <td><span class="pill {{ 'ok' if c.result == 'pass' else ('bad' if c.result == 'fail' else 'warn') }}">{{ _(cycle_results[c.result]) }}</span></td></tr>{% endfor %}</table></div>
+  {% else %}<p class="muted">{{ _("No cycles yet.") }}</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,8 +1,9 @@
 {% macro tabs(active) %}
-<nav class="tabs" aria-label="Stock">
-  <a href="{{ url_for('ops.stock_list') }}" class="{{ 'on' if active == 'list' }}">Stock</a>
-  <a href="{{ url_for('ops.stock_order') }}" class="{{ 'on' if active == 'order' }}">To order</a>
-  <a href="{{ url_for('ops.stock_expiry') }}" class="{{ 'on' if active == 'expiry' }}">Expiry</a>
-  {% if user.role == 'manager' %}<a href="{{ url_for('ops.stock_suppliers') }}" class="{{ 'on' if active == 'suppliers' }}">Suppliers</a>{% endif %}
+<nav class="tabs" aria-label="{{ _('Stock') }}">
+  <a href="{{ url_for('ops.stock_list') }}" class="{{ 'on' if active == 'list' }}">{{ _("Stock") }}</a>
+  <a href="{{ url_for('ops.stock_order') }}" class="{{ 'on' if active == 'order' }}">{{ _("To order") }}</a>
+  <a href="{{ url_for('ops.stock_expiry') }}" class="{{ 'on' if active == 'expiry' }}">{{ _("Expiry") }}</a>
+  {% if user.role != 'front_desk' %}<a href="{{ url_for('kits.home') }}" class="{{ 'on' if active == 'kits' }}">{{ _("Kits") }}</a>{% endif %}
+  {% if user.role == 'manager' %}<a href="{{ url_for('ops.stock_suppliers') }}" class="{{ 'on' if active == 'suppliers' }}">{{ _("Suppliers") }}</a>{% endif %}
 </nav>
 {% endmacro %}

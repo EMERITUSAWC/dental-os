@@ -1,7 +1,8 @@
 """Treatment plans and the procedure log.
 One table holds the plan and the work done: finishing a procedure is a status change, never a copy.
 A done procedure cannot be edited or deleted. If it was entered in error, a manager voids it with a reason."""
-from . import audit
+from . import audit, teeth
+from . import feesched as FS
 from .timeutil import now_local, parse_dt
 
 PERMANENT = [n for q in (1, 2, 3, 4) for n in range(q * 10 + 1, q * 10 + 9)]
@@ -37,16 +38,11 @@ def ensure_catalogue(db, clinic_id):
 
 
 def clean_tooth(raw):
-    raw = (str(raw).strip() if raw is not None else "")
-    if not raw:
-        return None
+    """A typed tooth in the clinic's own numbering (see services/teeth.py), returned as an FDI number."""
     try:
-        n = int(raw)
-    except ValueError:
-        n = -1
-    if n not in VALID_TEETH:
-        raise TreatmentError("Tooth numbers use the FDI system, for example 36 or 54.")
-    return n
+        return teeth.parse(raw)
+    except teeth.ToothError as exc:
+        raise TreatmentError(str(exc))
 
 
 def clean_surfaces(values):
@@ -79,7 +75,7 @@ def add_planned(db, clinic, user_id, patient_id, code_id, tooth=None, surfaces=N
         raise TreatmentError("Pick a procedure from the list.")
     if provider_id is not None and not _owned(db, "providers", cid, provider_id):
         raise TreatmentError("Pick a dentist from this clinic.")
-    fee = code["fee_p"] if fee_p is None else fee_p
+    fee = FS.fee_for(db, cid, patient_id, code) if fee_p is None else fee_p
     if fee < 0:
         raise TreatmentError("A fee cannot be negative.")
     today = now_local(clinic["timezone"]).date().isoformat()
@@ -106,11 +102,15 @@ def mark_done(db, clinic, user_id, proc_id, appointment_id=None, provider_id=Non
         done_on = parse_dt(appt["start_at"]).date().isoformat()
     if provider_id is not None and not _owned(db, "providers", cid, provider_id):
         raise TreatmentError("Pick a dentist from this clinic.")
+    from . import periodlock
+    periodlock.check(db, cid, done_on, TreatmentError)
     db.execute(
         """UPDATE procedures SET status='done', done_on=?, appointment_id=?, provider_id=COALESCE(?, provider_id)
            WHERE id = ? AND clinic_id = ?""",
         (done_on, appointment_id or None, provider_id, proc_id, cid))
     audit.log(db, cid, user_id, "procedure.done", "procedure", proc_id)
+    from . import kits
+    return kits.use_for(db, clinic, user_id, proc_id)                  # the stock this treatment uses comes off the shelf
 
 
 def set_fee(db, clinic_id, user_id, proc_id, fee_p):
@@ -141,11 +141,15 @@ def void(db, clinic_id, user_id, proc_id, reason):
         raise LookupError("procedure")
     if proc["status"] != "done":
         raise TreatmentError("Only finished work can be voided.")
+    from . import periodlock
+    periodlock.check(db, clinic_id, proc["done_on"], TreatmentError)
     reason = (reason or "").strip()
     if len(reason) < 3:
         raise TreatmentError("Say why it is being voided.")
     db.execute("UPDATE procedures SET status='voided', void_reason=? WHERE id = ? AND clinic_id = ?",
                (reason, proc_id, clinic_id))
+    from . import kits
+    kits.give_back(db, db.execute("SELECT * FROM clinics WHERE id = ?", (clinic_id,)).fetchone(), user_id, proc_id)
     audit.log(db, clinic_id, user_id, "procedure.void", "procedure", proc_id, reason[:80])
 
 

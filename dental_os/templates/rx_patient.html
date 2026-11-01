@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Prescriptions") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("prescriptions") }}</h1>
+{{ tabs(p, 'rx') }}
+{% if can_write %}
+<section class="card">
+  <h2>{{ _("Write a prescription") }}</h2>
+  {% if not drugs %}<p class="muted">{{ _("The clinic has no medicines on its list yet.") }} {% if user.role == 'manager' %}<a href="{{ url_for('care.drugs') }}">{{ _("Set up the medicines list") }}</a>{% else %}{{ _("Ask a manager to set up the medicines list.") }}{% endif %}</p>
+  {% else %}
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="grid two">
+      <div><label for="provider_id">{{ _("Prescriber") }}</label><select id="provider_id" name="provider_id">{% for pr in providers %}<option value="{{ pr.id }}" {{ 'selected' if form.get('provider_id')|string == pr.id|string }}>{{ pr.name }}{% if not pr.reg_number %} ({{ _("no registration number yet") }}){% endif %}</option>{% endfor %}</select></div>
+      <div><label for="appointment_id">{{ _("Visit (optional)") }}</label><select id="appointment_id" name="appointment_id"><option value="">{{ _("Not linked") }}</option>{% for v in visits %}<option value="{{ v.id }}" {{ 'selected' if form.get('appointment_id')|string == v.id|string }}>{{ v.start_at|date }}, {{ _(v.category) }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <tr><th>{{ _("Medicine") }}</th><th>{{ _("How to take it (leave empty for the usual)") }}</th><th>{{ _("Days") }}</th><th>{{ _("Supply") }}</th></tr>
+      {% for i in range(4 if not form else max_items) %}
+      <tr><td><select name="drug_{{ i }}" aria-label="{{ _('Medicine') }} {{ i + 1 }}"><option value="">{{ _("None") }}</option>{% for d in drugs %}<option value="{{ d.id }}" {{ 'selected' if form.get('drug_%d' % i)|string == d.id|string }}>{{ d.name }} {{ d.strength }} {{ d.form }}</option>{% endfor %}</select></td>
+        <td><input name="dose_{{ i }}" maxlength="200" value="{{ form.get('dose_%d' % i, '') }}" aria-label="{{ _('How to take it') }} {{ i + 1 }}"></td>
+        <td><input name="days_{{ i }}" inputmode="numeric" maxlength="2" style="width:70px" value="{{ form.get('days_%d' % i, '') }}" aria-label="{{ _('Days') }} {{ i + 1 }}"></td>
+        <td><input name="qty_{{ i }}" maxlength="40" style="width:130px" value="{{ form.get('qty_%d' % i, '') }}" aria-label="{{ _('Supply') }} {{ i + 1 }}"></td></tr>
+      {% endfor %}
+    </table></div>
+    <label for="notes">{{ _("Note for the pharmacist (optional)") }}</label><input id="notes" name="notes" maxlength="300" value="{{ form.get('notes', '') }}">
+    {% if checked %}
+      {% if warnings %}<div class="card warnbox" role="alert"><h3>{{ _("Check before you write it") }}</h3>
+        <ul>{% for w in warnings %}<li class="{{ 'stop' if w.level == 'stop' }}"><strong>{{ _("Stop:") if w.level == 'stop' else _("Take care:") }}</strong> {{ _(w.text) }}{% if w.source %} <span class="muted small">({{ w.source }})</span>{% endif %}</li>{% endfor %}</ul>
+        {% if warnings|selectattr('level', 'equalto', 'stop')|list %}<label for="override_reason">{{ _("Why it is right to go ahead anyway") }}</label><input id="override_reason" name="override_reason" maxlength="300" value="{{ form.get('override_reason', '') }}">{% endif %}
+      </div>{% else %}<p class="pill ok">{{ _("No warnings found on the patient's record for these medicines.") }}</p>{% endif %}
+    {% endif %}
+    <p class="row"><button type="submit" name="action" value="check">{{ _("Check") }}</button>{% if checked %}<button class="primary" type="submit" name="action" value="issue">{{ _("Write the prescription") }}</button>{% endif %}</p>
+    <p class="muted small">{{ _("The checks look for plain words in the allergies and medicines on the record. They do not replace the dentist's judgement or the national formulary.") }}</p>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+<section class="card"><h2>{{ _("Written before") }}</h2>
+  {% for x in rows %}<div class="rxline"><p><a href="{{ url_for('care.prescription_print', rx_id=x.rx.id) }}">{{ x.rx.issued_on|date }}</a>, {{ x.rx.provider_name }}
+    {% if x.rx.status == 'cancelled' %}<span class="pill bad">{{ _("Cancelled") }}</span>{% endif %}</p>
+    <ul class="small">{% for it in x.items %}<li>{{ it.name }} {{ it.strength }} {{ it.form }}: {{ it.dose }}{% if it.days %}, {{ _("%(n)s days", n=it.days) }}{% endif %}</li>{% endfor %}</ul></div>
+  {% else %}<p class="muted">{{ _("No prescriptions yet.") }}</p>{% endfor %}
+</section>
+{% endblock %}

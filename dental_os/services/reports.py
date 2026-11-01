@@ -47,8 +47,12 @@ def money(db, clinic_id, start, end):
                WHERE clinic_id=? AND voided=0 AND received_on BETWEEN ? AND ? GROUP BY method""",
             (clinic_id, str(start), str(end))):
         by_method[r["method"]] = r["total"]
+    from . import refunds
+    back = refunds.by_method(db, clinic_id, start, end)
+    for m, v in back.items():
+        by_method[m] -= v
     new_patients = db.execute(
         "SELECT COUNT(*) FROM patients WHERE clinic_id=? AND date(created_at) BETWEEN ? AND ?",
         (clinic_id, str(start), str(end))).fetchone()[0]
     return {"charges": charges, "adjustments": adjust, "by_method": by_method,
-            "collected": sum(by_method.values()), "new_patients": new_patients}
+            "collected": sum(by_method.values()), "refunded": sum(back.values()), "new_patients": new_patients}

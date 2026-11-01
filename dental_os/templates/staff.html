@@ -1,55 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Staff{% endblock %}
+{% block title %}{{ _("Staff") }}{% endblock %}
 {% block body %}
-<h1>Staff logins</h1>
+<h1>{{ _("Staff logins") }}</h1>
+<p class="row"><a class="btn" href="{{ url_for('team.groups') }}">{{ _("Permission groups") }}</a><a class="btn" href="{{ url_for('cpd.team') }}">{{ _("Registration and CPD") }}</a></p>
 <div class="grid two">
   <section class="card">
     <div class="tbl-wrap"><table>
-      <tr><th>Name</th><th>Username</th><th>Role</th><th>Two-step</th><th></th></tr>
+      <tr><th>{{ _("Name") }}</th><th>{{ _("Username") }}</th><th>{{ _("Role") }}</th><th>{{ _("Two-step") }}</th><th></th></tr>
       {% for r in rows %}
       <tr><td>{{ r.display_name }}</td><td>{{ r.username }}</td><td>{{ r.role|replace('_', ' ') }}</td>
-        <td>{% if r.totp_enabled %}<span class="pill ok">On</span>{% else %}<span class="pill {{ 'bad' if clinic.require_2fa else 'warn' }}">Off</span>{% endif %}</td>
+        <td>{% if r.totp_enabled %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill {{ 'bad' if clinic.require_2fa else 'warn' }}">{{ _("Off") }}</span>{% endif %}</td>
         <td>
           <form method="post" action="{{ url_for('views.staff_toggle', uid=r.id) }}">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <button class="{{ 'danger' if r.active }}" type="submit">{{ 'Switch off' if r.active else 'Switch on' }}</button>
+            <button class="{{ 'danger' if r.active }}" type="submit">{{ _('Switch off') if r.active else _('Switch on') }}</button>
           </form>
           <form method="post" action="{{ url_for('views.staff_reset_password', uid=r.id) }}" class="inline">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <button type="submit" class="small">Reset password</button>
+            <button type="submit" class="small">{{ _("Reset password") }}</button>
           </form>
           {% if (r.totp_enabled or r.totp_secret) and r.id != user.id %}
           <form method="post" action="{{ url_for('views.staff_reset_2fa', uid=r.id) }}" class="inline">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <button type="submit" class="small">Reset two-step</button>
+            <button type="submit" class="small">{{ _("Reset two-step") }}</button>
           </form>{% endif %}</td></tr>
       {% endfor %}
     </table></div>
   </section>
   <section class="card">
-    <h2>Two-step login</h2>
-    <p class="muted small">A code from a phone app, as well as the password. It protects patient records if a password leaks. {{ rows|selectattr('totp_enabled')|list|length }} of {{ rows|length }} logins use it.</p>
+    <h2>{{ _("Two-step login") }}</h2>
+    <p class="muted small">{{ _("A code from a phone app, as well as the password. It protects patient records if a password leaks.") }} {{ _("%(n)s of %(total)s logins use it.", n=rows|selectattr('totp_enabled')|list|length, total=rows|length) }}</p>
     <form method="post" action="{{ url_for('views.staff_require_2fa') }}">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      {% if clinic.require_2fa %}<input type="hidden" name="on" value="0"><p><span class="pill ok">Required for everyone</span></p><button type="submit">Make it optional</button>
-      {% else %}<input type="hidden" name="on" value="1"><p><span class="pill warn">Optional</span></p><button class="primary" type="submit">Require it for everyone</button>{% endif %}
+      {% if clinic.require_2fa %}<input type="hidden" name="on" value="0"><p><span class="pill ok">{{ _("Required for everyone") }}</span></p><button type="submit">{{ _("Make it optional") }}</button>
+      {% else %}<input type="hidden" name="on" value="1"><p><span class="pill warn">{{ _("Optional") }}</span></p><button class="primary" type="submit">{{ _("Require it for everyone") }}</button>{% endif %}
     </form>
-    <p class="small"><a href="{{ url_for('auth.security') }}">My security</a></p>
+    <p class="small"><a href="{{ url_for('auth.security') }}">{{ _("My security") }}</a></p>
   </section>
   <section class="card">
-    <h2>Add someone</h2>
+    <h2>{{ _("Add someone") }}</h2>
     <form method="post">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      <label for="display_name">Full name</label><input id="display_name" name="display_name" required>
-      <label for="username">Username</label><input id="username" name="username" autocomplete="off" required>
-      <label for="role">Role</label>
+      <label for="display_name">{{ _("Full name") }}</label><input id="display_name" name="display_name" required>
+      <label for="username">{{ _("Username") }}</label><input id="username" name="username" autocomplete="off" required>
+      <label for="role">{{ _("Role") }}</label>
       <select id="role" name="role">
-        <option value="front_desk">Front desk</option><option value="dentist">Dentist</option>
-        <option value="assistant">Assistant</option><option value="manager">Manager</option>
+        <option value="front_desk">{{ _("Front desk") }}</option><option value="dentist">{{ _("Dentist") }}</option>
+        <option value="assistant">{{ _("Assistant") }}</option><option value="manager">{{ _("Manager") }}</option>
       </select>
-      <label for="password">Starting password (10 characters or more, not a common one)</label>
+      <label for="password">{{ _("Starting password (10 characters or more, not a common one)") }}</label>
       <input id="password" name="password" type="password" autocomplete="new-password" minlength="10" required>
-      <p><button class="primary" type="submit">Create login</button></p>
+      <p><button class="primary" type="submit">{{ _("Create login") }}</button></p>
     </form>
   </section>
 </div>

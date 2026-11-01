@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% block title %}{{ c.title }}{% endblock %}
 {% block body %}
-<div class="row spread no-print"><h1>{{ c.title }}</h1><button type="button" data-print>Print</button></div>
+<div class="row spread no-print"><h1>{{ c.title }}</h1><button type="button" data-print>{{ _("Print") }}</button></div>
 <section class="card receipt">
   <p class="muted">{{ clinic.name }}</p>
   <h2>{{ c.title }}</h2>
   <p class="note-body">{{ c.body }}</p>
   <dl class="facts">
     <dt>{{ _d("Patient") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd>
-    <dt>{{ _d('Signed by') }}</dt><dd>{{ c.signer_name }} ({{ _d({'self': 'the patient', 'parent': 'parent', 'guardian': 'legal guardian', 'other': 'authorised person'}[c.signer_relation]) }})</dd>
+    <dt>{{ _d('Signed by') }}</dt><dd>{{ c.signer_name }} ({{ {'self': _d('the patient'), 'parent': _d('parent'), 'guardian': _d('legal guardian'), 'other': _d('authorised person')}[c.signer_relation] }})</dd>
     <dt>{{ _d('How') }}</dt><dd>{{ _d('Typed on screen') if c.method == 'typed' else _d('On paper') }}</dd>
     <dt>{{ _d("When") }}</dt><dd>{{ c.signed_at[:10]|date }} {{ _d("at") }} {{ c.signed_at[11:16] }}</dd>
     <dt>{{ _d("Recorded by") }}</dt><dd>{{ c.recorded_name or '' }}</dd>
     {% if c.status == 'withdrawn' %}<dt>{{ _d("Withdrawn") }}</dt><dd>{{ c.withdrawn_on|date }}: {{ c.withdrawn_reason }}</dd>{% endif %}
   </dl>
 </section>
-<p class="no-print"><a href="{{ url_for('record.consents_view', pid=p.id) }}">Back to consents</a></p>
+<p class="no-print"><a href="{{ url_for('record.consents_view', pid=p.id) }}">{{ _("Back to consents") }}</a></p>
 {% endblock %}

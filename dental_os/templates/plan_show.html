@@ -4,128 +4,127 @@
 {% block body %}
 <div class="row spread">
   <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ plan.title }}</h1>
-  <div class="row"><span class="pill {{ 'ok' if plan.status == 'accepted' else 'warn' if plan.status == 'presented' else 'bad' if plan.status == 'declined' else '' }}">{{ statuses[plan.status] }}</span>
-    {% if rows %}<a class="btn" href="{{ url_for('commercial.plan_quote', plan_id=plan.id) }}" target="_blank" rel="noopener">Quote to print</a>{% endif %}</div>
+  <div class="row"><span class="pill {{ 'ok' if plan.status == 'accepted' else 'warn' if plan.status == 'presented' else 'bad' if plan.status == 'declined' else '' }}">{{ _(statuses[plan.status]) }}</span>
+    {% if rows %}<a class="btn" href="{{ url_for('commercial.plan_quote', plan_id=plan.id) }}" target="_blank" rel="noopener">{{ _("Quote to print") }}</a>{% endif %}</div>
 </div>
 {{ tabs(p, 'plans') }}
 
 {% for n, lines, sub in phases %}
-<section class="card"><div class="row spread"><h2>Phase {{ n }}</h2><strong>{{ sub|money }}</strong></div>
+<section class="card"><div class="row spread"><h2>{{ _("Phase") }} {{ n }}</h2><strong>{{ sub|money }}</strong></div>
   <div class="tbl-wrap"><table>
-    <tr><th>Treatment</th><th>Tooth</th><th class="nw">Fee</th>{% if plan.status == 'accepted' %}<th>Progress</th>{% else %}<th></th>{% endif %}</tr>
+    <tr><th>{{ _("Treatment") }}</th><th>{{ _("Tooth") }}</th><th class="nw">{{ _("Fee") }}</th>{% if plan.status == 'accepted' %}<th>{{ _("Progress") }}</th>{% else %}<th></th>{% endif %}</tr>
     {% for r in lines %}
     <tr><td>{{ r.code_name }}{% if r.surfaces %} ({{ r.surfaces }}){% endif %}{% if r.note %}<br><span class="muted small">{{ r.note }}</span>{% endif %}</td>
-      <td>{{ r.tooth or '' }}</td><td class="nw">{{ r.fee_p|money }}</td>
+      <td>{{ r.tooth|tooth }}</td><td class="nw">{{ r.fee_p|money }}</td>
       <td>
       {% if plan.status == 'accepted' %}
-        {% if r.work_status == 'done' %}<span class="pill ok">Done</span>{% elif r.work_status in ('cancelled', 'voided') %}<span class="pill bad">Dropped</span>{% else %}<span class="pill">To do</span>{% endif %}
+        {% if r.work_status == 'done' %}<span class="pill ok">{{ _("Done") }}</span>{% elif r.work_status in ('cancelled', 'voided') %}<span class="pill bad">{{ _("Dropped") }}</span>{% else %}<span class="pill">{{ _("To do") }}</span>{% endif %}
       {% else %}
         <form method="post" action="{{ url_for('commercial.plan_item_update', item_id=r.id) }}" class="row">
           <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-          <input name="fee" value="{{ r.fee_p|plain }}" inputmode="decimal" aria-label="Fee" style="width:90px">
-          <input name="phase" type="number" min="1" max="9" value="{{ r.phase }}" aria-label="Phase" style="width:60px">
-          <button type="submit" class="small">Save</button>
+          <input name="fee" value="{{ r.fee_p|plain }}" inputmode="decimal" aria-label="{{ _('Fee') }}" style="width:90px">
+          <input name="phase" type="number" min="1" max="9" value="{{ r.phase }}" aria-label="{{ _('Phase') }}" style="width:60px">
+          <button type="submit" class="small">{{ _("Save") }}</button>
         </form>
-        <form method="post" action="{{ url_for('commercial.plan_item_remove', item_id=r.id) }}" style="margin-top:4px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">Remove</button></form>
+        <form method="post" action="{{ url_for('commercial.plan_item_remove', item_id=r.id) }}" style="margin-top:4px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Remove") }}</button></form>
       {% endif %}
       </td></tr>
     {% endfor %}
   </table></div>
 </section>
-{% else %}<p class="card muted">No lines yet. Add the first one below.</p>{% endfor %}
+{% else %}<p class="card muted">{{ _("No lines yet. Add the first one below.") }}</p>{% endfor %}
 
 <section class="card">
   <div class="stats" style="grid-template-columns: repeat(3, 1fr)">
-    <div class="card"><div class="stat">{{ total|money }}</div><div class="muted">plan total</div></div>
-    <div class="card"><div class="stat">{{ deposit|money }}</div><div class="muted">deposit paid</div></div>
-    <div class="card"><div class="stat">{% if plan.status == 'accepted' %}{{ progress.done }} of {{ progress.lines }}{% else %}{{ rows|length }}{% endif %}</div><div class="muted">{{ 'lines done' if plan.status == 'accepted' else 'lines' }}</div></div>
+    <div class="card"><div class="stat">{{ total|money }}</div><div class="muted">{{ _("plan total") }}</div></div>
+    <div class="card"><div class="stat">{{ deposit|money }}</div><div class="muted">{{ _("deposit paid") }}</div></div>
+    <div class="card"><div class="stat">{% if plan.status == 'accepted' %}{{ _("%(done)s of %(total)s", done=progress.done, total=progress.lines) }}{% else %}{{ rows|length }}{% endif %}</div><div class="muted">{{ _('lines done') if plan.status == 'accepted' else _('lines') }}</div></div>
   </div>
-  <p class="muted small">Fees are estimates. They may change if the dentist finds more is needed once treatment starts. Each line becomes real planned work only when the plan is accepted.</p>
+  <p class="muted small">{{ _("Fees are estimates. They may change if the dentist finds more is needed once treatment starts. Each line becomes real planned work only when the plan is accepted.") }}</p>
 </section>
 
 {% if plan.status != 'accepted' %}
-<section class="card"><h2>Add a line</h2>
-  {% if not codes %}<p class="muted">The procedure list is empty. A manager can add the starter list under Catalogue.</p>{% else %}
+<section class="card"><h2>{{ _("Add a line") }}</h2>
+  {% if not codes %}<p class="muted">{{ _("The procedure list is empty. A manager can add the starter list under Catalogue.") }}</p>{% else %}
   <form method="post" action="{{ url_for('commercial.plan_item_add', plan_id=plan.id) }}">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
     <div class="grid three">
-      <div><label for="code_id">Treatment</label><select id="code_id" name="code_id" required>
+      <div><label for="code_id">{{ _("Treatment") }}</label><select id="code_id" name="code_id" required>
         {% for c in codes %}<option value="{{ c.id }}">{{ c.name }}{% if c.fee_p %} ({{ c.fee_p|money }}){% endif %}</option>{% endfor %}</select></div>
-      <div><label for="tooth">Tooth (FDI)</label><input id="tooth" name="tooth" inputmode="numeric" maxlength="2"></div>
-      <div><label for="phase">Phase</label><input id="phase" name="phase" type="number" min="1" max="9" value="1"></div>
+      <div><label for="tooth">{{ _("Tooth") }}</label><input id="tooth" name="tooth" maxlength="4" placeholder="{{ _(tooth_hint()) }}"></div>
+      <div><label for="phase">{{ _("Phase") }}</label><input id="phase" name="phase" type="number" min="1" max="9" value="1"></div>
     </div>
     <div class="row" style="margin-top:8px">{% for s in surfaces %}<label class="check" style="margin:0"><input type="checkbox" name="surfaces" value="{{ s }}"><span>{{ s }}</span></label>{% endfor %}</div>
     <div class="grid two">
-      <div><label for="fee">Fee (leave empty to use the list price)</label><input id="fee" name="fee" inputmode="decimal"></div>
-      <div><label for="note">Note</label><input id="note" name="note" maxlength="200"></div>
+      <div><label for="fee">{{ _("Fee (leave empty to use the list price)") }}</label><input id="fee" name="fee" inputmode="decimal"></div>
+      <div><label for="note">{{ _("Note") }}</label><input id="note" name="note" maxlength="200"></div>
     </div>
-    <p><button class="primary" type="submit">Add line</button></p>
+    <p><button class="primary" type="submit">{{ _("Add line") }}</button></p>
   </form>
   {% endif %}
 </section>
 {% endif %}
 
 {% if plan.status in ('draft', 'presented') and rows %}
-<section class="card"><h2>{{ 'Present again' if plan.status == 'presented' else 'Present to the patient' }}</h2>
+<section class="card"><h2>{{ _('Present again') if plan.status == 'presented' else _('Present to the patient') }}</h2>
   <form method="post" action="{{ url_for('commercial.plan_present', plan_id=plan.id) }}" class="row">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-    <label for="owner" style="margin:0">Who follows it up</label>
+    <label for="owner" style="margin:0">{{ _("Who follows it up") }}</label>
     <select id="owner" name="owner_id" style="width:auto">{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if u.id == (plan.owner_id or user.id) }}>{{ u.display_name }}</option>{% endfor %}</select>
-    <label for="fud" style="margin:0">Follow up in</label>
-    <input id="fud" name="follow_up_days" type="number" min="1" max="90" value="7" style="width:70px"> days
-    <button class="primary" type="submit">Mark as presented</button>
+    <label for="fud" style="margin:0">{{ _("Follow up in") }}</label>
+    <input id="fud" name="follow_up_days" type="number" min="1" max="90" value="7" style="width:70px"> {{ _("days") }}
+    <button class="primary" type="submit">{{ _("Mark as presented") }}</button>
   </form>
 </section>
 {% endif %}
 
 {% if plan.status == 'presented' %}
-<section class="card"><h2>Chased the patient?</h2>
-  <p class="muted small">Next follow-up is {{ plan.follow_up_on|date if plan.follow_up_on else 'not set' }}{% if plan.owner_id %}, owner: {{ (users|selectattr('id', 'equalto', plan.owner_id)|list|first).display_name if (users|selectattr('id', 'equalto', plan.owner_id)|list) else '' }}{% endif %}.</p>
+<section class="card"><h2>{{ _("Chased the patient?") }}</h2>
+  <p class="muted small">{{ _("Next follow-up is %(date)s", date=plan.follow_up_on|date if plan.follow_up_on else _('not set')) }}{% if plan.owner_id %}{{ _(", owner: %(name)s", name=(users|selectattr('id', 'equalto', plan.owner_id)|list|first).display_name if (users|selectattr('id', 'equalto', plan.owner_id)|list) else '') }}{% endif %}.</p>
   <form method="post" action="{{ url_for('commercial.plan_followup', plan_id=plan.id) }}" class="row">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-    <input name="note" placeholder="Rang, no answer" aria-label="What happened" maxlength="300" required style="flex:1; min-width:200px">
-    <label for="nid" style="margin:0">Again in</label><input id="nid" name="next_in_days" type="number" min="1" max="180" value="7" style="width:70px"> days
-    <button type="submit">Note it</button>
+    <input name="note" placeholder="{{ _('Rang, no answer') }}" aria-label="{{ _('What happened') }}" maxlength="300" required style="flex:1; min-width:200px">
+    <label for="nid" style="margin:0">{{ _("Again in") }}</label><input id="nid" name="next_in_days" type="number" min="1" max="180" value="7" style="width:70px"> {{ _("days") }}
+    <button type="submit">{{ _("Note it") }}</button>
   </form>
 </section>
 {% endif %}
 
 {% if plan.status in ('draft', 'presented') and rows %}
-<section class="card"><h2>The patient says yes</h2>
+<section class="card"><h2>{{ _("The patient says yes") }}</h2>
   <form method="post" action="{{ url_for('commercial.plan_accept', plan_id=plan.id) }}">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
     <div class="grid two">
-      <div><label for="signer_name">Full name of the person agreeing</label><input id="signer_name" name="signer_name" maxlength="120" required></div>
-      <div><label for="relation">Who is agreeing</label><select id="relation" name="relation"><option value="self">The patient</option><option value="parent">Parent</option><option value="guardian">Legal guardian</option><option value="other">Other authorised person</option></select></div>
+      <div><label for="signer_name">{{ _("Full name of the person agreeing") }}</label><input id="signer_name" name="signer_name" maxlength="120" required></div>
+      <div><label for="relation">{{ _("Who is agreeing") }}</label><select id="relation" name="relation"><option value="self">{{ _("The patient") }}</option><option value="parent">{{ _("Parent") }}</option><option value="guardian">{{ _("Legal guardian") }}</option><option value="other">{{ _("Other authorised person") }}</option></select></div>
     </div>
-    <label for="method">How</label><select id="method" name="method"><option value="typed">Typed on this screen, with the patient present</option><option value="paper">Signed on paper (scan it under Files)</option></select>
+    <label for="method">{{ _("How") }}</label><select id="method" name="method"><option value="typed">{{ _("Typed on this screen, with the patient present") }}</option><option value="paper">{{ _("Signed on paper (scan it under Files)") }}</option></select>
     <div class="grid three">
-      <div><label for="deposit">Deposit taken now (optional)</label><input id="deposit" name="deposit" inputmode="decimal"></div>
-      <div><label for="dm">Paid by</label><select id="dm" name="deposit_method">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
-      <div><label for="dr">Reference (not for cash)</label><input id="dr" name="deposit_reference" maxlength="80"></div>
+      <div><label for="deposit">{{ _("Deposit taken now (optional)") }}</label><input id="deposit" name="deposit" inputmode="decimal"></div>
+      <div><label for="dm">{{ _("Paid by") }}</label><select id="dm" name="deposit_method">{% for k, v in methods.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div><label for="dr">{{ _("Reference (not for cash)") }}</label><input id="dr" name="deposit_reference" maxlength="80"></div>
     </div>
-    <label class="check"><input type="checkbox" name="agreed" value="1" required><span>The person above has seen the costs, had the chance to ask questions, and agreed to this plan.</span></label>
-    <p><button class="primary" type="submit">Accept plan</button></p>
+    <label class="check"><input type="checkbox" name="agreed" value="1" required><span>{{ _("The person above has seen the costs, had the chance to ask questions, and agreed to this plan.") }}</span></label>
+    <p><button class="primary" type="submit">{{ _("Accept plan") }}</button></p>
   </form>
-  <details><summary>Patient says no</summary>
+  <details><summary>{{ _("Patient says no") }}</summary>
     <form method="post" action="{{ url_for('commercial.plan_decline', plan_id=plan.id) }}" class="row" style="margin-top:8px">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      <input name="reason" placeholder="Why: cost, wants to wait, going elsewhere" aria-label="Reason" maxlength="200" required style="flex:1; min-width:220px">
-      <button class="danger" type="submit">Mark as declined</button></form></details>
+      <input name="reason" placeholder="{{ _('Why: cost, wants to wait, going elsewhere') }}" aria-label="{{ _('Reason') }}" maxlength="200" required style="flex:1; min-width:220px">
+      <button class="danger" type="submit">{{ _("Mark as declined") }}</button></form></details>
 </section>
 {% endif %}
 
 {% if plan.status == 'declined' %}
-<section class="card"><p>Declined on {{ plan.decided_on|date }}: {{ plan.decline_reason }}</p>
-  <form method="post" action="{{ url_for('commercial.plan_reopen', plan_id=plan.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">Reopen this plan</button></form></section>
+<section class="card"><p>{{ _("Declined on") }} {{ plan.decided_on|date }}: {{ plan.decline_reason }}</p>
+  <form method="post" action="{{ url_for('commercial.plan_reopen', plan_id=plan.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Reopen this plan") }}</button></form></section>
 {% endif %}
 
 {% if plan.status == 'accepted' %}
-<section class="card"><p>Accepted on {{ plan.decided_on|date }} by {{ plan.signer_name }} ({{ {'self': 'the patient', 'parent': 'parent', 'guardian': 'legal guardian', 'other': 'authorised person'}[plan.signer_relation] }}).
-  The work is on the <a href="{{ url_for('clinical.treatment', pid=p.id) }}">treatment list</a>. Want to spread the cost? <a href="{{ url_for('commercial.patient_instalments', pid=p.id) }}">Set up instalments</a>.</p></section>
+<section class="card"><p>{{ _("Accepted on %(date)s by %(name)s (%(who)s). The work is on the treatment list. Want to spread the cost?", date=plan.decided_on|date, name=plan.signer_name, who={'self': _('the patient'), 'parent': _('parent'), 'guardian': _('legal guardian'), 'other': _('authorised person')}[plan.signer_relation]) }} <a href="{{ url_for('clinical.treatment', pid=p.id) }}">{{ _("Open the treatment list") }}</a>. <a href="{{ url_for('commercial.patient_instalments', pid=p.id) }}">{{ _("Set up instalments") }}</a>.</p></section>
 {% endif %}
 
-<section class="card"><h2>History</h2>
-  {% for e in events %}<p class="small"><span class="muted">{{ e.created_at[:16] }} UTC, {{ e.user_name or '' }}</span>: {{ e.kind }}{% if e.note %}, {{ e.note }}{% endif %}</p>{% endfor %}
+<section class="card"><h2>{{ _("History") }}</h2>
+  {% for e in events %}<p class="small"><span class="muted">{{ e.created_at[:16] }} {{ _("UTC,") }} {{ e.user_name or '' }}</span>: {{ e.kind }}{% if e.note %}, {{ e.note }}{% endif %}</p>{% endfor %}
 </section>
 {% endblock %}

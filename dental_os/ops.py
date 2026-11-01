@@ -7,7 +7,7 @@ from flask import Blueprint, Response, abort, current_app, flash, g, redirect, r
 
 from .auth import clinical_required, manager_required
 from .db import get_db
-from .services import apikeys, kpi, labs as LAB, orgs, scheduling, stock as STK, webhooks as WH
+from .services import dataio, apikeys, kpi, labs as LAB, orgs, scheduling, stock as STK, webhooks as WH
 from .services import money
 from .services.timeutil import parse_date
 from .views import _patient_or_404, _today
@@ -54,7 +54,7 @@ def kpi_csv():
     today = _today()
     start, end = _range(today)
     buf = io.StringIO()
-    csv.writer(buf).writerows([[("'" + str(c)) if isinstance(c, str) and c[:1] in "=+-@" else c for c in row]
+    csv.writer(buf).writerows([[dataio._safe_cell(c) for c in row]
                                for row in kpi.csv_rows(get_db(), g.clinic, start, end)])
     return Response(buf.getvalue(), mimetype="text/csv", headers={"Content-Disposition": f'attachment; filename="kpi-{start}-to-{end}.csv"'})
 

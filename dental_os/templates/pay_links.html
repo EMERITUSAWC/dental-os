@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Pay links") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Pay links") }}</h1>
+<p class="row"><a class="btn {{ 'primary' if not status }}" href="{{ url_for('payments.links_list') }}">{{ _("All") }}</a>{% for k, v in statuses.items() %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('payments.links_list', status=k) }}">{{ _(v) }}</a>{% endfor %}</p>
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Made") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Amount") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for l in rows %}<tr><td><a href="{{ url_for('payments.link_show', ref=l.ref) }}">{{ l.created_at[:10]|date }}</a></td><td>{{ l.first_name }} {{ l.last_name }}</td><td class="nw">{{ l.amount_p|money }}</td>
+    <td><span class="pill {{ 'ok' if l.status == 'paid' else ('bad' if l.status == 'failed' else '') }}">{{ _(statuses[l.status]) }}</span></td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("No pay links yet.") }}</p>{% endif %}</section>
+{% endblock %}

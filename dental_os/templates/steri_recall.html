@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Recall") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Recall") }}: {{ d.r.steriliser }}</h1>
+{{ tabs('') }}
+<section class="card">
+  <p>{{ _("Opened") }} {{ d.r.opened_at|date }}. {% if d.r.since %}{{ _("Covers packs made since the last passing spore test on") }} {{ d.r.since|date }}.{% else %}{{ _("There was no earlier passing spore test, so it covers every pack made on this steriliser.") }}{% endif %}</p>
+  {% if d.r.closed_at %}<p><span class="pill ok">{{ _("Closed") }}</span> {{ d.r.closed_at|date }}: {{ d.r.note }}</p>{% endif %}
+  <p class="muted small">{{ _("Packs still on the shelf have been pulled and cannot be used. Send them back for cleaning. A dentist should review the patients below. Implants come first.") }}</p>
+</section>
+<section class="card"><h2>{{ _("Already used on patients") }}</h2>
+  {% if d.used %}<div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("Pack") }}</th><th>{{ _("Used") }}</th><th>{{ _("Implants") }}</th></tr>
+  {% for k in d.used %}<tr><td><a href="{{ url_for('views.patient_view', pid=k.used_on) }}">{{ k.first_name }} {{ k.last_name }}</a></td><td>{{ k.code }}: {{ k.contents }}</td><td class="nw">{{ k.used_at|date }}</td><td>{% if k.implants %}<span class="pill bad">{{ _("Yes") }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
+  {% else %}<p class="muted">{{ _("None.") }}</p>{% endif %}</section>
+<section class="card"><h2>{{ _("Pulled from the shelf") }}</h2>
+  {% for k in d.pulled %}<p><a href="{{ url_for('steri.pack_find', code=k.code) }}">{{ k.code }}</a>: {{ k.contents }} ({{ _(pack_status[k.status]) }})</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% if not d.r.closed_at and user.role == 'manager' %}<form method="post" action="{{ url_for('steri.recall_close', rid=d.r.id) }}" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="note">{{ _("What was done") }}</label><input id="note" name="note" maxlength="1000" required>
+  <p><button class="primary" type="submit">{{ _("Close the recall") }}</button></p></form>{% endif %}
+{% endblock %}

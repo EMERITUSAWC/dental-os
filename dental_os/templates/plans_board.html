@@ -1,37 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Plans to follow up{% endblock %}
+{% block title %}{{ _("Plans to follow up") }}{% endblock %}
 {% block body %}
-<h1>Plans to follow up</h1>
+<h1>{{ _("Plans to follow up") }}</h1>
 <div class="stats" style="grid-template-columns: repeat(3, 1fr)">
-  <div class="card"><div class="stat">{{ waiting|length }}</div><div class="muted">plans waiting for a decision</div></div>
-  <div class="card"><div class="stat">{{ value|money }}</div><div class="muted">worth of treatment offered</div></div>
-  <div class="card"><div class="stat">{{ (overdue|length) + (fees|length) }}</div><div class="muted">payments to collect</div></div>
+  <div class="card"><div class="stat">{{ waiting|length }}</div><div class="muted">{{ _("plans waiting for a decision") }}</div></div>
+  <div class="card"><div class="stat">{{ value|money }}</div><div class="muted">{{ _("worth of treatment offered") }}</div></div>
+  <div class="card"><div class="stat">{{ (overdue|length) + (fees|length) }}</div><div class="muted">{{ _("payments to collect") }}</div></div>
 </div>
-<section class="card"><h2>Waiting for a decision</h2>
+<section class="card"><h2>{{ _("Waiting for a decision") }}</h2>
   <div class="tbl-wrap"><table>
-    <tr><th>Patient</th><th>Plan</th><th>Worth</th><th>Offered</th><th>Follow up</th><th>Who</th></tr>
+    <tr><th>{{ _("Patient") }}</th><th>{{ _("Plan") }}</th><th>{{ _("Worth") }}</th><th>{{ _("Offered") }}</th><th>{{ _("Follow up") }}</th><th>{{ _("Who") }}</th></tr>
     {% for r in waiting %}{% set pl = r.plan %}
     <tr><td><a href="{{ url_for('views.patient_view', pid=pl.patient_id) }}">{{ pl.first_name }} {{ pl.last_name }}</a><br><span class="muted small">{{ pl.phone|phone }}</span></td>
       <td><a href="{{ url_for('commercial.plan_show', plan_id=pl.id) }}">{{ pl.title }}</a></td>
-      <td class="nw">{{ r.value|money }}</td><td>{{ r.days }} days ago</td>
-      <td class="nw">{% if pl.follow_up_on %}{{ pl.follow_up_on|date }}{% if r.due %} <span class="pill warn">Due</span>{% endif %}{% endif %}</td>
+      <td class="nw">{{ r.value|money }}</td><td>{{ _("%(n)s days ago", n=r.days) }}</td>
+      <td class="nw">{% if pl.follow_up_on %}{{ pl.follow_up_on|date }}{% if r.due %} <span class="pill warn">{{ _("Due") }}</span>{% endif %}{% endif %}</td>
       <td>{{ pl.owner_name or '' }}</td></tr>
-    {% else %}<tr><td colspan="6" class="muted">Nothing waiting. When you present a plan to a patient it appears here until they decide.</td></tr>{% endfor %}
+    {% else %}<tr><td colspan="6" class="muted">{{ _("Nothing waiting. When you present a plan to a patient it appears here until they decide.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
-<section class="card"><h2>Instalments overdue</h2>
+<section class="card"><h2>{{ _("Instalments overdue") }}</h2>
   <div class="tbl-wrap"><table>
     {% for r in overdue %}<tr><td><a href="{{ url_for('commercial.patient_instalments', pid=r.row.patient_id) }}">{{ r.row.first_name }} {{ r.row.last_name }}</a></td>
-      <td class="nw">{{ r.row.amount_p|money }}</td><td>due {{ r.row.due_on|date }}, {{ r.days_late }} days late</td><td>{{ r.row.phone|phone }}</td></tr>
-    {% else %}<tr><td class="muted">None overdue.</td></tr>{% endfor %}
+      <td class="nw">{{ r.row.amount_p|money }}</td><td>{{ _("due %(date)s, %(n)s days late", date=r.row.due_on|date, n=r.days_late) }}</td><td>{{ r.row.phone|phone }}</td></tr>
+    {% else %}<tr><td class="muted">{{ _("None overdue.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
-<section class="card"><h2>Membership fees to collect</h2>
+<section class="card"><h2>{{ _("Membership fees to collect") }}</h2>
   <div class="tbl-wrap"><table>
     {% for r in fees %}<tr><td><a href="{{ url_for('commercial.patient_membership', pid=r.row.patient_id) }}">{{ r.row.first_name }} {{ r.row.last_name }}</a></td>
       <td>{{ r.row.plan_name }}</td><td class="nw">{{ r.row.amount_p|money }}</td>
-      <td>due {{ r.row.due_on|date }}{% if r.days_late %}, {{ r.days_late }} days late{% endif %}{% if r.row.status == 'failed' %} <span class="pill bad">Failed</span>{% endif %}</td></tr>
-    {% else %}<tr><td class="muted">None to collect.</td></tr>{% endfor %}
+      <td>{{ _("due %(date)s", date=r.row.due_on|date) }}{% if r.days_late %}{{ _(", %(n)s days late", n=r.days_late) }}{% endif %}{% if r.row.status == 'failed' %} <span class="pill bad">{{ _("Failed") }}</span>{% endif %}</td></tr>
+    {% else %}<tr><td class="muted">{{ _("None to collect.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
 {% endblock %}

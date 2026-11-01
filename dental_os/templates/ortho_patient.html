@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% from "_ortho_case_fields.html" import fields with context %}
+{% block title %}{{ p.first_name }} {{ p.last_name }}: {{ _("Ortho") }}{% endblock %}
+{% block body %}
+<h1>{{ p.first_name }} {{ p.last_name }}</h1>
+{{ tabs(p, 'ortho') }}
+{% if not cases or cases[0].c.status in ('finished', 'stopped') %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="open">
+  <h2>{{ _("Open an ortho case") }}</h2>
+  <label for="provider_id">{{ _("Orthodontist") }}</label><select id="provider_id" name="provider_id">{% for d in providers %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+  {{ fields(None, appliances, arches, molar, crowding) }}
+  <p><button class="primary" type="submit">{{ _("Open case") }}</button></p></form>{% endif %}
+{% for x in cases %}{% set c = x.c %}
+<section class="card">
+  <div class="row spread"><h2>{{ _(appliances[c.appliance]) }}, {{ _(arches[c.arches]).lower() }}</h2><span class="pill {{ 'ok' if c.status == 'active' else '' }}">{{ _(statuses[c.status]) }}</span></div>
+  <p>{% if c.started_on %}{{ _("Started") }} {{ c.started_on|date }}. {{ _("Month") }} {{ x.months }} {{ _("of about") }} {{ c.est_months }}.{% else %}{{ _("Expected length") }}: {{ c.est_months }} {{ _("months") }}.{% endif %}
+    {% if c.molar_class %}{{ _(molar[c.molar_class]) }}.{% endif %}{% if c.overjet_tenths is not none %} {{ _("Overjet") }} {{ c.overjet_tenths / 10 }} mm.{% endif %}{% if c.overbite_tenths is not none %} {{ _("Overbite") }} {{ c.overbite_tenths / 10 }} mm.{% endif %}{% if c.crowding %} {{ _("Crowding") }}: {{ _(crowding[c.crowding]).lower() }}.{% endif %}
+    {% if c.debonded_on %}{{ _("Braces off") }} {{ c.debonded_on|date }}: {{ c.retention }}.{% endif %}{% if x.next_due %} {{ _("Next visit due") }} {{ x.next_due.isoformat()|date }}.{% endif %}</p>
+  {% if c.notes %}<p class="small">{{ c.notes }}</p>{% endif %}
+  {% if c.status == 'planned' %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="start"><input type="hidden" name="case_id" value="{{ c.id }}">
+    <label for="started_on{{ c.id }}">{{ _("Treatment started on") }}</label><input id="started_on{{ c.id }}" type="date" name="started_on" value="{{ today }}"><button class="primary" type="submit">{{ _("Start treatment") }}</button></form>{% endif %}
+  {% if c.status in ('active', 'retention') %}
+  <h3>{{ _("Ortho chart") }}</h3>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="visit"><input type="hidden" name="case_id" value="{{ c.id }}">
+    <div class="grid three">
+      <div><label for="vd{{ c.id }}">{{ _("Date") }}</label><input id="vd{{ c.id }}" type="date" name="visit_on" value="{{ today }}"></div>
+      <div><label for="uw{{ c.id }}">{{ _("Upper wire") }}</label><input id="uw{{ c.id }}" name="upper_wire" placeholder="0.016 NiTi" maxlength="80"></div>
+      <div><label for="lw{{ c.id }}">{{ _("Lower wire") }}</label><input id="lw{{ c.id }}" name="lower_wire" maxlength="80"></div>
+      <div><label for="el{{ c.id }}">{{ _("Elastics") }}</label><input id="el{{ c.id }}" name="elastics" maxlength="80"></div>
+      <div><label for="al{{ c.id }}">{{ _("Aligner number") }}</label><input id="al{{ c.id }}" name="aligner_no" maxlength="80"></div>
+      <div><label for="rp{{ c.id }}">{{ _("Breakages and repairs") }}</label><input id="rp{{ c.id }}" name="repairs" maxlength="80"></div>
+      <div><label for="nw{{ c.id }}">{{ _("Come back in (weeks)") }}</label><input id="nw{{ c.id }}" name="next_weeks" type="number" min="0" max="52" value="6"></div>
+      {% if visits_today %}<div><label for="ap{{ c.id }}">{{ _("Visit") }}</label><select id="ap{{ c.id }}" name="appointment_id"><option value="">{{ _("No visit") }}</option>{% for v in visits_today %}<option value="{{ v.id }}" selected>{{ v.start_at|time }}</option>{% endfor %}</select></div>{% endif %}
+    </div>
+    <label for="vn{{ c.id }}">{{ _("Notes") }}</label><input id="vn{{ c.id }}" name="notes" maxlength="1000">
+    <p><button class="primary" type="submit">{{ _("Add to the ortho chart") }}</button></p></form>
+  {% endif %}
+  {% if x.visits %}<div class="tbl-wrap"><table><tr><th>{{ _("Date") }}</th><th>{{ _("Upper wire") }}</th><th>{{ _("Lower wire") }}</th><th>{{ _("Elastics") }}</th><th>{{ _("Aligner") }}</th><th>{{ _("Repairs") }}</th><th>{{ _("Notes") }}</th><th>{{ _("Next") }}</th></tr>
+    {% for v in x.visits %}<tr><td class="nw">{{ v.visit_on|date }}</td><td>{{ v.upper_wire or '' }}</td><td>{{ v.lower_wire or '' }}</td><td>{{ v.elastics or '' }}</td><td>{{ v.aligner_no or '' }}</td><td>{{ v.repairs or '' }}</td><td>{{ v.notes or '' }} <span class="muted small">{{ v.by_name or '' }}</span></td><td>{% if v.next_weeks %}{{ v.next_weeks }} {{ _("weeks") }}{% endif %}</td></tr>{% endfor %}</table></div>{% endif %}
+  <h3>{{ _("Contract") }}</h3>
+  {% if x.contract and x.contract.status != 'replaced' %}
+    <p>{{ _("Total") }} {{ x.contract.total_p|money }}{% if x.contract.deposit_p %}, {{ _("deposit") }} {{ x.contract.deposit_p|money }}{% endif %}{% if x.contract.months %}, {{ _("then") }} {{ x.contract.months }} {{ _("monthly amounts of") }} {{ x.contract.monthly_p|money }}{% endif %}.
+      <span class="pill {{ 'ok' if x.contract.status == 'active' else '' }}">{{ {'active': _('Active'), 'finished': _('Fully charged'), 'cancelled': _('Stopped')}[x.contract.status] }}</span></p>
+    <details><summary class="small">{{ _("Schedule") }}</summary><div class="tbl-wrap"><table><tr><th>{{ _("Due") }}</th><th>{{ _("Amount") }}</th><th>{{ _("On the account") }}</th></tr>
+      {% for ch in x.charges %}<tr><td class="nw">{{ ch.due_on|date }}</td><td>{{ ch.amount_p|money }}</td><td>{% if ch.procedure_id %}{{ ch.posted_on|date }}{% elif ch.cancelled %}<span class="muted">{{ _("stopped") }}</span>{% endif %}</td></tr>{% endfor %}</table></div></details>
+    {% if x.contract.status == 'active' %}<details><summary class="small">{{ _("Stop the contract") }}</summary><form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="stop_contract"><input type="hidden" name="case_id" value="{{ c.id }}">
+      <input name="reason" aria-label="{{ _('Why') }}" placeholder="{{ _('Why, for example moved away') }}" required><button type="submit">{{ _("Stop") }}</button></form></details>{% endif %}
+  {% elif c.status not in ('finished', 'stopped') %}
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="contract"><input type="hidden" name="case_id" value="{{ c.id }}">
+      <div class="grid three">
+        <div><label for="tt{{ c.id }}">{{ _("Total fee") }}</label><input id="tt{{ c.id }}" name="total" inputmode="decimal" required></div>
+        <div><label for="dp{{ c.id }}">{{ _("Deposit, charged today") }}</label><input id="dp{{ c.id }}" name="deposit" inputmode="decimal" value="0"></div>
+        <div><label for="mo{{ c.id }}">{{ _("Monthly payments") }}</label><input id="mo{{ c.id }}" name="months" type="number" min="0" max="60" value="{{ c.est_months }}"></div>
+        <div><label for="fd{{ c.id }}">{{ _("First monthly amount due") }}</label><input id="fd{{ c.id }}" type="date" name="first_due" value="{{ next_month }}"></div>
+      </div>
+      <p><button class="primary" type="submit">{{ _("Save the contract") }}</button></p></form>
+  {% endif %}
+  {% if c.status not in ('finished', 'stopped') %}
+  <details><summary class="small">{{ _("Change the diagnosis or plan") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="update"><input type="hidden" name="case_id" value="{{ c.id }}">
+    {{ fields(c, appliances, arches, molar, crowding, c.id|string) }}<p><button type="submit">{{ _("Save") }}</button></p></form></details>
+  {% if c.status == 'active' %}<details><summary class="small">{{ _("Braces off, start retention") }}</summary><form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="debond"><input type="hidden" name="case_id" value="{{ c.id }}">
+    <input type="date" name="debonded_on" value="{{ today }}" aria-label="{{ _('Date') }}"><input name="retention" placeholder="{{ _('Retainers given') }}" aria-label="{{ _('Retainers given') }}" required><button type="submit">{{ _("Save") }}</button></form></details>{% endif %}
+  <details><summary class="small">{{ _("Close the case") }}</summary><form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="close"><input type="hidden" name="case_id" value="{{ c.id }}">
+    <input name="reason" placeholder="{{ _('Reason, if stopped early') }}" aria-label="{{ _('Reason') }}">
+    <button type="submit" name="outcome" value="finished">{{ _("Finished") }}</button><button type="submit" name="outcome" value="stopped">{{ _("Stopped early") }}</button></form></details>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

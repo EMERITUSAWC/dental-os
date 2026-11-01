@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ _("NHS set-up") }}{% endblock %}
+{% block body %}
+<h1>{{ _("NHS set-up") }}</h1>
+<section class="card"><p>{{ _("For NHS dental work in England. The band charges and UDA values follow NHS England's 2026/27 figures. They change each April, so check them and update them here.") }}</p>
+  <p class="muted small">{{ _("Sending FP17s straight to the NHS Business Services Authority needs this software to be accredited by them. Until then, each FP17 is prepared and checked here, sent through your NHSBSA route, and its reference recorded on the course.") }}</p></section>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if s.enabled }}> <span>{{ _("This clinic does NHS work") }}</span></label>
+  <label for="contract_no">{{ _("NHS contract number") }}</label><input id="contract_no" name="contract_no" value="{{ s.contract_no or '' }}">
+  <h2>{{ _("Patient charges") }}</h2>
+  <div class="grid three">
+    <div><label for="band1">{{ _("Band 1 (£)") }}</label><input id="band1" name="band1" value="{{ '%.2f' % (s.charges.band1 / 100) }}"></div>
+    <div><label for="band2">{{ _("Band 2 (£)") }}</label><input id="band2" name="band2" value="{{ '%.2f' % (s.charges.band2 / 100) }}"></div>
+    <div><label for="band3">{{ _("Band 3 (£)") }}</label><input id="band3" name="band3" value="{{ '%.2f' % (s.charges.band3 / 100) }}"></div>
+    <div><label for="from">{{ _("From") }}</label><input id="from" type="date" name="from" value="{{ s.charges['from'] }}"></div>
+    <div><label for="source">{{ _("Where these figures came from") }}</label><input id="source" name="source" value="{{ s.charges.source }}"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="year">
+  <h2>{{ _("The contract for one year") }}</h2>
+  {% for y in years %}<p>{{ y.year }}/{{ (y.year + 1) % 100 }}: {{ y.udas }} {{ _("UDAs at") }} £{{ '%.2f' % (y.uda_value_p / 100) }}</p>{% endfor %}
+  <div class="grid three">
+    <div><label for="year">{{ _("Year starting 1 April") }}</label><input id="year" name="year" type="number" value="{{ this_year }}"></div>
+    <div><label for="udas">{{ _("Contracted UDAs") }}</label><input id="udas" name="udas" type="number" min="1"></div>
+    <div><label for="uda_value">{{ _("UDA value (£)") }}</label><input id="uda_value" name="uda_value" inputmode="decimal"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="people">
+  <h2>{{ _("Performer numbers") }}</h2>
+  {% for p in providers %}<div class="row"><label for="perf_{{ p.id }}">{{ p.name }}</label><input id="perf_{{ p.id }}" name="perf_{{ p.id }}" value="{{ p.nhs_performer_no or '' }}" inputmode="numeric"></div>{% endfor %}
+  <h2>{{ _("Which procedures are NHS work") }}</h2>
+  <p class="muted small">{{ _("Mark each procedure with the NHS band it belongs to. A course suggests its band from the work done.") }}</p>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Code") }}</th><th>{{ _("Procedure") }}</th><th>{{ _("NHS band") }}</th></tr>
+  {% for c in codes %}<tr><td>{{ c.code }}</td><td>{{ c.name }}</td><td><label class="sr-only" for="cls_{{ c.id }}">{{ _("NHS band") }}</label><select id="cls_{{ c.id }}" name="cls_{{ c.id }}">{% for k, v in classes.items() %}<option value="{{ k }}" {{ 'selected' if (c.nhs_class or '') == k }}>{{ _(v) }}</option>{% endfor %}</select></td></tr>{% endfor %}</table></div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% endblock %}

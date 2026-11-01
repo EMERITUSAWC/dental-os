@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Implant and materials register") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Implant and materials register") }}</h1>
+<form method="get" class="card"><p class="muted small">{{ _("Find every patient who has a given item, for example when a maker recalls a lot.") }}</p>
+  <div class="grid three">
+    <div><label for="maker">{{ _("Maker") }}</label><input id="maker" name="maker" value="{{ q.maker }}"></div>
+    <div><label for="product">{{ _("Product") }}</label><input id="product" name="product" value="{{ q.product }}"></div>
+    <div><label for="lot">{{ _("Lot or batch number") }}</label><input id="lot" name="lot" value="{{ q.lot }}"></div>
+    <div><label for="placed_from">{{ _("Placed from") }}</label><input id="placed_from" type="date" name="placed_from" value="{{ q.placed_from }}"></div>
+    <div><label for="placed_to">{{ _("Placed to") }}</label><input id="placed_to" type="date" name="placed_to" value="{{ q.placed_to }}"></div>
+  </div><p><button class="primary" type="submit">{{ _("Find") }}</button></p></form>
+{% if rows is not none %}<section class="card"><h2>{{ _("Found") }}: {{ rows|length }}</h2>
+  {% for i in rows %}<p><a href="{{ url_for('implants.patient', pid=i.patient_id) }}">{{ i.first_name }} {{ i.last_name }}</a>: {{ _(kinds[i.kind]) }}, {{ i.maker }}{% if i.product %} {{ i.product }}{% endif %}, {{ _("lot") }} {{ i.lot }}{% if i.tooth %}, {{ _("tooth") }} {{ i.tooth|tooth }}{% endif %}, {{ i.placed_on|date }}{% if i.removed_on %} <span class="pill">{{ _("Removed") }}</span>{% endif %}</p>{% else %}<p class="muted">{{ _("No patients have that item.") }}</p>{% endfor %}
+  {% if rows and (q.maker or q.lot) %}<form method="post" action="{{ url_for('implants.recall_new') }}" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="maker" value="{{ q.maker }}"><input type="hidden" name="product" value="{{ q.product }}"><input type="hidden" name="lot" value="{{ q.lot }}">
+    <label for="reason">{{ _("Is this a recall? Say what it is about, then open it to track who has been told.") }}</label><input id="reason" name="reason" maxlength="1000">
+    <button type="submit">{{ _("Open a recall") }}</button></form>{% endif %}
+</section>{% endif %}
+<section class="card"><h2>{{ _("Recalls") }}</h2>
+  {% for r in recalls %}<p><a href="{{ url_for('implants.recall_view', rid=r.id) }}">{{ r.maker or '' }} {{ r.product or '' }} {% if r.lot %}{{ _("lot") }} {{ r.lot }}{% endif %}</a>: {{ r.contacted }} / {{ r.found }} {{ _("told") }}{% if r.closed_at %} <span class="pill ok">{{ _("Closed") }}</span>{% endif %}</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% endblock %}

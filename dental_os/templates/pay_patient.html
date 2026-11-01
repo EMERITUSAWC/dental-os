@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Pay links") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("pay links") }}</h1>
+{{ tabs(p, 'account') }}
+{% if on %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Ask for a payment online") }}</h2>
+  <div class="grid three">
+    <div><label for="amount">{{ _("Amount") }}</label><input id="amount" name="amount" inputmode="decimal" value="{{ balance|plain if balance > 0 else '' }}" required></div>
+    <div><label for="description">{{ _("What it is for") }}</label><input id="description" name="description" maxlength="120" placeholder="{{ _('for example crown, deposit') }}"></div>
+    <div><label for="purpose">{{ _("Kind") }}</label><select id="purpose" name="purpose"><option value="treatment">{{ _("Treatment") }}</option><option value="membership">{{ _("Membership fee") }}</option></select></div>
+  </div>
+  <p class="muted small">{{ _("The patient gets a link to pay by card or mobile money. When they pay, a receipt goes on their account by itself.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Make a pay link") }}</button></p>
+</form>
+{% else %}<div class="card"><p class="muted">{{ _("Online payments are not switched on.") }} {% if user.role == 'manager' %}<a href="{{ url_for('payments.setup') }}">{{ _("Set them up") }}</a>{% endif %}</p></div>{% endif %}
+{% if cards or attempts %}<section class="card"><h2>{{ _("Saved cards") }}</h2>
+  {% for c in cards %}<div class="taskline">
+    <p><strong>{{ c.brand|title }} {{ _("ending") }} {{ c.last4 }}</strong>{% if c.exp_month %}, {{ _("expires") }} {{ '%02d' % c.exp_month }}/{{ c.exp_year }}{% endif %}
+      {% if c.auto_ok %}<span class="pill ok">{{ _("Monthly fees charged automatically") }}</span>{% endif %}
+      {% if c.exp_year and (c.exp_year, c.exp_month) < (today.year, today.month) %}<span class="pill bad">{{ _("Expired") }}</span>{% endif %}</p>
+    <p class="small muted">{{ _("The patient agreed:") }} {{ c.consent_text }} ({{ c.consent_at[:16] if c.consent_at }} UTC)</p>
+    <form method="post" action="{{ url_for('payments.card_action', pid=p.id, card_id=c.id, action='charge') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <label class="sr-only" for="ca{{ c.id }}">{{ _("Amount") }}</label><input id="ca{{ c.id }}" name="amount" inputmode="decimal" value="{{ balance|plain if balance > 0 else '' }}" class="narrow" required>
+      <label class="sr-only" for="cw{{ c.id }}">{{ _("What it is for") }}</label><input id="cw{{ c.id }}" name="what" maxlength="120" placeholder="{{ _('What it is for') }}">
+      <label class="check"><input type="checkbox" name="told" value="1"> <span>{{ _("The patient was told about this charge") }}</span></label>
+      <button class="primary" type="submit">{{ _("Charge the card") }}</button></form>
+    <details><summary class="small">{{ _("Remove the card, or stop automatic charges") }}</summary>
+      {% if c.auto_ok %}<form method="post" action="{{ url_for('payments.card_action', pid=p.id, card_id=c.id, action='auto_off') }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Stop automatic charges") }}</button></form>{% endif %}
+      <form method="post" action="{{ url_for('payments.card_action', pid=p.id, card_id=c.id, action='remove') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <input name="reason" placeholder="{{ _('Why, for example the patient asked') }}" aria-label="{{ _('Why') }}" required><button type="submit">{{ _("Remove the card") }}</button></form></details>
+  </div>{% endfor %}
+  {% if attempts %}<h3>{{ _("Charges tried") }}</h3>{% for x in attempts %}<p class="small">{{ x.created_at[:16] }} UTC: {{ x.amount_p|money }} {{ _("on") }} {{ x.brand }} {{ x.last4 }}{% if x.what %} ({{ x.what }}){% endif %}
+    <span class="pill {{ 'ok' if x.status == 'paid' else 'bad' }}">{{ _("Paid") if x.status == 'paid' else _("Failed") }}</span>{% if x.error %} {{ _(x.error) }}{% endif %} {% if x.by_name %}<span class="muted">{{ x.by_name }}</span>{% else %}<span class="muted">{{ _("automatic") }}</span>{% endif %}</p>{% endfor %}{% endif %}
+</section>{% endif %}
+<section class="card"><h2>{{ _("Pay links") }}</h2>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Made") }}</th><th>{{ _("Amount") }}</th><th>{{ _("For") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for l in rows %}<tr><td><a href="{{ url_for('payments.link_show', ref=l.ref) }}">{{ l.created_at[:10]|date }}</a></td><td class="nw">{{ l.amount_p|money }}</td><td>{{ l.description }}</td>
+    <td><span class="pill {{ 'ok' if l.status == 'paid' else ('bad' if l.status == 'failed' else '') }}">{{ _(statuses[l.status]) }}</span></td></tr>{% endfor %}</table></div>
+  {% else %}<p class="muted">{{ _("No pay links yet.") }}</p>{% endif %}
+</section>
+{% endblock %}

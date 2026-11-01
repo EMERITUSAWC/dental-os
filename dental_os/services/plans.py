@@ -2,6 +2,7 @@
 Lines are only estimates until the patient accepts. Acceptance turns them into planned work on the treatment list,
 which is where billing already looks. Declined plans create nothing."""
 from . import audit, billing, serialize, webhooks
+from . import feesched as FS
 from . import treatment as TR
 from .timeutil import add_months, now_local, parse_date
 from datetime import timedelta
@@ -58,7 +59,7 @@ def add_item(db, clinic, user_id, plan_id, code_id, tooth=None, surfaces=None, f
         raise PlanError("Pick a procedure from the list.")
     if not isinstance(phase, int) or not 1 <= phase <= 9:
         raise PlanError("The phase must be a number from 1 to 9.")
-    fee = code["fee_p"] if fee_p is None else fee_p
+    fee = FS.fee_for(db, cid, plan["patient_id"], code) if fee_p is None else fee_p
     if fee < 0:
         raise PlanError("A fee cannot be negative.")
     n = db.execute("SELECT COUNT(*) FROM plan_items WHERE plan_id = ? AND clinic_id = ? AND removed = 0", (plan_id, cid)).fetchone()[0]

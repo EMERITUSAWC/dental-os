@@ -1,0 +1,8 @@
+{% macro tabs(active) %}
+<nav class="tabs" aria-label="{{ _('Diary set-up') }}">
+  {% if user.role == 'manager' %}<a href="{{ url_for('diary.hours') }}" class="{{ 'on' if active == 'hours' }}">{{ _("Dentists' hours") }}</a>{% endif %}
+  <a href="{{ url_for('diary.time_off') }}" class="{{ 'on' if active == 'off' }}">{{ _("Time off") }}</a>
+  <a href="{{ url_for('diary.blocks') }}" class="{{ 'on' if active == 'blocks' }}">{{ _("Blocked time") }}</a>
+  {% if user.role == 'manager' %}<a href="{{ url_for('diary.types') }}" class="{{ 'on' if active == 'types' }}">{{ _("Appointment types") }}</a>{% endif %}
+</nav>
+{% endmacro %}

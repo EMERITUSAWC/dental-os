@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_diary_tabs.html" import tabs with context %}
+{% block title %}{{ _("Blocked time") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Diary set-up") }}</h1>
+{{ tabs(active) }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Block out time") }}</h2>
+  <p class="muted small">{{ _("Lunch, meetings, training and closed time cannot be booked. Time kept for emergencies, new patients or held back is left out of the free times, unless the appointment type is allowed to use it or someone ticks to book into it.") }}</p>
+  <div class="grid three">
+    <div><label for="kind">{{ _("Kept for") }}</label><select id="kind" name="kind">{% for k, v in block_kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="provider_id">{{ _("Dentist") }}</label><select id="provider_id" name="provider_id"><option value="">{{ _("Every dentist") }}</option>{% for p in providers %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+    <div><label for="chair_id">{{ _("Chair") }}</label><select id="chair_id" name="chair_id"><option value="">{{ _("Any chair") }}</option>{% for c in chairs %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="grid three">
+    <div><label for="start_date">{{ _("Day") }}</label><input id="start_date" type="date" name="start_date" value="{{ today }}" required></div>
+    <div><label for="start_time">{{ _("Starts at") }}</label><input id="start_time" type="time" name="start_time" value="13:00" required></div>
+    <div><label for="end_time">{{ _("Ends at") }}</label><input id="end_time" type="time" name="end_time" value="14:00" required></div>
+  </div>
+  <div class="grid three">
+    <div><label for="repeat">{{ _("Repeats") }}</label><select id="repeat" name="repeat">{% for k, v in repeats.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="end_date">{{ _("Repeats until (empty: a year)") }}</label><input id="end_date" type="date" name="end_date"></div>
+    <div><label for="label">{{ _("Label (optional)") }}</label><input id="label" name="label" maxlength="60"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Add blocked time") }}</button></p>
+</form>
+<section class="card"><h2>{{ _("Blocked time in the diary") }}</h2>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Kept for") }}</th><th>{{ _("Who") }}</th><th>{{ _("When") }}</th><th>{{ _("Repeats") }}</th><th></th></tr>
+  {% for r in rows %}<tr><td><span class="pill {{ 'bad' if r.kind in hard else 'warn' }}">{{ _(block_kinds.get(r.kind, r.kind)) }}</span> {{ r.label or '' }}</td>
+    <td>{{ r.provider_name or _('Every dentist') }}{% if r.chair_name %}, {{ r.chair_name }}{% endif %}</td>
+    <td>{{ r.start_date|date }}{% if r.repeat != 'once' %} {{ _("to") }} {{ r.end_date|date }}{% endif %}, {{ r.start_time }} {{ _("to") }} {{ r.end_time }}</td>
+    <td>{{ _(repeats.get(r.repeat, r.repeat)) }}</td>
+    <td><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="link" type="submit" name="remove" value="{{ r.id }}">{{ _("Remove") }}</button></form></td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("Nothing blocked.") }}</p>{% endif %}
+</section>
+{% endblock %}

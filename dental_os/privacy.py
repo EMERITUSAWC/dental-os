@@ -150,7 +150,7 @@ def patient_privacy(pid):
     patient = _patient_or_404(pid)
     open_reqs = [r for r in PV.list_requests(db, g.clinic, "open") if r["patient_id"] == pid]
     return render_template("privacy_patient.html", p=patient, why=PV.anonymise_check(db, g.clinic, pid), word=PV.ANONYMISE_WORD,
-                           log=PV.access_log(db, g.clinic["id"], pid), requests=open_reqs)
+                           log=PV.access_log(db, g.clinic["id"], pid), requests=open_reqs, kinds=PV.REQUEST_KINDS)
 
 
 @bp.get("/patients/<int:pid>/record-copy")

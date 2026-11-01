@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Time cards") }}{% endblock %}
+{% block body %}
+<div class="row spread">
+  <h1>{{ _("Time cards: week of %(day)s", day=monday|day) }}</h1>
+  <div class="row"><a class="btn" href="{{ url_for('practice.timecards', date=prev) }}" aria-label="{{ _('Previous week') }}">←</a>
+    <a class="btn" href="{{ url_for('practice.timecards', date=next) }}" aria-label="{{ _('Next week') }}">→</a>
+    <a class="btn" href="{{ url_for('practice.timecards_csv', date=monday) }}">{{ _("Download spreadsheet") }}</a></div>
+</div>
+<section class="card"><div class="tbl-wrap"><table>
+  <tr><th>{{ _("Name") }}</th>{% for d in days %}<th>{{ d|date }}</th>{% endfor %}<th>{{ _("Total") }}</th></tr>
+  {% for p in people %}<tr><td>{{ p.name }}{% if p.open %} <span class="pill ok">{{ _("in now") }}</span>{% endif %}</td>{% for m in p.days %}<td class="nw">{{ hm(m) if m else '' }}</td>{% endfor %}<td class="nw"><strong>{{ hm(p.total) }}</strong></td></tr>
+  {% else %}<tr><td colspan="9" class="muted">{{ _("Nobody clocked in this week.") }}</td></tr>{% endfor %}
+</table></div><p class="muted small">{{ _("Hours and minutes worked, after breaks. This records time worked; it does not work out pay.") }}</p></section>
+{% for p in people %}<section class="card"><h2>{{ p.name }}</h2>
+  {% for x in p.entries %}{% set e = x.e %}
+  {% if edit == e.id %}
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="entry_id" value="{{ e.id }}">
+    <input name="clock_in" value="{{ e.clock_in }}" style="width:150px" aria-label="{{ _('Clock in') }}"> <input name="clock_out" value="{{ e.clock_out or '' }}" style="width:150px" aria-label="{{ _('Clock out') }}">
+    <input name="break_minutes" value="{{ e.break_minutes or 0 }}" style="width:70px" aria-label="{{ _('Break minutes') }}"> <input name="reason" required maxlength="200" placeholder="{{ _('Why it is being corrected') }}" aria-label="{{ _('Reason') }}">
+    <button class="primary" type="submit">{{ _("Save") }}</button></form>
+  {% else %}<p class="small">{{ e.clock_in[:10]|date }} {{ e.clock_in|time }} {{ _("to") }} {% if e.clock_out %}{{ e.clock_out|time }}{% else %}<span class="pill ok">{{ _("still in") }}</span>{% endif %}
+    {% if e.break_minutes %}, {{ _("break %(n)s minutes", n=e.break_minutes) }}{% endif %}: <strong>{{ hm(x.minutes) }}</strong>
+    {% if e.edited_by %} <span class="pill warn" title="{{ e.edit_reason }}">{{ _("corrected") }}</span>{% endif %}
+    <a href="{{ url_for('practice.timecards', date=monday, edit=e.id) }}">{{ _("Correct") }}</a></p>{% endif %}
+  {% endfor %}
+</section>{% endfor %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Add a shift someone forgot to clock") }}</h2>
+  <div class="grid three"><div><label for="user_id">{{ _("Who") }}</label><select id="user_id" name="user_id">{% for u in users %}<option value="{{ u.id }}">{{ u.display_name }}</option>{% endfor %}</select></div>
+    <div><label for="ci">{{ _("Clock in") }}</label><input id="ci" name="clock_in" placeholder="{{ monday }} 08:00"></div>
+    <div><label for="co">{{ _("Clock out") }}</label><input id="co" name="clock_out" placeholder="{{ monday }} 17:00"></div></div>
+  <div class="grid two"><div><label for="bm">{{ _("Break minutes") }}</label><input id="bm" name="break_minutes" value="0"></div>
+    <div><label for="rs">{{ _("Reason") }}</label><input id="rs" name="reason" required maxlength="200"></div></div>
+  <p><button type="submit">{{ _("Add shift") }}</button></p></form>
+{% endblock %}

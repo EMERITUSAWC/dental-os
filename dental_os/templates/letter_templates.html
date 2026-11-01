@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Letters") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Letters") }}</h1>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">{% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+  <h2>{{ _("Change this letter") if edit else _("Add a letter") }}</h2>
+  <label for="name">{{ _("Name") }}</label><input id="name" name="name" maxlength="80" required value="{{ edit.name if edit else '' }}">
+  <label for="body">{{ _("Wording") }}</label><textarea id="body" name="body" rows="12" maxlength="8000" required>{{ edit.body if edit else '' }}</textarea>
+  <p class="muted small">{{ _("Fields filled in from the record:") }} {% for k, v in fields.items() %}<code>{{ '{' ~ k ~ '}' }}</code> {{ _(v) }}{{ ', ' if not loop.last }}{% endfor %}</p>
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button>{% if edit %}<a class="btn" href="{{ url_for('care.letter_templates') }}">{{ _("Cancel") }}</a>{% endif %}</p>
+</form>
+<section class="card">{% for t in rows %}<div class="row spread {{ 'muted' if not t.active }}"><strong>{{ t.name }}</strong>
+  <span><a href="{{ url_for('care.letter_templates', edit=t.id) }}">{{ _("Edit") }}</a>
+  <form method="post" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ t.id }}"><button class="link" type="submit" name="action" value="toggle">{{ _("Switch off") if t.active else _("Switch on") }}</button></form></span></div>
+{% endfor %}</section>
+{% endblock %}

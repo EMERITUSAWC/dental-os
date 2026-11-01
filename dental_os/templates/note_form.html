@@ -1,20 +1,31 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}{{ templates[key][0] }} note{% endblock %}
+{% block title %}{{ templates[key][0] }} {{ _("note") }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ templates[key][0] }}{% if note %} (editing draft){% endif %}</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ templates[key][0] }}{% if note %} {{ _("(editing draft)") }}{% endif %}</h1>
 {{ tabs(p, 'notes') }}
 {% if not note %}<p class="row">{% for k, t in templates.items() %}<a class="btn {{ 'primary' if k == key }}" href="{{ url_for('record.note_new', pid=p.id, template=k, tooth=tooth or None) }}">{{ t[0] }}</a>{% endfor %}</p>{% endif %}
+{% if ai_on and not note %}
+<form method="post" action="{{ url_for('record.note_ai', pid=p.id) }}" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="template" value="{{ key }}"><input type="hidden" name="tooth" value="{{ tooth }}">
+  <h2>{{ _("Draft with AI") }}</h2>
+  <label for="shorthand">{{ _("Type your shorthand, and the boxes below are filled in as a draft") }}</label>
+  <textarea id="shorthand" name="shorthand" rows="3" maxlength="{{ ai_max }}">{{ shorthand }}</textarea>
+  <p class="muted small">{{ _("Only this shorthand is sent to the AI service. The patient's name, phone number and email are taken out first, but a name or detail you type that we do not know about is not. Do not type other people's names. Nothing is saved until you press Save draft, and a dentist still signs the note.") }}</p>
+  <p><button type="submit">{{ _("Make a draft") }}</button></p>
+</form>
+{% endif %}
+{% if ai_draft %}<p class="card"><span class="pill warn">{{ _("AI draft") }}</span> {{ _("Read every line and fix it before you save. It may be wrong or may have left something out.") }}</p>{% endif %}
 <form method="post" class="card">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="template" value="{{ key }}">
   <div class="grid two">
-    <div><label for="tooth">Tooth (FDI number, if the note is about one tooth)</label><input id="tooth" name="tooth" inputmode="numeric" value="{{ tooth }}" maxlength="2"></div>
-    {% if visits %}<div><label for="appointment_id">Visit</label><select id="appointment_id" name="appointment_id"><option value="">Not linked to a visit</option>
+    <div><label for="tooth">{{ _("Tooth, if the note is about one tooth") }}</label><input id="tooth" name="tooth" value="{{ tooth }}" maxlength="4" placeholder="{{ _(tooth_hint()) }}"></div>
+    {% if visits %}<div><label for="appointment_id">{{ _("Visit") }}</label><select id="appointment_id" name="appointment_id"><option value="">{{ _("Not linked to a visit") }}</option>
       {% for v in visits %}<option value="{{ v.id }}">{{ v.start_at[:10]|date }}, {{ v.category }}</option>{% endfor %}</select></div>{% endif %}
   </div>
   {% for h in templates[key][1] %}
   <label for="f{{ loop.index0 }}">{{ h }}</label><textarea id="f{{ loop.index0 }}" name="f{{ loop.index0 }}" rows="{{ 5 if key == 'free' else 2 }}" maxlength="4000">{{ values.get('f%d' % loop.index0, '') }}</textarea>
   {% endfor %}
-  <p><button class="primary" type="submit">Save draft</button> <a class="btn" href="{{ url_for('record.notes_list', pid=p.id) }}">Cancel</a></p>
+  <p><button class="primary" type="submit">{{ _("Save draft") }}</button> <a class="btn" href="{{ url_for('record.notes_list', pid=p.id) }}">{{ _("Cancel") }}</a></p>
 </form>
 {% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Operator sign-in") }}{% endblock %}
+{% block body %}
+<div class="pub"><h1>{{ _("Operator sign-in") }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p class="muted small">{{ _("For the people who run the service. Clinic staff sign in on the usual page.") }}</p>
+  <label for="username">{{ _("Username") }}</label><input id="username" name="username" required autocomplete="username">
+  <label for="password">{{ _("Password") }}</label><input id="password" type="password" name="password" required autocomplete="current-password">
+  <p><button class="primary" type="submit">{{ _("Sign in") }}</button></p></form></div>
+{% endblock %}

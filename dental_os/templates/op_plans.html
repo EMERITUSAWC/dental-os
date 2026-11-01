@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Plans") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Plans") }}</h1>
+{% for p in rows %}<section class="card"><strong>{{ p.name }}</strong>{% if not p.active %} <span class="small muted">{{ _("not in use") }}</span>{% endif %}: {% for cur, v in p.price_map.items() %}{{ v|money_in(cur) }} {% endfor %}{{ _("a month") }}{% if p.max_dentists %}, {{ _("up to") }} {{ p.max_dentists }} {{ _("dentists") }}{% endif %}</section>{% endfor %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("New plan") }}</h2>
+  <label for="name">{{ _("Name") }}</label><input id="name" name="name" maxlength="60" required>
+  <label for="max_dentists">{{ _("Dentists allowed (empty for no limit)") }}</label><input id="max_dentists" name="max_dentists" class="narrow" inputmode="numeric">
+  <p class="muted small">{{ _("A monthly price in each currency the plan is sold in. Leave the others empty.") }}</p>
+  <div class="grid three">{% for cur in currencies %}<div><label for="p{{ cur }}">{{ cur }}</label><input id="p{{ cur }}" name="price_{{ cur }}" inputmode="decimal" class="narrow"></div>{% endfor %}</div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+{% endblock %}

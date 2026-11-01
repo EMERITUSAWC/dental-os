@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Start a free trial") }}{% endblock %}
+{% block body %}
+<div class="pub"><h1>{{ _("Start a free trial of Dental OS") }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p class="muted">{{ _("Your clinic gets its own space, free for %(days)s days. Nothing to install. You can take a full copy of your data at any time.", days=trial_days) }}</p>
+  <label for="clinic_name">{{ _("Clinic name") }}</label><input id="clinic_name" name="clinic_name" value="{{ form.get('clinic_name', '') }}" maxlength="120" required>
+  <label for="country">{{ _("Country") }}</label><select id="country" name="country">{% for code, name in countries %}<option value="{{ code }}" {{ 'selected' if form.get('country', 'GH') == code }}>{{ name }}</option>{% endfor %}</select>
+  <label for="your_name">{{ _("Your name") }}</label><input id="your_name" name="your_name" value="{{ form.get('your_name', '') }}" maxlength="80" required autocomplete="name">
+  <label for="username">{{ _("Username to sign in with") }}</label><input id="username" name="username" value="{{ form.get('username', '') }}" maxlength="40" required autocomplete="username">
+  <label for="password">{{ _("Password (at least 10 characters; a few ordinary words together is best)") }}</label><input id="password" type="password" name="password" required autocomplete="new-password">
+  <label for="password2">{{ _("The password again") }}</label><input id="password2" type="password" name="password2" required autocomplete="new-password">
+  <label class="check"><input type="checkbox" name="agree" value="1"> <span>{{ _("I agree to the terms of service and the data processing terms, and I am allowed to sign up for this clinic.") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Start the trial") }}</button> <a href="{{ url_for('auth.login') }}">{{ _("Already signed up? Sign in") }}</a></p></form></div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Support access") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Support access") }}</h1>
+<section class="card"><p>{{ _("If you need help, let Dental OS support look at the clinic for a few hours. They can look, not change anything, and every page they open is written in the Activity log. You can end it at any time.") }}</p>
+  {% if live %}<p class="flash warn">{{ _("Support can look until") }} {{ live.until_at }} UTC.</p><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="end"><button class="primary" type="submit">{{ _("End support access now") }}</button></form>
+  {% else %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><label for="hours">{{ _("For") }}</label><select id="hours" name="hours">{% for h in hours %}<option value="{{ h }}">{{ h }} {{ _("hours") }}</option>{% endfor %}</select>
+    <label for="why">{{ _("What you need help with (optional)") }}</label><input id="why" name="why" maxlength="300"><button class="primary" type="submit">{{ _("Let support look") }}</button></form>{% endif %}
+  <p class="small muted">{{ _("Pages support has opened, ever") }}: {{ views }}</p></section>
+<section class="card"><h2>{{ _("Earlier") }}</h2>{% for r in rows %}<p class="small">{{ r.created_at }} {{ r.display_name or '' }}: {{ _("until") }} {{ r.until_at }}{% if r.ended_at %}, {{ _("ended") }} {{ r.ended_at }}{% endif %}{% if r.why %}, {{ r.why }}{% endif %}</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>
+{% endblock %}

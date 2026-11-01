@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_edi_tabs.html" import tabs with context %}
+{% block title %}{{ f.kind }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _(kinds[f.kind]) }} ({{ f.kind }})</h1><a class="btn primary" href="{{ url_for('edi.file_download', fid=f.id) }}">{{ _("Download") }}</a></div>
+{{ tabs('') }}
+<section class="card">
+  <p>{{ f.created_at|date }} {{ f.created_at[11:16] }}{% if f.control_no %}, {{ _("control number") }} {{ f.control_no }}{% endif %}</p>
+  {% if f.summary %}<p>{{ f.summary }}</p>{% endif %}
+  <pre class="x12">{{ f.body }}</pre>
+</section>
+{% endblock %}

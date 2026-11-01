@@ -1,95 +1,161 @@
 {% extends "base.html" %}
-{% block title %}Settings{% endblock %}
+{% block title %}{{ _("Settings") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Settings</h1><a class="btn" href="{{ url_for('clinical.catalogue') }}">Procedures and prices</a></div>
+<div class="row spread"><h1>{{ _("Settings") }}</h1><div class="row"><a class="btn" href="{{ url_for('payments.setup') }}">{{ _("Online payments") }}</a><a class="btn" href="{{ url_for('voice.setup') }}">{{ _("Phone calls") }}</a><a class="btn" href="{{ url_for('mail.setup') }}">{{ _("Email") }}</a><a class="btn" href="{{ url_for('sms.setup') }}">{{ _("SMS") }}</a>{% if clinic.country == 'GB' %}<a class="btn" href="{{ url_for('nhs.setup') }}">{{ _("NHS") }}</a>{% endif %}<a class="btn" href="{{ url_for('clinical.catalogue') }}">{{ _("Procedures and prices") }}</a><a class="btn" href="{{ url_for('fees.schedules') }}">{{ _("Fee schedules") }}</a><a class="btn" href="{{ url_for('autocodes.home') }}">{{ _("Auto codes") }}</a><a class="btn" href="{{ url_for('closed.home') }}">{{ _("Closed days") }}</a><a class="btn" href="{{ url_for('backups.home') }}">{{ _("Copies and the internet") }}</a><a class="btn" href="{{ url_for('billing.home') }}">{{ _("Billing") }}</a><a class="btn" href="{{ url_for('billing.support') }}">{{ _("Support access") }}</a></div></div>
 <section class="card">
-  <h2>Clinic</h2>
+  <h2>{{ _("Clinic") }}</h2>
   <form method="post">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="clinic">
-    <label for="name">Clinic name</label><input id="name" name="name" value="{{ clinic.name }}">
-    <div class="grid three">
-      <div><label for="open_time">Opens</label><input id="open_time" type="time" name="open_time" value="{{ clinic.open_time }}"></div>
-      <div><label for="close_time">Closes</label><input id="close_time" type="time" name="close_time" value="{{ clinic.close_time }}"></div>
-      <div><label for="slot_minutes">Diary step</label>
-        <select id="slot_minutes" name="slot_minutes">{% for m in (10, 15, 20, 30, 60) %}<option value="{{ m }}" {{ 'selected' if m == clinic.slot_minutes }}>{{ m }} minutes</option>{% endfor %}</select></div>
+    <label for="name">{{ _("Clinic name") }}</label><input id="name" name="name" value="{{ clinic.name }}">
+    <div class="grid two">
+      <div><label for="address">{{ _("Clinic address (printed on letters and prescriptions)") }}</label><textarea id="address" name="address" rows="2" maxlength="300">{{ clinic.address or '' }}</textarea></div>
+      <div><label for="phone">{{ _("Clinic phone") }}</label><input id="phone" name="phone" value="{{ clinic.phone|phone if clinic.phone else '' }}">
+        <label for="email">{{ _("Clinic email") }}</label><input id="email" name="email" type="email" maxlength="120" value="{{ clinic.email or '' }}"></div>
     </div>
-    <p class="muted small">Opening hours start as a guess. Put in the real ones.</p>
-    <label>Working days</label>
+    <div class="grid three">
+      <div><label for="open_time">{{ _("Opens") }}</label><input id="open_time" type="time" name="open_time" value="{{ clinic.open_time }}"></div>
+      <div><label for="close_time">{{ _("Closes") }}</label><input id="close_time" type="time" name="close_time" value="{{ clinic.close_time }}"></div>
+      <div><label for="slot_minutes">{{ _("Diary step") }}</label>
+        <select id="slot_minutes" name="slot_minutes">{% for m in (10, 15, 20, 30, 60) %}<option value="{{ m }}" {{ 'selected' if m == clinic.slot_minutes }}>{{ m }} {{ _("minutes") }}</option>{% endfor %}</select></div>
+    </div>
+    <p class="muted small">{{ _("Opening hours start as a guess. Put in the real ones.") }}</p>
+    <label>{{ _("Working days") }}</label>
     <div class="row">
       {% for n, d in ((1, 'Mon'), (2, 'Tue'), (3, 'Wed'), (4, 'Thu'), (5, 'Fri'), (6, 'Sat'), (7, 'Sun')) %}
       <label class="check" style="margin:0"><input type="checkbox" name="days" value="{{ n }}" {{ 'checked' if n in days }}> {{ d }}</label>{% endfor %}
     </div>
     <div class="grid three">
-      <div><label for="country">Country</label>
+      <div><label for="country">{{ _("Country") }}</label>
         <select id="country" name="country">{% for code, cname in countries %}<option value="{{ code }}" {{ 'selected' if code == clinic.country }}>{{ cname }}</option>{% endfor %}</select></div>
-      <div><label for="currency">Currency</label>
+      <div><label for="currency">{{ _("Currency") }}</label>
         <select id="currency" name="currency">{% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == clinic.currency }}>{{ c }}</option>{% endfor %}</select></div>
-      <div><label for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ clinic.timezone }}" placeholder="Continent/City"></div>
+      <div><label for="timezone">{{ _("Timezone") }}</label><input id="timezone" name="timezone" value="{{ clinic.timezone }}" placeholder="{{ _('Continent/City') }}"></div>
     </div>
-    <p class="muted small">Country decides how phone numbers are read. Currency decides how prices are shown. Changing the currency does not convert old amounts, so set it before you enter prices.</p>
-    <label for="language">Language</label>
+    <p class="muted small">{{ _("Country decides how phone numbers are read. Currency decides how prices are shown. Changing the currency does not convert old amounts, so set it before you enter prices.") }}</p>
+    <label for="language">{{ _("Language") }}</label>
     <select id="language" name="language">{% for code, name in languages.items() %}<option value="{{ code }}" {{ 'selected' if code == clinic.language }}>{{ name }}</option>{% endfor %}</select>
-    <p class="muted small">Used for the menus and for patient messages and documents. A patient can have their own language on their record, and each member of staff can choose theirs under their name at the top. Only the menus, the sign-in page, the online booking page, the patient's private page and the printed documents are in French so far. The other screens stay in English.</p>
-    <label for="whatsapp">Clinic WhatsApp number (the one patients message)</label>
+    <p class="muted small">{{ _("Used for the menus and for patient messages and documents. A patient can have their own language on their record, and each member of staff can choose theirs under their name at the top. The developer pages (API and webhooks, the activity log and the WhatsApp set-up) stay in English.") }}</p>
+    <label for="tooth_notation">{{ _("Tooth numbering") }}</label>
+    <select id="tooth_notation" name="tooth_notation">{% for k, v in notations.items() %}<option value="{{ k }}" {{ 'selected' if k == clinic.tooth_notation }}>{{ _(v) }}</option>{% endfor %}</select>
+    <p class="muted small">{{ _("How teeth are shown and typed on every screen and document. Records are kept the same way underneath, so this can be changed at any time. The API always uses FDI.") }}</p>
+    <label for="whatsapp">{{ _("Clinic WhatsApp number (the one patients message)") }}</label>
     <input id="whatsapp" name="whatsapp" value="{{ clinic.whatsapp|phone }}">
-    <label>Ways patients pay (cash is always on)</label>
+    <label>{{ _("Ways patients pay (cash is always on)") }}</label>
     <div class="row">
       {% for k, v in methods.items() %}
       <label class="check" style="margin:0"><input type="checkbox" name="pay_{{ k }}" {{ 'checked' if k in enabled or k == 'cash' }}> {{ v }}</label>{% endfor %}
     </div>
-    <p><button class="primary" type="submit">Save</button></p>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
   </form>
 </section>
 
 <section class="card">
-  <h2>Tax on invoices</h2>
-  <p class="muted small">Leave the rate at 0 if your treatment is not taxed. Many countries tax some dental work and not other work. Ask your accountant what applies before you set a rate. This only changes new invoices.</p>
+  <h2>{{ _("Tax on invoices") }}</h2>
+  <p class="muted small">{{ _("Leave the rate at 0 if your treatment is not taxed. Many countries tax some dental work and not other work. Ask your accountant what applies before you set a rate. This only changes new invoices.") }}</p>
   <form method="post">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="tax">
     <div class="grid three">
-      <div><label for="tax_name">Tax name</label><input id="tax_name" name="tax_name" value="{{ clinic.tax_name or '' }}" maxlength="20" placeholder="VAT"></div>
-      <div><label for="tax_rate">Rate (%)</label><input id="tax_rate" name="tax_rate" value="{{ '%g'|format(clinic.tax_rate_bp / 100) }}" inputmode="decimal"></div>
-      <div><label for="tax_inclusive">Prices</label><select id="tax_inclusive" name="tax_inclusive"><option value="1" {{ 'selected' if clinic.tax_inclusive }}>Already include tax</option><option value="0" {{ 'selected' if not clinic.tax_inclusive }}>Tax is added on top</option></select></div>
+      <div><label for="tax_name">{{ _("Tax name") }}</label><input id="tax_name" name="tax_name" value="{{ clinic.tax_name or '' }}" maxlength="20" placeholder="{{ _('VAT') }}"></div>
+      <div><label for="tax_rate">{{ _("Rate (%)") }}</label><input id="tax_rate" name="tax_rate" value="{{ '%g'|format(clinic.tax_rate_bp / 100) }}" inputmode="decimal"></div>
+      <div><label for="tax_inclusive">{{ _("Prices") }}</label><select id="tax_inclusive" name="tax_inclusive"><option value="1" {{ 'selected' if clinic.tax_inclusive }}>{{ _("Already include tax") }}</option><option value="0" {{ 'selected' if not clinic.tax_inclusive }}>{{ _("Tax is added on top") }}</option></select></div>
     </div>
     <div class="grid two">
-      <div><label for="tax_number">Tax registration number</label><input id="tax_number" name="tax_number" value="{{ clinic.tax_number or '' }}" maxlength="40"></div>
-      <div><label for="invoice_footer">Footer on invoices (for example bank details)</label><input id="invoice_footer" name="invoice_footer" value="{{ clinic.invoice_footer or '' }}" maxlength="300"></div>
+      <div><label for="tax_number">{{ _("Tax registration number") }}</label><input id="tax_number" name="tax_number" value="{{ clinic.tax_number or '' }}" maxlength="40"></div>
+      <div><label for="invoice_footer">{{ _("Footer on invoices (for example bank details)") }}</label><input id="invoice_footer" name="invoice_footer" value="{{ clinic.invoice_footer or '' }}" maxlength="300"></div>
     </div>
-    <p><button class="primary" type="submit">Save</button></p>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
   </form>
 </section>
 
 <section class="card">
-  <h2>Other tax rates</h2>
-  <p class="muted small">Some treatment is taxed at a different rate, or not taxed at all. Add the rates here, then pick one for each treatment under Procedures and prices. Treatment with no rate of its own uses the default rate above. A rate is never deleted, only switched off. Ask your accountant which rate applies to what.</p>
+  <h2>{{ _("A starting point for %(country)s", country=clinic.country) }}</h2>
+  {% if tax_preset %}
+  <p class="muted small">{{ _("This is not tax advice. It adds the named rates people in %(country)s usually need, and shows what we could check, where we read it and when (%(checked)s). It does not change your default rate or any treatment. Show it to your accountant.", country=tax_preset.country, checked=tax_checked) }}</p>
+  <ul class="small">{% for text, strength in tax_preset.facts %}<li>{{ text }} <span class="pill {{ 'ok' if strength == 'official' else '' }}">{{ tax_strengths[strength] }}</span></li>{% endfor %}</ul>
+  <p class="small"><strong>{{ _("Ask your accountant:") }}</strong></p>
+  <ul class="small">{% for q in tax_preset.ask %}<li>{{ q }}</li>{% endfor %}</ul>
+  <p class="small"><strong>{{ _("Sources:") }}</strong> {% for s in tax_preset.sources %}<a href="{{ s.url }}" rel="noopener noreferrer" target="_blank">{{ s.title }}</a> ({{ s.strength }}){{ '; ' if not loop.last }}{% endfor %}</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="tax_preset">
+    <p class="row"><button type="submit">{{ _("Add these rates:") }} {% for n, k, pct in tax_preset.rates %}{{ n }}{{ ', ' if not loop.last }}{% endfor %}</button></p></form>
+  {% else %}<p class="muted small">{{ _("There is no starting point for this country yet. Ask your accountant which rates apply, then add them below.") }}</p>{% endif %}
+
+  <h2>{{ _("Other tax rates") }}</h2>
+  <p class="muted small">{{ _("Some treatment is taxed at a different rate, or not taxed at all. Add the rates here, then pick one for each treatment under Procedures and prices. Treatment with no rate of its own uses the default rate above. A rate is never deleted, only switched off. Ask your accountant which rate applies to what.") }}</p>
   {% if tax_rates %}<div class="tbl-wrap"><table>
-    <tr><th>Name</th><th>Kind</th><th>Rate</th><th></th></tr>
-    {% for r in tax_rates %}<tr><td>{{ r.name }}</td><td class="muted">{{ tax_kinds[r.kind] }}</td><td>{{ '%g'|format(r.rate_bp / 100) }}%</td>
+    <tr><th>{{ _("Name") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Rate") }}</th><th></th></tr>
+    {% for r in tax_rates %}<tr><td>{{ r.name }}</td><td class="muted">{{ _(tax_kinds[r.kind]) }}</td><td>{{ '%g'|format(r.rate_bp / 100) }}%</td>
       <td><form method="post" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="taxrate_toggle"><input type="hidden" name="id" value="{{ r.id }}">
-        <button type="submit">{{ 'Switch off' if r.active else 'Switch on' }}</button></form></td></tr>{% endfor %}
+        <button type="submit">{{ _('Switch off') if r.active else _('Switch on') }}</button></form></td></tr>{% endfor %}
   </table></div>{% endif %}
   <form method="post" class="grid three" style="margin-top:8px">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="taxrate_add">
-    <div><label for="rate_name">Name</label><input id="rate_name" name="rate_name" maxlength="30" placeholder="Reduced" required></div>
-    <div><label for="rate_kind">Kind</label><select id="rate_kind" name="rate_kind">{% for k, v in tax_kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
-    <div><label for="rate_pct">Rate (%)</label><input id="rate_pct" name="rate_pct" inputmode="decimal" placeholder="5"></div>
-    <div style="align-self:end"><button class="primary" type="submit">Add rate</button></div>
+    <div><label for="rate_name">{{ _("Name") }}</label><input id="rate_name" name="rate_name" maxlength="30" placeholder="{{ _('Reduced') }}" required></div>
+    <div><label for="rate_kind">{{ _("Kind") }}</label><select id="rate_kind" name="rate_kind">{% for k, v in tax_kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="rate_pct">{{ _("Rate (%)") }}</label><input id="rate_pct" name="rate_pct" inputmode="decimal" placeholder="5"></div>
+    <div style="align-self:end"><button class="primary" type="submit">{{ _("Add rate") }}</button></div>
   </form>
 </section>
 
+<section class="card">
+  <h2>{{ _("Voice entry for gum charting") }}</h2>
+  <p class="muted small">{{ _("Off unless you switch it on. On the new gum chart screen a dentist or hygienist can speak tooth numbers and measurements, hands-free, and the chart fills in. By default the browser must turn speech into words on the computer itself, so no sound leaves it. Not every browser can do that yet, and it needs a one-time language download in the browser. Only tooth numbers and measurements need to be spoken, so the patient's name should never be said. The same screen also has a box to type what you would say, which sends nothing anywhere.") }}</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="voice_perio">
+    <p><label><input type="checkbox" name="enabled" value="1" {{ 'checked' if clinic.voice_perio }}> {{ _("Offer voice entry on the gum chart") }}</label></p>
+    <p><label><input type="checkbox" name="cloud" value="1" {{ 'checked' if clinic.voice_cloud }}> {{ _("Also allow the browser maker's online speech service when the computer cannot listen by itself (the sound is sent to them: for Chrome that is Google). Leave this off unless your lawyer agrees and your patients are told.") }}</label></p>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+</section>
+
+<section class="card">
+  <h2>{{ _("AI help for clinical notes") }}</h2>
+  <p class="muted small">{{ _("Off unless you switch it on. A dentist types shorthand on the note screen and gets a draft to read, fix and save. The note still has to be signed. Only the shorthand the dentist types is sent, to Anthropic's Claude service, which is in another country. The patient's name, phone number and email are taken out first, but not anything else the dentist types. Sending a patient's health details to a service abroad needs a legal basis under your country's data law, and your patients should be told. Ask your lawyer before you switch it on. See the privacy notes in the product's documents.") }}</p>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="ai_account">
+    <div class="grid two">
+      <div><label for="ai_key">{{ _("Your clinic's API key") }} {% if ai.has_key %}{{ _("(saved, not shown. Leave empty to keep it)") }}{% endif %}</label><input id="ai_key" name="api_key" type="password" autocomplete="off" maxlength="300"></div>
+      <div><label for="ai_model">{{ _("Model") }}</label><input id="ai_model" name="model" value="{{ ai.model }}" maxlength="80"></div>
+    </div>
+    <p><label><input type="checkbox" name="enabled" value="1" {{ 'checked' if ai.enabled }}> {{ _("Switch AI help on for this clinic") }}</label></p>
+    <p class="muted small">{{ _("Not yet tested against the live service. Try it with a made-up patient first.") }}</p>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{ _("Dentists' registration details") }}</h2>
+  <p class="muted small">{{ _("Printed on prescriptions, referral letters and signed letters. A dentist cannot prescribe until their registration number is in.") }}</p>
+  {% for r in providers if r.active %}
+  <form method="post" class="grid three" style="align-items:end;margin-bottom:8px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="provider_details"><input type="hidden" name="id" value="{{ r.id }}">
+    <div><label for="q{{ r.id }}">{{ r.name }}: {{ _("qualifications") }}</label><input id="q{{ r.id }}" name="qualifications" maxlength="80" value="{{ r.qualifications or '' }}" placeholder="{{ _('for example BDS') }}"></div>
+    <div><label for="b{{ r.id }}">{{ _("Registered with") }}</label><input id="b{{ r.id }}" name="reg_body" maxlength="80" value="{{ r.reg_body or '' }}" placeholder="{{ _('for example GDC') }}"></div>
+    <div class="row"><div style="flex:1"><label for="n{{ r.id }}">{{ _("Registration number") }}</label><input id="n{{ r.id }}" name="reg_number" maxlength="40" value="{{ r.reg_number or '' }}"></div><button type="submit">{{ _("Save") }}</button></div>
+  </form>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>{{ _("Blood pressure levels") }}</h2>
+  <form method="post" action="{{ url_for('care.bp_levels') }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="bp_amber" style="margin:0">{{ _("Put off planned treatment from") }}</label><input id="bp_amber" name="amber" value="{{ clinic.bp_amber }}" style="width:100px">
+    <label for="bp_red" style="margin:0">{{ _("No treatment without a doctor from") }}</label><input id="bp_red" name="red" value="{{ clinic.bp_red }}" style="width:100px">
+    <button type="submit">{{ _("Save") }}</button>
+  </form>
+  <p class="muted small">{{ _("The starting levels, 160/100 and 180/110, come from a US dental school's clinic manual. Your dentists decide the levels they use.") }}</p>
+</section>
+
 <div class="grid two">
-{% for kind, title, rows in (('provider', 'Dentists', providers), ('chair', 'Chairs', chairs)) %}
+{% for kind, title, rows in (('provider', _('Dentists'), providers), ('chair', _('Chairs'), chairs)) %}
   <section class="card">
     <h2>{{ title }}</h2>
     {% for r in rows %}
     <form method="post" class="row spread" style="margin-bottom:6px">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ kind }}_toggle"><input type="hidden" name="id" value="{{ r.id }}">
-      <span>{{ r.name }} {% if not r.active %}<span class="pill">Off</span>{% endif %}</span>
-      <button type="submit">{{ 'Switch off' if r.active else 'Switch on' }}</button>
+      <span>{{ r.name }} {% if not r.active %}<span class="pill">{{ _("Off") }}</span>{% endif %}</span>
+      <button type="submit">{{ _('Switch off') if r.active else _('Switch on') }}</button>
     </form>{% endfor %}
     <form method="post" class="row" style="margin-top:12px">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ kind }}">
-      <input name="name" placeholder="Add new" aria-label="Add {{ kind }}" style="flex:1"><button type="submit">Add</button>
+      <input name="name" placeholder="{{ _('Add new') }}" aria-label="Add {{ kind }}" style="flex:1"><button type="submit">{{ _("Add") }}</button>
     </form>
   </section>
 {% endfor %}

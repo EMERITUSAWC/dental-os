@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _d("Invoice") }} {{ inv.invoice_no }}{% endblock %}
 {% block body %}
-<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('finance.patient_invoices', pid=inv.patient_id) }}">Back to invoices</a></div>
+<div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button> <a href="{{ url_for('finance.patient_invoices', pid=inv.patient_id) }}">{{ _("Back to invoices") }}</a></div>
 <section class="card receipt" style="max-width:720px; margin-top:12px">
   <div class="row spread"><div><strong>{{ clinic.name }}</strong>{% if inv.tax_number %}<br><span class="muted small">{{ clinic.tax_name or _d('Tax') }} {{ _d('number') }} {{ inv.tax_number }}</span>{% endif %}</div>
     <div style="text-align:right"><h1 style="margin:0">{{ _d("Invoice") }} {{ inv.invoice_no }}</h1>{% if inv.status == 'void' %}<span class="pill bad">{{ _d("VOID") }}</span>{% endif %}</div></div>
@@ -21,5 +21,5 @@
 </section>
 {% if user.role == 'manager' and inv.status == 'issued' %}
 <form method="post" action="{{ url_for('finance.invoice_void', invoice_id=inv.id) }}" class="row no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
-  <input name="reason" placeholder="Why void this invoice?" aria-label="Reason" maxlength="200" required style="width:260px"><button class="danger" type="submit">Void invoice</button></form>{% endif %}
+  <input name="reason" placeholder="{{ _('Why void this invoice?') }}" aria-label="{{ _('Reason') }}" maxlength="200" required style="width:260px"><button class="danger" type="submit">{{ _("Void invoice") }}</button></form>{% endif %}
 {% endblock %}

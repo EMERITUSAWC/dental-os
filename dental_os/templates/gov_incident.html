@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Incident") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><h1>{{ _("Incident") }}: {{ _(kinds[i.kind]) }}</h1><button type="button" data-print>{{ _("Print") }}</button></div>
+<section class="card">
+  <p><span class="pill {{ 'ok' if i.status == 'closed' else 'warn' }}">{{ _(i_statuses[i.status]) }}</span> <span class="pill {{ 'warn' if i.harm in ('moderate','severe','psychological','death') }}">{{ _(harm[i.harm]) }}</span> {{ i.occurred_on|date }}{% if i.place %}, {{ i.place }}{% endif %}. {{ _("Reported by") }} {{ i.reported_by }}</p>
+  {% if i.patient_id %}<p>{{ _("Patient") }}: <a href="{{ url_for('views.patient_view', pid=i.patient_id) }}">{{ i.first_name }} {{ i.last_name }}</a></p>{% endif %}
+  {% if i.people %}<p>{{ _("Staff or others involved") }}: {{ i.people }}</p>{% endif %}
+  <h2>{{ _("What happened") }}</h2><p>{{ i.what_happened }}</p>
+  {% if i.immediate_action %}<h2>{{ _("What was done straight away") }}</h2><p>{{ i.immediate_action }}</p>{% endif %}
+  {% if i.cause %}<h2>{{ _("Why it happened") }}</h2><p>{{ i.cause }}</p><h2>{{ _("What will stop it happening again") }}</h2><p>{{ i.actions }}</p>{% endif %}
+  {% if i.reported_to %}<p>{{ _("Reported to") }} {{ i.reported_to }}{% if i.report_ref %}, {{ i.report_ref }}{% endif %}</p>{% endif %}
+  {% if i.candour_told_on %}<h2>{{ _("Duty of candour") }}</h2><p>{{ _("Told in person on") }} {{ i.candour_told_on|date }}{% if i.candour_told_by %} {{ _("by") }} {{ i.candour_told_by }}{% endif %}, {{ _("with an apology") }}.{% if i.candour_written_on %} {{ _("Written follow-up on") }} {{ i.candour_written_on|date }}.{% endif %}</p>{% if i.candour_note %}<p class="small">{{ i.candour_note }}</p>{% endif %}{% endif %}
+</section>
+{% if candour and not (i.candour_told_on and i.candour_written_on) %}<div class="flash error">{{ _("This did moderate harm or worse to a patient. In England this is likely a notifiable safety incident under the duty of candour: tell the patient in person as soon as reasonably practicable, apologise, give a true account, and follow up in writing. Elsewhere it is still the right thing to do.") }}</div>{% endif %}
+{% if i.status != 'closed' %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="review"><h2>{{ _("Review") }}</h2>
+  <label for="cause">{{ _("Why it happened") }}</label><textarea id="cause" name="cause" rows="3">{{ i.cause or '' }}</textarea>
+  <label for="actions">{{ _("What will stop it happening again") }}</label><textarea id="actions" name="actions" rows="3">{{ i.actions or '' }}</textarea>
+  <div class="grid three"><div><label for="harm">{{ _("Harm done") }}</label><select id="harm" name="harm">{% for k, v in harm.items() %}<option value="{{ k }}" {{ 'selected' if k == i.harm }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="reported_to">{{ _("Reported to (optional)") }}</label><input id="reported_to" name="reported_to" value="{{ i.reported_to or '' }}" maxlength="200"></div>
+  <div><label for="report_ref">{{ _("Their reference") }}</label><input id="report_ref" name="report_ref" value="{{ i.report_ref or '' }}" maxlength="120"></div></div>
+  <p><button type="submit">{{ _("Save the review") }}</button></p></form>
+{% if candour %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="candour"><h2>{{ _("Duty of candour") }}</h2>
+  <div class="grid three"><div><label for="told_on">{{ _("Told in person on") }}</label><input id="told_on" type="date" name="told_on" value="{{ i.candour_told_on or today }}"></div>
+  <div><label for="told_by">{{ _("By") }}</label><input id="told_by" name="told_by" value="{{ i.candour_told_by or '' }}" maxlength="120"></div>
+  <div><label for="written_on">{{ _("Written follow-up on") }}</label><input id="written_on" type="date" name="written_on" value="{{ i.candour_written_on or '' }}"></div></div>
+  <label class="check"><input type="checkbox" name="apology" value="1" {{ 'checked' if i.candour_apology }}> <span>{{ _("An apology was given") }}</span></label>
+  <label for="cnote">{{ _("Note (optional)") }}</label><input id="cnote" name="note" maxlength="2000"><p><button type="submit">{{ _("Save") }}</button></p></form>{% endif %}
+{% if i.status == 'reviewed' and user.role == 'manager' %}<form method="post" class="card no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="close"><button class="primary" type="submit">{{ _("Close the incident") }}</button></form>{% endif %}{% endif %}
+{% endblock %}

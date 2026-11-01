@@ -45,6 +45,29 @@ Every row belongs to one clinic, and a person from another clinic cannot see it 
 - The activity log records changes and views by user.
 - The API never returns clinical data. Keys are stored hashed.
 
+If a clinic connects the WhatsApp Business API, the message text, the patient's phone number and the patient's first name leave the
+server for Meta, and Meta passes a patient's replies back. The clinic must say so in its privacy notice, must have the patient's agreement to
+WhatsApp messages (the software checks it), and its lawyer must check what the Meta business terms mean for health data in each market.
+Messages never carry treatment details or money. The access token and the app secret are stored encrypted and never logged.
+
+If a clinic switches on AI help for clinical notes (off by default, a manager's choice), the shorthand a dentist types leaves the
+server for Anthropic's Claude service, which is in another country. The software removes the patient's name, phone numbers and
+email addresses first and sends no patient number or record, but it cannot know about other names or details the dentist types. The
+clinic needs a legal basis for sending health information abroad (in Ghana, check the Data Protection Act, 2012 (Act 843) and the Data
+Protection Commission's guidance on transfers; in the EU and UK, the GDPR rules on transfers and a data processing agreement),
+must say so in its privacy notice, and should check what the provider's terms say about keeping and using the text. The API key
+is stored encrypted and never logged, and the audit log holds neither the shorthand nor the answer.
+
+If a clinic switches on voice entry for gum charting (off by default), the browser turns speech into words. The page asks the browser to
+do this on the computer itself, so the sound is not sent anywhere (see MDN, "Using the Web Speech API", on `processLocally`). If a clinic
+also ticks the second box that allows the online service, the browser sends the sound to its maker (for Chrome, Google), which needs a
+legal basis and a line in the privacy notice. Only tooth numbers and measurements are meant to be spoken, never names. The software
+never records or keeps the sound; it keeps only the numbers that end up in the saved chart.
+
+If a clinic runs on PostgreSQL, everything above about the audit log and encryption of keys is unchanged. The database host then holds
+the patient data, so the host must be chosen and contracted as any processor of health data is (and its country checked), and the
+connection to it must use TLS (`?sslmode=require` in the address). Encrypt the disk and the backups (`pg_dump` files hold everything).
+
 What the software does not do, and the host or clinic must: encrypt the disk and backups, use HTTPS, keep the server patched,
 control who has the server, and train staff.
 

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_statement_tabs.html" import tabs with context %}
+{% block title %}{{ _("Statements") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Statements") }}</h1>
+{{ tabs('home') }}
+<form method="get" class="card row">
+  <label for="min_balance">{{ _("Owes at least") }}</label><input id="min_balance" name="min_balance" value="{{ min_balance }}" class="narrow">
+  <label for="older_than_days">{{ _("with some of it older than (days)") }}</label><input id="older_than_days" name="older_than_days" type="number" min="0" max="365" value="{{ older }}" class="narrow">
+  <label for="gap_days">{{ _("and no statement in the last (days)") }}</label><input id="gap_days" name="gap_days" type="number" min="0" max="365" value="{{ gap }}" class="narrow">
+  <button type="submit">{{ _("Show") }}</button>
+</form>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="min_balance" value="{{ min_balance }}"><input type="hidden" name="older_than_days" value="{{ older }}"><input type="hidden" name="gap_days" value="{{ gap }}">
+  {% if rows %}<div class="tbl-wrap"><table><tr><th></th><th>{{ _("Patient") }}</th><th>{{ _("Owes") }}</th><th>{{ _("Over 90 days") }}</th><th>{{ _("Insurers expected to pay") }}</th><th>{{ _("Last statement") }}</th>{% if s.late_on %}<th>{{ _("Late fee") }}</th>{% endif %}</tr>
+  {% for r in rows %}<tr><td><input type="checkbox" name="patient_id" value="{{ r.patient.id }}" checked aria-label="{{ _('Include') }} {{ r.patient.first_name }} {{ r.patient.last_name }}"></td>
+    <td><a href="{{ url_for('clinical.account', pid=r.patient.id) }}">{{ r.patient.first_name }} {{ r.patient.last_name }}</a></td><td>{{ r.balance_p|money }}</td><td>{{ r.buckets['90+']|money if r.buckets['90+'] }}</td>
+    <td>{{ r.insurers_p|money if r.insurers_p }}</td><td class="nw">{{ r.last|date if r.last }}</td>{% if s.late_on %}<td>{% if r.fee_p %}{{ r.fee_p|money }}{% else %}<span class="muted small">{{ _(r.why_no_fee) }}</span>{% endif %}</td>{% endif %}</tr>{% endfor %}</table></div>
+  {% if s.late_on and user.role == 'manager' %}<label class="check"><input type="checkbox" name="add_fees" value="1"> <span>{{ _("Add the late fees shown to these accounts") }}</span></label>{% endif %}
+  <p><button class="primary" type="submit">{{ _("Make the statement run") }}</button></p>
+  {% else %}<p class="muted">{{ _("Nobody matches.") }}</p>{% endif %}
+</form>
+<section class="card"><h2>{{ _("Earlier runs") }}</h2>
+  {% for r in runs %}<p><a href="{{ url_for('statements.run_view', rid=r.id) }}">{{ r.made_on|date }}</a>: {{ r.n }} {{ _("patients") }}, {{ r.sent }} {{ _("sent or printed") }}{% if r.fees_added %}, {{ _("late fees added") }}{% endif %}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}
+</section>
+{% endblock %}

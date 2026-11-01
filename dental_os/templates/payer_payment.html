@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Payment from %(payer)s", payer=pp.payer_name) }}{% endblock %}
+{% block body %}
+<h1>{{ _("Payment from %(payer)s", payer=pp.payer_name) }}</h1>
+<section class="card"><dl class="facts"><dt>{{ _("Received on") }}</dt><dd>{{ pp.received_on|date }}</dd><dt>{{ _("Reference") }}</dt><dd>{{ pp.reference }}</dd>
+  <dt>{{ _("Amount") }}</dt><dd><strong>{{ pp.amount_p|money }}</strong></dd><dt>{{ _("Recorded by") }}</dt><dd>{{ pp.by_name or '' }}</dd>{% if pp.note %}<dt>{{ _("Note") }}</dt><dd>{{ pp.note }}</dd>{% endif %}</dl></section>
+<section class="card"><div class="tbl-wrap"><table><tr><th>{{ _("Claim") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Amount") }}</th><th>{{ _("Receipt") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for l in lines %}<tr><td><a href="{{ url_for('finance.claim_show', claim_id=l.claim_id) }}">{{ l.claim_no }}</a></td><td>{{ l.first_name }} {{ l.last_name }}</td><td class="nw">{{ l.amount_p|money }}</td>
+    <td><a href="{{ url_for('clinical.receipt', pay_id=l.id) }}">R-{{ '%06d' % l.receipt_no }}</a></td><td>{{ _(statuses[l.claim_status]) }}</td></tr>{% endfor %}
+</table></div></section>
+<p><a class="btn" href="{{ url_for('finance.payer_payments') }}">{{ _("All payments from payers") }}</a></p>
+{% endblock %}

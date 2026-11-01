@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Price list, {{ payer.name }}{% endblock %}
+{% block title %}{{ _("Price list,") }} {{ payer.name }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>{{ payer.name }}: price list</h1><a class="btn" href="{{ url_for('finance.payers') }}">All payers</a></div>
-<p class="muted">Type the price this payer allows for a treatment. Leave a box empty to use the clinic's own price.</p>
+<div class="row spread"><h1>{{ payer.name }}{{ _(": price list") }}</h1><a class="btn" href="{{ url_for('finance.payers') }}">{{ _("All payers") }}</a></div>
+<p class="muted">{{ _("Type the price this payer allows for a treatment. Leave a box empty to use the clinic's own price.") }}</p>
 <form method="post" class="card">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}">
   <div class="tbl-wrap"><table>
-    <tr><th>Treatment</th><th>Clinic price</th><th>Payer price</th></tr>
+    <tr><th>{{ _("Treatment") }}</th><th>{{ _("Clinic price") }}</th><th>{{ _("Payer price") }}</th></tr>
     {% for r in rows %}<tr><td>{{ r.name }}<br><span class="muted small">{{ r.category }}</span></td><td class="nw">{{ r.clinic_fee_p|money }}</td>
       <td><input name="fee_{{ r.id }}" value="{{ r.payer_fee_p|plain if r.payer_fee_p is not none else '' }}" inputmode="decimal" aria-label="Payer price for {{ r.name }}" style="width:120px"></td></tr>
-    {% else %}<tr><td colspan="3" class="muted">The procedure list is empty. Add it under Procedures and prices first.</td></tr>{% endfor %}
+    {% else %}<tr><td colspan="3" class="muted">{{ _("The procedure list is empty. Add it under Procedures and prices first.") }}</td></tr>{% endfor %}
   </table></div>
-  <p><button class="primary" type="submit">Save prices</button></p>
+  <p><button class="primary" type="submit">{{ _("Save prices") }}</button></p>
 </form>
 {% endblock %}

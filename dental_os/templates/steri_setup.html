@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Sterilisation set-up") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Sterilisation set-up") }}</h1>
+{{ tabs('setup') }}
+<section class="card"><h2>{{ _("Sterilisers") }}</h2>
+  {% for s in rows %}<form method="post" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="sid" value="{{ s.id }}">
+    <label class="sr-only" for="n{{ s.id }}">{{ _("Name") }}</label><input id="n{{ s.id }}" name="name" value="{{ s.name }}" maxlength="80">
+    <label class="sr-only" for="k{{ s.id }}">{{ _("Kind") }}</label><select id="k{{ s.id }}" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if s.kind == k }}>{{ _(v) }}</option>{% endfor %}</select>
+    <label class="sr-only" for="sn{{ s.id }}">{{ _("Serial number") }}</label><input id="sn{{ s.id }}" name="serial" value="{{ s.serial or '' }}" placeholder="{{ _('Serial number') }}" maxlength="60">
+    <label class="sr-only" for="v{{ s.id }}">{{ _("Last yearly validation") }}</label><input id="v{{ s.id }}" type="date" name="validated_on" value="{{ s.validated_on or '' }}" title="{{ _('Last yearly validation') }}">
+    <label class="check"><input type="checkbox" name="retired" value="1" {{ 'checked' if s.retired }}> <span>{{ _("No longer used") }}</span></label>
+    <button type="submit">{{ _("Save") }}</button>
+  </form>{% endfor %}
+  <form method="post" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label class="sr-only" for="name">{{ _("Name") }}</label><input id="name" name="name" placeholder="{{ _('For example Autoclave 1') }}" maxlength="80" required>
+    <label class="sr-only" for="kind">{{ _("Kind") }}</label><select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+    <label class="sr-only" for="serial">{{ _("Serial number") }}</label><input id="serial" name="serial" placeholder="{{ _('Serial number') }}" maxlength="60">
+    <label class="sr-only" for="validated_on">{{ _("Last yearly validation") }}</label><input id="validated_on" type="date" name="validated_on" title="{{ _('Last yearly validation') }}">
+    <button class="primary" type="submit">{{ _("Add steriliser") }}</button>
+  </form>
+</section>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="settings">
+  <h2>{{ _("Rules") }}</h2>
+  <label class="check"><input type="checkbox" name="require_daily" value="1" {{ 'checked' if settings.require_daily }}> <span>{{ _("Do not let a cycle be recorded until that steriliser's daily tests have passed") }}</span></label>
+  <label for="shelf_days">{{ _("How many days a wrapped pack may stay on the shelf") }}</label>
+  <input id="shelf_days" name="shelf_days" type="number" min="1" max="730" value="{{ settings.shelf_days }}">
+  <p class="muted small">{{ _("Set this from the guidance your regulator follows and the pouch maker's advice. Every pack label shows its use-by date.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% endblock %}

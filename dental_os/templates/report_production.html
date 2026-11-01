@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Work done by treatment") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Work done by treatment") }}</h1>
+<form method="get" class="card row"><label for="start" style="margin:0">{{ _("From") }}</label><input id="start" type="date" name="start" value="{{ start }}" style="width:auto">
+  <label for="end" style="margin:0">{{ _("to") }}</label><input id="end" type="date" name="end" value="{{ end }}" style="width:auto"><button type="submit">{{ _("Show") }}</button>
+  <a class="btn" href="{{ url_for('practice.production', start=start, end=end, csv=1) }}">{{ _("Download spreadsheet") }}</a></form>
+<section class="card"><div class="tbl-wrap"><table><tr><th>{{ _("Code") }}</th><th>{{ _("Treatment") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Times") }}</th><th>{{ _("Total") }}</th></tr>
+  {% for r in rows %}<tr><td>{{ r.code }}</td><td>{{ r.name }}</td><td>{{ _(r.category) }}</td><td>{{ r.n }}</td><td class="nw">{{ r.total|money }}</td></tr>{% else %}<tr><td colspan="5" class="muted">{{ _("Nothing done in this period.") }}</td></tr>{% endfor %}
+  {% if rows %}<tr><th colspan="4">{{ _("Total") }}</th><th class="nw">{{ total|money }}</th></tr>{% endif %}</table></div></section>
+{% endblock %}

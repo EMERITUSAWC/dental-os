@@ -1,35 +1,35 @@
 {% extends "base.html" %}
-{% block title %}Requests{% endblock %}
+{% block title %}{{ _("Requests") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>Requests about personal data</h1><a class="btn" href="{{ url_for('privacy.home') }}">Privacy home</a></div>
+<div class="row spread"><h1>{{ _("Requests about personal data") }}</h1><a class="btn" href="{{ url_for('privacy.home') }}">{{ _("Privacy home") }}</a></div>
 <div class="grid two">
   <section class="card">
     <div class="tbl-wrap"><table>
-      <tr><th>From</th><th>Asking to</th><th>Reply by</th><th>Status</th></tr>
+      <tr><th>{{ _("From") }}</th><th>{{ _("Asking to") }}</th><th>{{ _("Reply by") }}</th><th>{{ _("Status") }}</th></tr>
       {% for r in rows %}
-      <tr><td><a href="{{ url_for('privacy.request_view', rid=r.id) }}">{{ r.requester }}</a></td><td>{{ kinds[r.kind] }}</td><td class="nw">{{ r.due_on|date }}</td>
-        <td>{% if r.status == 'open' %}<span class="pill {{ 'bad' if r.overdue else 'warn' }}">{{ 'Late' if r.overdue else (r.days_left|string + ' days left') }}</span>
+      <tr><td><a href="{{ url_for('privacy.request_view', rid=r.id) }}">{{ r.requester }}</a></td><td>{{ _(kinds[r.kind]) }}</td><td class="nw">{{ r.due_on|date }}</td>
+        <td>{% if r.status == 'open' %}<span class="pill {{ 'bad' if r.overdue else 'warn' }}">{{ _('Late') if r.overdue else _('%(n)s days left', n=r.days_left) }}</span>
             {% else %}<span class="pill {{ 'ok' if r.status == 'done' else '' }}">{{ r.status|capitalize }}</span>{% endif %}</td></tr>
-      {% else %}<tr><td colspan="4" class="muted">No requests recorded.</td></tr>{% endfor %}
+      {% else %}<tr><td colspan="4" class="muted">{{ _("No requests recorded.") }}</td></tr>{% endfor %}
     </table></div>
   </section>
   <section class="card">
-    <h2>Record a request</h2>
+    <h2>{{ _("Record a request") }}</h2>
     <form method="post">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
       {% if patient_id %}<input type="hidden" name="patient_id" value="{{ patient_id }}">{% endif %}
-      <label for="requester">Who is asking{% if patient_id %} (leave blank to use the patient's name){% endif %}</label><input id="requester" name="requester" maxlength="120" {{ '' if patient_id else 'required' }}>
-      <label for="kind">They want to</label>
-      <select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+      <label for="requester">{{ _("Who is asking") }}{% if patient_id %} {{ _("(leave blank to use the patient's name)") }}{% endif %}</label><input id="requester" name="requester" maxlength="120" {{ '' if patient_id else 'required' }}>
+      <label for="kind">{{ _("They want to") }}</label>
+      <select id="kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
       <div class="grid two">
-        <div><label for="received_on">Arrived on</label><input id="received_on" name="received_on" type="date" value="{{ today }}"></div>
-        <div><label for="due_on">Reply by (blank: {{ reply_days }} days)</label><input id="due_on" name="due_on" type="date"></div>
+        <div><label for="received_on">{{ _("Arrived on") }}</label><input id="received_on" name="received_on" type="date" value="{{ today }}"></div>
+        <div><label for="due_on">{{ _("Reply by (blank: %(n)s days)", n=reply_days) }}</label><input id="due_on" name="due_on" type="date"></div>
       </div>
-      <label for="details">What they said (do not paste medical details)</label><textarea id="details" name="details" rows="3" maxlength="1000"></textarea>
-      <label class="check"><input type="checkbox" name="identity_checked" value="1"> I have checked who this person is</label>
-      <p><button class="primary" type="submit">Record</button></p>
+      <label for="details">{{ _("What they said (do not paste medical details)") }}</label><textarea id="details" name="details" rows="3" maxlength="1000"></textarea>
+      <label class="check"><input type="checkbox" name="identity_checked" value="1"> {{ _("I have checked who this person is") }}</label>
+      <p><button class="primary" type="submit">{{ _("Record") }}</button></p>
     </form>
-    <p class="muted small">Many laws give about a month to reply, counted from when you received the request. Confirm your own country's limit with your lawyer.</p>
+    <p class="muted small">{{ _("Many laws give about a month to reply, counted from when you received the request. Confirm your own country's limit with your lawyer.") }}</p>
   </section>
 </div>
 {% endblock %}

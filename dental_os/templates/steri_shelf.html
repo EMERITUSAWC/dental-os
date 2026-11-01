@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Packs") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Packs") }}</h1>
+{{ tabs('shelf') }}
+<p class="row">{% for k, v in pack_status.items() %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('steri.shelf', status=k) }}">{{ _(v) }}</a>{% endfor %}</p>
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Code") }}</th><th>{{ _("What is in it") }}</th><th>{{ _("Cycle") }}</th><th>{{ _("Use by") }}</th></tr>
+  {% for k in rows %}<tr><td><a href="{{ url_for('steri.pack_find', code=k.code) }}">{{ k.code }}</a></td><td>{{ k.contents }}</td><td>{{ k.steriliser }}, {{ k.cycle_no }}</td>
+    <td class="nw">{{ k.expires_on|date }}{% if k.expired and status == 'stored' %} <span class="pill bad">{{ _("Past its use-by date") }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("No packs here.") }}</p>{% endif %}</section>
+{% endblock %}

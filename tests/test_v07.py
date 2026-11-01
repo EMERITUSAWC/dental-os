@@ -4,6 +4,7 @@ import re
 import unittest
 from datetime import timedelta
 
+from tests import dbmeta
 from dental_os.services import (booking, campaigns as CAMP, inbox, links, medical, msgtemplates as MT, outbox, plans as PL,
                                 scheduling)
 from dental_os.services.timeutil import now_local
@@ -805,7 +806,7 @@ class UpgradeAndCli(Comms):
         self.assertIn("1 messages added", r.output)
 
     def test_old_database_gets_read_marker(self):
-        cols = {r[1] for r in self.db().execute("PRAGMA table_info(messages)")}
+        cols = dbmeta.columns(self.db(), "messages")
         self.assertIn("read_at", cols)
 
     def test_new_clinic_starts_with_wording_and_a_two_day_reminder(self):

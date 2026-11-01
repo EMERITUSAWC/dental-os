@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ f.title if f else _("New form") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ f.title if f else _("New form") }}</h1><div class="row"><a class="btn" href="{{ url_for('cforms.builder_list') }}">{{ _("All forms") }}</a>{% if f %}<a class="btn" href="{{ url_for('cforms.preview', form_id=f.id) }}">{{ _("See it as the patient will") }}</a>{% endif %}</div></div>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="title">{{ _("Title") }}</label><input id="title" name="title" value="{{ f.title if f else '' }}" maxlength="120" required>
+  <label for="intro">{{ _("A few words at the top (optional)") }}</label><textarea id="intro" name="intro" rows="2">{{ f.intro or '' if f else '' }}</textarea>
+  <h2>{{ _("Questions") }}</h2>
+  <p class="muted small">{{ _("Leave a question's wording empty to remove it. For a choice question, write each choice on its own line. Save to get more empty rows.") }}</p>
+  {% for q in rows %}{% set i = loop.index0 %}<div class="card">
+    <div class="grid three">
+      <div><label for="q{{ i }}l">{{ _("Question") }} {{ i + 1 }}</label><input id="q{{ i }}l" name="q{{ i }}_label" value="{{ q.label }}" maxlength="300"></div>
+      <div><label for="q{{ i }}k">{{ _("Kind") }}</label><select id="q{{ i }}k" name="q{{ i }}_kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if q.kind == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div><label class="check"><input type="checkbox" name="q{{ i }}_required" value="1" {{ 'checked' if q.required }}> <span>{{ _("Must be answered") }}</span></label></div>
+    </div>
+    <label for="q{{ i }}o" class="small">{{ _("Choices (one per line)") }}</label><textarea id="q{{ i }}o" name="q{{ i }}_options" rows="2">{{ q.options|join('\n') }}</textarea>
+  </div>{% endfor %}
+  <label class="check"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" {{ 'checked' if not f or f.active }}> <span>{{ _("In use") }}</span></label>
+  <p class="muted small">{{ _("Changing the questions makes a new version. Forms already filled in keep the questions as the patient saw them.") }}</p>
+  <p><button class="primary" type="submit">{{ _("Save the form") }}</button></p>
+</form>
+{% endblock %}

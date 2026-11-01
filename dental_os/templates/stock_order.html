@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% from "_stock_tabs.html" import tabs with context %}
-{% block title %}To order{% endblock %}
+{% block title %}{{ _("To order") }}{% endblock %}
 {% block body %}
-<div class="row spread no-print"><h1>To order</h1><button data-print>Print</button></div>
+<div class="row spread no-print"><h1>{{ _("To order") }}</h1><button data-print>{{ _("Print") }}</button></div>
 <span class="no-print">{{ tabs('order') }}</span>
-<p class="muted">Items at or below their reorder level. The quantity is the usual order size, or enough to reach twice the reorder level. Prices are the last known cost. {{ today|date }}.</p>
+<p class="muted">{{ _("Items at or below their reorder level. The quantity is the usual order size, or enough to reach twice the reorder level. Prices are the last known cost.") }} {{ today|date }}.</p>
 {% for g in groups %}
 <section class="card"><h2>{{ g.supplier }}</h2>
-  <div class="tbl-wrap"><table><tr><th>Item</th><th>In stock</th><th>Order</th><th>About</th></tr>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Item") }}</th><th>{{ _("In stock") }}</th><th>{{ _("Order") }}</th><th>{{ _("About") }}</th></tr>
   {% for l in g.lines %}<tr><td><a href="{{ url_for('ops.stock_item', item_id=l.item.id) }}">{{ l.item.name }}</a>{% if l.item.sku %} <span class="muted small">{{ l.item.sku }}</span>{% endif %}</td><td>{{ l.level }}</td><td><strong>{{ l.want }}</strong> {{ l.item.unit }}</td><td class="nw">{{ l.cost_p|money }}</td></tr>{% endfor %}
-  <tr><td colspan="3"><strong>Estimated total</strong></td><td class="nw"><strong>{{ g.total_p|money }}</strong></td></tr></table></div></section>
-{% else %}<section class="card"><p class="muted">Nothing needs ordering. Set a "reorder when at or below" number on an item to have it appear here.</p></section>{% endfor %}
+  <tr><td colspan="3"><strong>{{ _("Estimated total") }}</strong></td><td class="nw"><strong>{{ g.total_p|money }}</strong></td></tr></table></div></section>
+{% else %}<section class="card"><p class="muted">{{ _('Nothing needs ordering. Set a "reorder when at or below" number on an item to have it appear here.') }}</p></section>{% endfor %}
 {% endblock %}

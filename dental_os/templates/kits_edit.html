@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ code.name }}: {{ _("Kit") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ code.name }}: {{ _("Kit") }}</h1><a class="btn" href="{{ url_for('kits.home') }}">{{ _("Treatment kits") }}</a></div>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p class="muted small">{{ _("How many of each item one of these treatments uses. Leave it empty or 0 for items it does not use.") }}</p>
+  <table><thead><tr><th>{{ _("Item") }}</th><th>{{ _("How many") }}</th></tr></thead><tbody>
+  {% for i in items %}<tr><td><label for="q{{ i.id }}">{{ i.name }}</label> <span class="small muted">{{ i.unit }}, {{ i.cost_p|money }}</span></td><td><input id="q{{ i.id }}" name="qty_{{ i.id }}" inputmode="numeric" class="narrow" value="{{ have.get(i.id, '') }}"></td></tr>
+  {% else %}<tr><td colspan="2" class="muted">{{ _("No stock items yet.") }}</td></tr>{% endfor %}</tbody></table>
+  <p><button class="primary" type="submit">{{ _("Save the kit") }}</button></p></form>
+{% endblock %}

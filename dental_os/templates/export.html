@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Exports for the accountant") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Exports for the accountant") }}</h1>
+<form method="get" class="card row">
+  <label for="start" style="margin:0">{{ _("From") }}</label><input id="start" type="date" name="start" value="{{ start }}" style="width:auto">
+  <label for="end" style="margin:0">{{ _("to") }}</label><input id="end" type="date" name="end" value="{{ end }}" style="width:auto">
+  <button type="submit">{{ _("Show") }}</button>
+</form>
+<div class="grid two">
+  <section class="card"><h2>{{ _("Money journal") }}</h2>
+    <p class="muted">{{ _("Every payment, voided payment and adjustment in the period, one row each, with receipt numbers and how it was paid.") }}</p>
+    <a class="btn primary" href="{{ url_for('practice.export_csv', kind='journal', start=start, end=end) }}">{{ _("Download the journal") }}</a></section>
+  <section class="card"><h2>{{ _("Invoices for an accounting package") }}</h2>
+    <p class="muted">{{ _("Issued invoices, one row per line, laid out like Xero's sales invoice import. Check it against your package's own template before the first import, and tell the package whether prices include tax.") }}</p>
+    <a class="btn primary" href="{{ url_for('practice.export_csv', kind='invoices', start=start, end=end) }}">{{ _("Download the invoices") }}</a>
+    <form method="post" style="margin-top:12px"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <div class="grid two"><div><label for="account">{{ _("Sales account code") }}</label><input id="account" name="account" maxlength="20" value="{{ clinic.export_account or '' }}" placeholder="{{ _('for example 200') }}"></div>
+        <div><label for="tax_type">{{ _("Tax type name in your package") }}</label><input id="tax_type" name="tax_type" maxlength="40" value="{{ clinic.export_tax_type or '' }}"></div></div>
+      <p><button type="submit">{{ _("Save") }}</button></p></form></section>
+</div>
+<p class="muted small">{{ _("Dates are written day/month/year, or month/day/year for a clinic in the United States. Every download is recorded in the activity log.") }}</p>
+{% endblock %}

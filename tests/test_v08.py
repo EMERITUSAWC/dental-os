@@ -5,6 +5,7 @@ import threading
 import unittest
 from datetime import date, datetime, timedelta
 
+from tests import dbmeta
 from dental_os import api as api_module
 from dental_os import db as dbmod
 from dental_os.services import (apikeys, kpi, labs as LAB, orgs, scheduling, stock as STK, webhooks as WH)
@@ -172,7 +173,7 @@ class KpiTests(Ops):
         t = today()
         rt = self.one("SELECT id FROM recall_types WHERE clinic_id = 1")[0]
         for pid, offset, status in ((1, 10, "due"), (2, -5, "due")):
-            self.sql("INSERT OR REPLACE INTO recalls(clinic_id, patient_id, type_id, due_on, status) VALUES (1,?,?,?,?)", pid, rt, str(t + timedelta(days=offset)), status)
+            self.sql("INSERT INTO recalls(clinic_id, patient_id, type_id, due_on, status) VALUES (1,?,?,?,?) ON CONFLICT(clinic_id, patient_id, type_id) DO UPDATE SET due_on = excluded.due_on, status = excluded.status", pid, rt, str(t + timedelta(days=offset)), status)
         self.sql("INSERT INTO patients(clinic_id, first_name, last_name, phone) VALUES (1,'C','C','+233201110001')")
         self.sql("INSERT INTO patients(clinic_id, first_name, last_name, phone) VALUES (1,'D','D','+233201110002')")
         self.sql("INSERT INTO recalls(clinic_id, patient_id, type_id, due_on, status) VALUES (1,4,?,?,'due')", rt, str(t - timedelta(days=100)))
@@ -1198,15 +1199,15 @@ class UpgradeTests(Ops):
         path = tempfile.mkdtemp() + "/old.sqlite"
         conn = dbmod.connect(path)
         dbmod.init_schema(conn)
-        conn.execute("DROP TABLE lab_cases")
-        conn.execute("DROP TABLE webhook_deliveries")
+        dbmeta.drop_table(conn, "lab_cases")
+        dbmeta.drop_table(conn, "webhook_deliveries")
         conn.execute("ALTER TABLE clinics DROP COLUMN org_id")
         conn.commit()
         dbmod.init_schema(conn)
-        cols = {r[1] for r in conn.execute("PRAGMA table_info(clinics)")}
+        cols = dbmeta.columns(conn, "clinics")
         self.assertIn("org_id", cols)
         for t in ("lab_cases", "webhook_deliveries", "stock_moves", "api_keys", "organisations"):
-            self.assertTrue(conn.execute("SELECT 1 FROM sqlite_master WHERE name = ?", (t,)).fetchone(), t)
+            self.assertTrue(dbmeta.has_table(conn, t), t)
         conn.close()
 
     def test_every_new_screen_opens(self):

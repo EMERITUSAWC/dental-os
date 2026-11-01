@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from flask import (Blueprint, abort, flash, g, redirect, render_template, request, url_for)
 from werkzeug.security import generate_password_hash
 
+from .safeurl import local_path
 from .auth import manager_required
 from .db import get_db
 from .services import audit, billing, messaging, patients as P, regions, scheduling as S, taxes as _taxes, passwords as _passwords, twofactor as _tf, privacy as _privacy, i18n as _i18n
@@ -56,7 +57,7 @@ def dashboard():
                 ORDER BY a.start_at""",
             (cid, f"{day} 00:00", f"{day + timedelta(days=1)} 00:00")).fetchall()
 
-    from .services import labs as _labs, outbox, stock as _stock
+    from .services import labs as _labs, outbox, steri as _steri, stock as _stock, team as _team
     outbox.build(db, g.clinic)
     outbox.refresh(db, g.clinic)
     todays = day_rows(today)
@@ -74,7 +75,20 @@ def dashboard():
                            waiting=waiting, stats=stats, birthdays=P.birthdays(db, cid, today),
                            attn=outbox.attention(db, g.clinic, g.user), lab=_labs.counts(db, g.clinic),
                            stock=_stock.summary(db, g.clinic) if g.user["role"] != "front_desk" else None,
-                           privacy=_privacy.counts(db, g.clinic) if g.user["role"] == "manager" else None)
+                           privacy=_privacy.counts(db, g.clinic) if g.user["role"] == "manager" else None,
+                           follow_ups=_follow_ups(db),
+                           steri=_steri.overview(db, g.clinic) if g.user["role"] != "front_desk" else None,
+                           equip=_team.due_summary(db, g.clinic) if g.user["role"] == "manager" else None)
+
+
+def _patient_tasks(db, pid):
+    from .services import tasks
+    return tasks.board(db, g.clinic, g.user["id"], patient_id=pid)
+
+
+def _follow_ups(db):
+    from .services import contactlog
+    return contactlog.due(db, g.clinic)
 
 
 # ------------------------------------------------------------------ diary
@@ -82,8 +96,10 @@ def dashboard():
 def diary():
     day = _date_arg()
     view = S.day_view(get_db(), g.clinic, day)
+    from .services import diaryrules as _R
+    from .services import closeddays as _CD
     return render_template("diary.html", day=day, prev=day - timedelta(days=1), next=day + timedelta(days=1),
-                           view=view, today=_today())
+                           view=view, today=_today(), block_kinds=_R.BLOCK_KINDS, closed=_CD.name_on(get_db(), g.clinic["id"], day))
 
 
 # ------------------------------------------------------------------ patients
@@ -148,8 +164,12 @@ def patient_view(pid):
         """SELECT a.*, pr.name AS provider_name FROM appointments a LEFT JOIN providers pr ON pr.id = a.provider_id
            WHERE a.clinic_id = ? AND a.patient_id = ? ORDER BY COALESCE(a.start_at, a.created_at) DESC LIMIT 30""",
         (cid, pid)).fetchall()
+    from .services import referrals as _ref, team as _team
     return render_template("patient.html", p=patient, head=head, dependants=dependants, appts=appts,
-                           msgs=messaging.history(db, cid, pid), bal=billing.totals(db, cid, pid))
+                           msgs=messaging.history(db, cid, pid), bal=billing.totals(db, cid, pid),
+                           referrers=_ref.list_referrers(db, cid, active_only=True), sources=_ref.SOURCES,
+                           ptasks=_patient_tasks(db, pid), staff=db.execute("SELECT id, display_name FROM users WHERE clinic_id = ? AND active = 1 ORDER BY display_name", (cid,)).fetchall(),
+                           team_notes=_team.about_patient(db, g.user, pid)[:10])
 
 
 @bp.post("/patients/<int:pid>/archive")
@@ -174,13 +194,22 @@ def _form_context(patient, appt=None):
     provider_id = request.values.get("provider_id", type=int) or (
         appt["provider_id"] if appt and appt["provider_id"] else (providers[0]["id"] if providers else None))
     category = request.values.get("category") or (appt["category"] if appt else "Consultation")
+    from .services import diaryrules as _R
+    types = _R.list_types(db, clinic["id"], active_only=True)
+    type_id = request.values.get("type_id", type=int) or (appt["type_id"] if appt else None)
+    type_row = _R.get_type(db, clinic["id"], type_id) if type_id else None
+    if type_row and not appt:
+        duration, category = type_row["duration_min"], type_row["category"]
+    allow_held = request.values.get("allow_held") == "1"
     slots = []
     if provider_id and request.values.get("find") == "1":
-        slots = S.free_slots(db, clinic, provider_id, day, duration)
+        slots = S.free_slots(db, clinic, provider_id, day, duration, type_row=type_row, allow_held=allow_held,
+                             exclude_patient=patient["id"])
     return dict(patient=patient, appt=appt, providers=providers, day=day, duration=duration,
                 provider_id=provider_id, category=category, slots=slots,
                 searched=request.values.get("find") == "1", categories=S.CATEGORIES, durations=S.DURATIONS,
-                notes=request.values.get("notes", appt["notes"] if appt else ""))
+                notes=request.values.get("notes", appt["notes"] if appt else ""), types=types, type_id=type_row["id"] if type_row else None,
+                allow_held=allow_held)
 
 
 @bp.get("/appointments/new")
@@ -221,7 +250,8 @@ def appointment_create():
         except ValueError:
             raise S.SchedulingError("Pick a time first.")
         appt_id = S.book(db, clinic, g.user["id"], patient["id"], request.form.get("provider_id", type=int),
-                         chair_id, start, duration, category, notes)
+                         chair_id, start, duration, category, notes, type_id=request.form.get("type_id", type=int),
+                         allow_held=request.form.get("allow_held") == "1")
         flash("Booked.", "ok")
         return redirect(url_for("views.appointment_view", aid=appt_id))
     except S.SchedulingError as exc:
@@ -237,11 +267,34 @@ def _appt_or_404(aid):
     return appt
 
 
+def _tp_get(country):
+    from .services import taxpresets
+    return taxpresets.get(country)
+
+
+def _tp_strengths():
+    from .services import taxpresets
+    return taxpresets.STRENGTHS
+
+
+def _tp_checked():
+    from .services import taxpresets
+    return taxpresets.CHECKED
+
+
+def _wa_on():
+    from flask import current_app
+    from .services import whatsapp as wa
+    return wa.is_on(get_db(), g.clinic["id"], current_app.config["SECRET_KEY"])
+
+
 @bp.get("/appointments/<int:aid>")
 def appointment_view(aid):
     appt = _appt_or_404(aid)
     return render_template("appointment.html", a=appt, start=parse_dt(appt["start_at"]) if appt["start_at"] else None,
+                           stage=S.stage(appt), is_today=bool(appt["start_at"]) and appt["start_at"][:10] == _today().isoformat(),
                            can_message=bool(appt["reminders_ok"]) and appt["status"] == "scheduled",
+                           api_on=_wa_on(),
                            next_statuses=S.TRANSITIONS[appt["status"]])
 
 
@@ -258,7 +311,7 @@ def appointment_reschedule(aid):
             time_part, chair = request.form.get("slot", "").split("|")
             start = parse_dt(f"{request.form.get('date')} {time_part}")
             S.place(db, g.clinic, g.user["id"], aid, request.form.get("provider_id", type=int), int(chair), start,
-                    request.form.get("duration", type=int))
+                    request.form.get("duration", type=int), allow_held=request.form.get("allow_held") == "1")
             flash("Appointment moved. Confirmation reset, so send a fresh message.", "ok")
             return redirect(url_for("views.appointment_view", aid=aid))
         except ValueError:
@@ -290,9 +343,7 @@ def appointment_confirmation(aid):
         flash("Updated.", "ok")
     except S.SchedulingError as exc:
         flash(str(exc), "error")
-    return redirect(request.form.get("back") if (request.form.get("back") or "").startswith("/")
-                    and not (request.form.get("back") or "").startswith("//")
-                    else url_for("views.appointment_view", aid=aid))
+    return redirect(local_path(request.form.get("back")) or url_for("views.appointment_view", aid=aid))
 
 
 @bp.post("/appointments/<int:aid>/whatsapp")
@@ -307,6 +358,24 @@ def appointment_whatsapp(aid):
         flash(str(exc), "error")
         return redirect(url_for("views.appointment_view", aid=aid))
     return redirect(link)
+
+
+@bp.post("/appointments/<int:aid>/whatsapp-api")
+def appointment_whatsapp_api(aid):
+    """The same confirmation or reminder, sent through the WhatsApp Business API instead of opening WhatsApp."""
+    from flask import current_app
+    from .services import whatsapp as wa
+    db = get_db()
+    appt = _appt_or_404(aid)
+    patient = _patient_or_404(appt["patient_id"])
+    try:
+        wa.send_appointment(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"], patient, appt,
+                            "reminder" if request.form.get("kind") == "reminder" else "confirmation")
+        flash("Sent by WhatsApp. Delivery news will show on the patient's messages.", "ok")
+    except wa.WhatsAppError as exc:
+        db.rollback()
+        flash(str(exc), "error")
+    return redirect(url_for("views.appointment_view", aid=aid))
 
 
 # ------------------------------------------------------------------ manager screens
@@ -413,6 +482,22 @@ def staff_toggle(uid):
     return redirect(url_for("views.staff"))
 
 
+def _ai_row(db, cid):
+    from .services import ainotes
+    r = ainotes.row(db, cid)
+    return {"enabled": bool(r and r["enabled"]), "has_key": bool(r and r["api_key"]), "model": (r["model"] if r else ainotes.DEFAULT_MODEL)}
+
+
+def _notations():
+    from .services import teeth
+    return teeth.NOTATIONS
+
+
+def _ai_default():
+    from .services import ainotes
+    return ainotes.DEFAULT_MODEL
+
+
 @bp.route("/settings", methods=["GET", "POST"])
 @manager_required
 def settings():
@@ -445,12 +530,24 @@ def settings():
                 if "cash" not in methods:
                     methods.insert(0, "cash")
                 whatsapp = (request.form.get("whatsapp") or "").strip()
+                from .services import teeth as _teeth
+                notation = request.form.get("tooth_notation") or g.clinic["tooth_notation"]
+                if notation not in _teeth.NOTATIONS:
+                    raise ValueError("Pick a tooth numbering from the list.")
+                kept = lambda key: (request.form.get(key) if key in request.form else (g.clinic[key] or ""))   # noqa: E731
+                phone = (kept("phone") or "").strip()
+                email = (kept("email") or "").strip()[:120]
+                address = (kept("address") or "").strip()[:300] or None
+                if email and ("@" not in email or " " in email):
+                    raise ValueError("That email address does not look right.")
                 db.execute(
                     """UPDATE clinics SET name=?, open_time=?, close_time=?, slot_minutes=?, working_days=?,
-                              whatsapp=?, country=?, currency=?, timezone=?, payment_methods=?, language=? WHERE id=?""",
+                              whatsapp=?, country=?, currency=?, timezone=?, payment_methods=?, language=?, tooth_notation=?,
+                              address=?, phone=?, email=? WHERE id=?""",
                     ((request.form.get("name") or "").strip() or g.clinic["name"], open_t, close_t, slot,
                      ",".join(map(str, days)), normalise_phone(whatsapp, country) if whatsapp else None,
-                     country, currency, tz, ",".join(methods), language, cid))
+                     country, currency, tz, ",".join(methods), language, notation,
+                     address, normalise_phone(phone, country) if phone else None, email or None, cid))
                 audit.log(db, cid, g.user["id"], "settings.clinic")
             elif action == "tax":
                 from .services import invoices as INV
@@ -465,6 +562,28 @@ def settings():
                     _taxes.add_rate(db, g.clinic, g.user["id"], request.form.get("rate_name"), request.form.get("rate_kind"), request.form.get("rate_pct"))
                 except _taxes.TaxError as exc:
                     raise ValueError(str(exc))
+            elif action == "tax_preset":
+                from .services import taxpresets as _tp
+                try:
+                    res = _tp.apply(db, g.clinic, g.user["id"])
+                except _taxes.TaxError as exc:
+                    raise ValueError(str(exc))
+                note = "Added: " + (", ".join(res["added"]) or "nothing new") + (". Already had: " + ", ".join(res["kept"]) if res["kept"] else "") + "."
+                flash(note, "ok")                                  # a settings screen: English only for now
+                return redirect(url_for("views.settings"))
+            elif action == "voice_perio":
+                on = 1 if request.form.get("enabled") else 0
+                cloud = 1 if (on and request.form.get("cloud")) else 0
+                db.execute("UPDATE clinics SET voice_perio = ?, voice_cloud = ? WHERE id = ?", (on, cloud, cid))
+                audit.log(db, cid, g.user["id"], "settings.voice_perio", None, None, ("on, online allowed" if cloud else "on") if on else "off")
+            elif action == "ai_account":
+                from flask import current_app
+                from .services import ainotes as _ai
+                try:
+                    _ai.save_account(db, g.clinic, g.user["id"], current_app.config["SECRET_KEY"], request.form.get("enabled"),
+                                     request.form.get("api_key"), request.form.get("model"))
+                except _ai.AIError as exc:
+                    raise ValueError(str(exc))
             elif action == "taxrate_toggle":
                 try:
                     _taxes.toggle_rate(db, cid, g.user["id"], request.form.get("id", type=int))
@@ -477,6 +596,11 @@ def settings():
                 table = "providers" if action == "provider" else "chairs"
                 db.execute(f"INSERT INTO {table}(clinic_id, name) VALUES (?,?)", (cid, name))
                 audit.log(db, cid, g.user["id"], f"settings.{action}.add")
+            elif action == "provider_details":
+                db.execute("UPDATE providers SET qualifications = ?, reg_body = ?, reg_number = ? WHERE id = ? AND clinic_id = ?",
+                           ((request.form.get("qualifications") or "").strip()[:80] or None, (request.form.get("reg_body") or "").strip()[:80] or None,
+                            (request.form.get("reg_number") or "").strip()[:40] or None, request.form.get("id", type=int), cid))
+                audit.log(db, cid, g.user["id"], "settings.provider_details", "provider", request.form.get("id", type=int))
             elif action in ("provider_toggle", "chair_toggle"):
                 table = "providers" if action == "provider_toggle" else "chairs"
                 db.execute(f"UPDATE {table} SET active = 1 - active WHERE id = ? AND clinic_id = ?",
@@ -494,4 +618,6 @@ def settings():
         countries=sorted(((c, row[0]) for c, row in regions.COUNTRIES.items()), key=lambda x: x[1]),
         currencies=sorted(regions.CURRENCIES), methods=billing.METHODS,
         enabled=set(billing.enabled_methods(g.clinic)),
-        tax_rates=_taxes.list_rates(db, cid), tax_kinds=_taxes.KINDS)
+        tax_rates=_taxes.list_rates(db, cid), tax_kinds=_taxes.KINDS, notations=_notations(),
+        ai=_ai_row(db, cid), ai_default=_ai_default(),
+        tax_preset=_tp_get(g.clinic["country"]), tax_strengths=_tp_strengths(), tax_checked=_tp_checked())

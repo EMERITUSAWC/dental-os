@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_letterhead.html" import letterhead with context %}
+{% block title %}{{ _d("Referral") }}{% endblock %}
+{% block body %}
+<div class="sheet card printdoc">
+  {{ letterhead() }}
+  <p>{{ today|date }}</p>
+  <p class="addressee"><strong>{{ r.to_name }}</strong>{% if r.to_specialty %}<br>{{ r.to_specialty }}{% endif %}{% if r.to_practice %}<br>{{ r.to_practice }}{% endif %}{% if r.to_address %}<br>{{ r.to_address }}{% endif %}</p>
+  <h2>{{ _d("Referral: %(name)s", name=r.first_name ~ ' ' ~ r.last_name) }}{% if r.urgency != 'routine' %} <span class="pill {{ 'bad' if r.urgency == 'urgent' else 'warn' }}">{{ _d(urgency[r.urgency]) }}</span>{% endif %}</h2>
+  <table>
+    <tr><th>{{ _d("Patient") }}</th><td>{{ r.first_name }} {{ r.last_name }}{% if r.dob %}, {{ _d("born") }} {{ r.dob|date }}{% endif %}</td></tr>
+    <tr><th>{{ _d("Phone") }}</th><td>{{ r.patient_phone|phone }}</td></tr>
+    {% if r.patient_address %}<tr><th>{{ _d("Address") }}</th><td>{{ r.patient_address }}</td></tr>{% endif %}
+    {% if r.teeth %}<tr><th>{{ _d("Teeth") }}</th><td>{{ r.teeth }}</td></tr>{% endif %}
+  </table>
+  <h3>{{ _d("Reason for referral") }}</h3><p class="note-body">{{ r.reason }}</p>
+  {% if r.history %}<h3>{{ _d("Findings and history") }}</h3><p class="note-body">{{ r.history }}</p>{% endif %}
+  <h3>{{ _d("Medical alerts and medicines") }}</h3>
+  {% if alerts or (hist and (hist.medications or hist.allergies or hist.conditions)) %}<ul>
+    {% for a in alerts %}<li>{{ a.text }}</li>{% endfor %}
+    {% if hist and hist.medications %}<li>{{ _d("Medicines:") }} {{ hist.medications }}</li>{% endif %}
+    {% if hist and hist.conditions %}<li>{{ _d("Conditions:") }} {{ hist.conditions }}</li>{% endif %}
+  </ul>{% else %}<p>{{ _d("None recorded.") }}</p>{% endif %}
+  <div class="signblock"><p>{{ _d("Yours sincerely") }}</p><p>______________________________</p>
+    <p><strong>{{ r.provider_name or '' }}</strong>{% if r.qualifications %}, {{ r.qualifications }}{% endif %}{% if r.reg_number %}<br>{{ r.reg_body or _d("Registration") }} {{ r.reg_number }}{% endif %}</p></div>
+</div>
+<section class="card no-print">
+  <h2>{{ _("Where it is") }}: {{ _(statuses[r.status]) }}</h2>
+  {% if r.sent_on %}<p class="muted">{{ _("Sent on") }} {{ r.sent_on|date }}</p>{% endif %}
+  {% if r.report_note %}<p><strong>{{ _("Report:") }}</strong> {{ r.report_note }}</p>{% endif %}
+  <div class="row"><button class="primary" data-print>{{ _("Print the letter") }}</button><a class="btn" href="{{ url_for('care.patient_referrals', pid=r.patient_id) }}">{{ _("Back") }}</a></div>
+  {% if next %}<form method="post" class="row" style="margin-top:12px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <select name="status" aria-label="{{ _('Next step') }}" style="width:auto">{% for s in next %}<option value="{{ s }}">{{ _(statuses[s]) }}</option>{% endfor %}</select>
+    <input name="note" maxlength="2000" placeholder="{{ _('Note, needed for a report') }}" aria-label="{{ _('Note') }}" style="width:320px">
+    <button type="submit">{{ _("Update") }}</button></form>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_report_table.html" import table with context %}
+{% block title %}{{ r.name }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><h1>{{ r.name }}</h1>
+  <div class="row"><a class="btn" href="{{ url_for('reports.saved', report_id=r.id, format='csv') }}">{{ _("Download spreadsheet") }}</a><button type="button" data-print>{{ _("Print") }}</button>
+  {% if user.role == 'manager' %}<a class="btn" href="{{ url_for('reports.builder', report_id=r.id, run='1', **edit_args) }}">{{ _("Change") }}</a>
+  <form method="post" action="{{ url_for('reports.saved_archive', report_id=r.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Remove") }}</button></form>{% endif %}</div></div>
+<section class="card">{% if result %}{{ table(result) }}{% endif %}</section>
+{% endblock %}

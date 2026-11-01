@@ -1,21 +1,28 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Move appointment' if appt else 'New appointment' }}{% endblock %}
+{% block title %}{{ _("Move appointment") if appt else _("New appointment") }}{% endblock %}
 {% block body %}
-<h1>{{ 'Move appointment for ' if appt else 'New appointment for ' }}<a href="{{ url_for('views.patient_view', pid=patient.id) }}">{{ patient.first_name }} {{ patient.last_name }}</a></h1>
+<h1>{{ _('Move appointment') if appt else _('New appointment') }}: <a href="{{ url_for('views.patient_view', pid=patient.id) }}">{{ patient.first_name }} {{ patient.last_name }}</a></h1>
 
 <form method="get" class="card">
   {% if not appt %}<input type="hidden" name="patient_id" value="{{ patient.id }}">{% endif %}
   <input type="hidden" name="find" value="1">
+  {% if types and not appt %}
+  <label for="type_id">{{ _("Appointment type") }}</label>
+  <select id="type_id" name="type_id"><option value="">{{ _("No type: choose the length and reason below") }}</option>
+    {% for t in types %}<option value="{{ t.id }}" {{ 'selected' if t.id == type_id }}>{{ t.name }} ({{ t.duration_min }} {{ _("minutes") }})</option>{% endfor %}</select>
+  {% if type_id %}<p class="muted small">{{ _("The length and reason come from the type.") }}</p>{% endif %}
+  {% endif %}
   <div class="grid three">
-    <div><label for="provider_id">Dentist</label>
+    <div><label for="provider_id">{{ _("Dentist") }}</label>
       <select id="provider_id" name="provider_id">{% for p in providers %}<option value="{{ p.id }}" {{ 'selected' if p.id == provider_id }}>{{ p.name }}</option>{% endfor %}</select></div>
-    <div><label for="date">Day</label><input id="date" type="date" name="date" value="{{ day }}"></div>
-    <div><label for="duration">Length</label>
-      <select id="duration" name="duration">{% for d in durations %}<option value="{{ d }}" {{ 'selected' if d == duration }}>{{ d }} minutes</option>{% endfor %}</select></div>
+    <div><label for="date">{{ _("Day") }}</label><input id="date" type="date" name="date" value="{{ day }}"></div>
+    <div><label for="duration">{{ _("Length") }}</label>
+      <select id="duration" name="duration">{% for d in durations %}<option value="{{ d }}" {{ 'selected' if d == duration }}>{{ d }} {{ _("minutes") }}</option>{% endfor %}</select></div>
   </div>
-  <label for="category">Reason</label>
-  <select id="category" name="category">{% for c in categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}</select>
-  <p><button type="submit">Find free times</button></p>
+  <label for="category">{{ _("Reason") }}</label>
+  <select id="category" name="category">{% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ _(c) }}</option>{% endfor %}</select>
+  <label class="check"><input type="checkbox" name="allow_held" value="1" {{ 'checked' if allow_held }}> <span>{{ _("Book into held-back time (kept for emergencies or new patients)") }}</span></label>
+  <p><button type="submit">{{ _("Find free times") }}</button></p>
 </form>
 
 {% if searched %}
@@ -26,18 +33,20 @@
   <input type="hidden" name="date" value="{{ day }}">
   <input type="hidden" name="duration" value="{{ duration }}">
   <input type="hidden" name="category" value="{{ category }}">
-  <h2>Free times on {{ day|day }}</h2>
+  {% if type_id %}<input type="hidden" name="type_id" value="{{ type_id }}">{% endif %}
+  {% if allow_held %}<input type="hidden" name="allow_held" value="1">{% endif %}
+  <h2>{{ _("Free times on") }} {{ day|day }}</h2>
   {% if slots %}
-  <div class="slots" role="radiogroup" aria-label="Free times">
+  <div class="slots" role="radiogroup" aria-label="{{ _('Free times') }}">
     {% for s in slots %}<label><input type="radio" name="slot" value="{{ s.time }}|{{ s.chair_id }}" required><span>{{ s.label }}</span></label>{% endfor %}
   </div>
   {% if not appt %}
-  <label for="notes">Note for staff (optional)</label>
+  <label for="notes">{{ _("Note for staff (optional)") }}</label>
   <input id="notes" name="notes" maxlength="300" value="{{ notes or '' }}">
   {% endif %}
-  <p><button class="primary" type="submit">{{ 'Move it here' if appt else 'Book this time' }}</button></p>
+  <p><button class="primary" type="submit">{{ _('Move it here') if appt else _('Book this time') }}</button></p>
   {% else %}
-  <p class="muted">Nothing is free that day for this dentist. Try another day, or put the patient on the waiting list.</p>
+  <p class="muted">{{ _("Nothing is free that day for this dentist. Try another day, or put the patient on the waiting list.") }}</p>
   {% endif %}
 </form>
 {% endif %}
@@ -50,9 +59,9 @@
   <input type="hidden" name="provider_id" value="{{ provider_id }}">
   <input type="hidden" name="duration" value="{{ duration }}">
   <input type="hidden" name="category" value="{{ category }}">
-  <h2>No time yet?</h2>
-  <label class="check"><input type="checkbox" name="asap" value="1"> <span>Wants the earliest slot that opens (ASAP)</span></label>
-  <p><button type="submit">Add to waiting list</button></p>
+  <h2>{{ _("No time yet?") }}</h2>
+  <label class="check"><input type="checkbox" name="asap" value="1"> <span>{{ _("Wants the earliest slot that opens (ASAP)") }}</span></label>
+  <p><button type="submit">{{ _("Add to waiting list") }}</button></p>
 </form>
 {% endif %}
 {% endblock %}

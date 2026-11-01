@@ -1,33 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Request{% endblock %}
+{% block title %}{{ _("Request") }}{% endblock %}
 {% block body %}
-<div class="row spread"><h1>{{ kinds[r.kind] }}: {{ r.requester }}</h1><a class="btn" href="{{ url_for('privacy.requests_list') }}">All requests</a></div>
+<div class="row spread"><h1>{{ _(kinds[r.kind]) }}: {{ r.requester }}</h1><a class="btn" href="{{ url_for('privacy.requests_list') }}">{{ _("All requests") }}</a></div>
 <div class="grid two">
   <section class="card">
     <dl class="facts">
-      <dt>Status</dt><dd>{% if r.status == 'open' %}<span class="pill {{ 'bad' if r.due_on < today|string else 'warn' }}">Open</span>{% else %}<span class="pill {{ 'ok' if r.status == 'done' else '' }}">{{ r.status|capitalize }}</span>{% endif %}</dd>
-      <dt>Arrived</dt><dd>{{ r.received_on|date }}</dd>
-      <dt>Reply by</dt><dd>{{ r.due_on|date }}{% if r.status == 'open' and r.due_on < today|string %} <strong>(late)</strong>{% endif %}</dd>
-      <dt>Patient</dt><dd>{% if r.patient_id %}<a href="{{ url_for('views.patient_view', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% else %}Not linked{% endif %}</dd>
-      <dt>Identity checked</dt><dd>{{ 'Yes' if r.identity_checked else 'Not yet' }}</dd>
-      {% if r.details %}<dt>They said</dt><dd>{{ r.details }}</dd>{% endif %}
-      {% if r.status != 'open' %}<dt>Outcome</dt><dd>{{ r.outcome }}</dd><dt>Closed</dt><dd>{{ r.closed_on|date }}{% if r.handler %} by {{ r.handler }}{% endif %}</dd>{% endif %}
+      <dt>{{ _("Status") }}</dt><dd>{% if r.status == 'open' %}<span class="pill {{ 'bad' if r.due_on < today|string else 'warn' }}">{{ _("Open") }}</span>{% else %}<span class="pill {{ 'ok' if r.status == 'done' else '' }}">{{ _(r.status|capitalize) }}</span>{% endif %}</dd>
+      <dt>{{ _("Arrived") }}</dt><dd>{{ r.received_on|date }}</dd>
+      <dt>{{ _("Reply by") }}</dt><dd>{{ r.due_on|date }}{% if r.status == 'open' and r.due_on < today|string %} <strong>{{ _("(late)") }}</strong>{% endif %}</dd>
+      <dt>{{ _("Patient") }}</dt><dd>{% if r.patient_id %}<a href="{{ url_for('views.patient_view', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% else %}{{ _("Not linked") }}{% endif %}</dd>
+      <dt>{{ _("Identity checked") }}</dt><dd>{{ _('Yes') if r.identity_checked else _('Not yet') }}</dd>
+      {% if r.details %}<dt>{{ _("They said") }}</dt><dd>{{ r.details }}</dd>{% endif %}
+      {% if r.status != 'open' %}<dt>{{ _("Outcome") }}</dt><dd>{{ r.outcome }}</dd><dt>{{ _("Closed") }}</dt><dd>{{ r.closed_on|date }}{% if r.handler %} {{ _("by") }} {{ r.handler }}{% endif %}</dd>{% endif %}
     </dl>
-    {% if r.patient_id %}<p><a class="btn" href="{{ url_for('privacy.patient_privacy', pid=r.patient_id) }}">Open this patient's privacy page</a></p>{% endif %}
+    {% if r.patient_id %}<p><a class="btn" href="{{ url_for('privacy.patient_privacy', pid=r.patient_id) }}">{{ _("Open this patient's privacy page") }}</a></p>{% endif %}
   </section>
   <section class="card">
     {% if r.status == 'open' %}
-    <h2>Handle it</h2>
+    <h2>{{ _("Handle it") }}</h2>
     <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="identity"><input type="hidden" name="value" value="{{ 0 if r.identity_checked else 1 }}">
-      <button type="submit">{{ 'Untick: identity checked' if r.identity_checked else 'I have checked who this is' }}</button></form>
-    <p class="muted small">Check you are talking to the person, or someone the law lets act for them, before sending anything. Asking for an ID the clinic already holds, or a call-back to the number on file, is usual.</p>
+      <button type="submit">{{ _('Untick: identity checked') if r.identity_checked else _('I have checked who this is') }}</button></form>
+    <p class="muted small">{{ _("Check you are talking to the person, or someone the law lets act for them, before sending anything. Asking for an ID the clinic already holds, or a call-back to the number on file, is usual.") }}</p>
     <form method="post">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      <label for="outcome">What was done, or why it was refused</label><textarea id="outcome" name="outcome" rows="3" maxlength="1000" required></textarea>
-      <p><button class="primary" type="submit" name="action" value="done">Close as done</button> <button class="danger" type="submit" name="action" value="refused">Close as refused</button></p>
+      <label for="outcome">{{ _("What was done, or why it was refused") }}</label><textarea id="outcome" name="outcome" rows="3" maxlength="1000" required></textarea>
+      <p><button class="primary" type="submit" name="action" value="done">{{ _("Close as done") }}</button> <button class="danger" type="submit" name="action" value="refused">{{ _("Close as refused") }}</button></p>
     </form>
     {% else %}
-    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="reopen"><button type="submit">Reopen</button></form>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="reopen"><button type="submit">{{ _("Reopen") }}</button></form>
     {% endif %}
   </section>
 </div>

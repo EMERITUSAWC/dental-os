@@ -4,7 +4,7 @@ deleted: a manager voids one with a reason, and the number stays used. The patie
 (work done, adjustments, payments), so an invoice is a document, not a second set of money."""
 from datetime import timedelta
 
-from . import audit, billing, serialize, taxes, webhooks
+from . import audit, billing, serialize, taxes, teeth, webhooks
 from .timeutil import now_local
 
 TERMS_DAYS = 14
@@ -94,7 +94,7 @@ def create(db, clinic, user_id, pid, procedure_ids, note=None):
         db.execute("INSERT INTO invoice_tax(clinic_id, invoice_id, name, kind, rate_bp, net_p, tax_p, gross_p) VALUES (?,?,?,?,?,?,?,?)",
                    (cid, cur.lastrowid, name, kind, rate, g_sub, g_tax, g_total))
     for r in rows:
-        label = r["code_name"] + (f", tooth {r['tooth']}" if r["tooth"] else "")
+        label = r["code_name"] + (f", tooth {teeth.show(r['tooth'])}" if r["tooth"] else "")
         t = taxes.for_code(book, clinic, r["tax_rate_id"])
         db.execute("""INSERT INTO invoice_lines(clinic_id, invoice_id, procedure_id, description, service_date, amount_p, tax_name, tax_rate_bp)
                       VALUES (?,?,?,?,?,?,?,?)""",

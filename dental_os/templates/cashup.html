@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Cash-up") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Cash-up: %(day)s", day=day|day) }}</h1>
+  <div class="row"><a class="btn" href="{{ url_for('practice.cashup', date=prev) }}" aria-label="{{ _('Previous day') }}">←</a>
+    {% if next <= today %}<a class="btn" href="{{ url_for('practice.cashup', date=next) }}" aria-label="{{ _('Next day') }}">→</a>{% endif %}
+    <a class="btn" href="{{ url_for('clinical.takings', start=day, end=day) }}">{{ _("Takings for the day") }}</a></div></div>
+{% if row %}
+<section class="card"><h2>{{ _("Closed") }} <span class="pill ok">{{ _("by %(name)s", name=(history[0].by_name if history else '')) }}</span></h2>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Way of paying") }}</th><th>{{ _("Expected") }}</th><th>{{ _("Counted") }}</th><th>{{ _("Difference") }}</th></tr>
+  {% for m, l in lines.items() %}<tr><td>{{ _(method_names.get(m, m)) }}</td><td class="nw">{{ l.expected|money }}</td><td class="nw">{{ l.counted|money }}</td>
+    <td class="nw {{ 'down' if l.difference < 0 else ('up' if l.difference > 0) }}">{{ l.difference|money }}</td></tr>{% endfor %}</table></div>
+  {% if row.note %}<p><strong>{{ _("Note:") }}</strong> {{ row.note }}</p>{% endif %}
+  {% if late %}<div class="card warnbox"><h3>{{ _("Payments entered for this day after it was closed") }}</h3>
+    {% for p in late %}<p><a href="{{ url_for('clinical.receipt', pay_id=p.id) }}">R-{{ '%06d' % p.receipt_no }}</a> {{ p.first_name }} {{ p.last_name }}: {{ p.amount_p|money }} ({{ _(method_names.get(p.method, p.method)) }}){% if p.voided %} <span class="pill bad">{{ _("voided") }}</span>{% endif %}</p>{% endfor %}</div>{% endif %}
+  {% if user.role == 'manager' %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="reopen">
+    <input name="reason" required maxlength="300" placeholder="{{ _('Why reopen it?') }}" aria-label="{{ _('Reason') }}" style="width:280px"><button type="submit">{{ _("Reopen the day") }}</button></form>{% endif %}
+</section>
+{% else %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Count and close") }}</h2>
+  <p class="muted small">{{ _("Count the cash in the till, and check the card machine and mobile money totals for the day. Insurance payments are not counted here.") }}</p>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Way of paying") }}</th><th>{{ _("Expected") }}</th><th>{{ _("Counted") }}</th></tr>
+  {% for m in methods %}<tr><td>{{ _(method_names.get(m, m)) }}</td><td class="nw">{{ (exp.get(m, {}).get('total', 0))|money }} <span class="muted small">({{ exp.get(m, {}).get('n', 0) }})</span></td>
+    <td><input name="count_{{ m }}" inputmode="decimal" style="width:140px" required aria-label="{{ _('Counted') }} {{ _(method_names.get(m, m)) }}"></td></tr>{% endfor %}</table></div>
+  <label for="note">{{ _("Note (needed if anything does not match)") }}</label><input id="note" name="note" maxlength="500">
+  <p><button class="primary" type="submit">{{ _("Close the day") }}</button></p>
+</form>
+{% endif %}
+{% if history|length > 1 or (history and history[0].status == 'reopened') %}<section class="card"><h2>{{ _("Earlier closes of this day") }}</h2>
+  {% for h in history if h.status == 'reopened' %}<p class="small">{{ _("Closed by %(name)s, reopened: %(reason)s", name=h.by_name or '', reason=h.reopen_reason or '') }}</p>{% endfor %}</section>{% endif %}
+<section class="card"><h2>{{ _("Recent closes") }}</h2>
+  {% for r in recent %}<p class="small"><a href="{{ url_for('practice.cashup', date=r.day) }}">{{ r.day|date }}</a> {{ r.by_name or '' }}{% if r.note %}: {{ r.note }}{% endif %}</p>{% else %}<p class="muted">{{ _("No days closed yet.") }}</p>{% endfor %}
+</section>
+{% endblock %}

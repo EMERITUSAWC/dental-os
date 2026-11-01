@@ -1,51 +1,95 @@
 {% extends "base.html" %}
-{% block title %}Tools{% endblock %}
+{% block title %}{{ _("Tools") }}{% endblock %}
 {% block body %}
-<h1>Tools</h1>
+<h1>{{ _("Tools") }}</h1>
 <div class="grid two">
-  <section class="card"><h2>Export your data</h2>
-    <p class="muted">A zip of spreadsheet files with this clinic's patients, visits, treatment, payments, medical history, notes and consents. The files themselves (X-rays and so on) are listed but not included. Treat the zip as confidential patient data.</p>
-    <form method="post" action="{{ url_for('record.export_data') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">Download export</button></form>
+  <section class="card"><h2>{{ _("Export your data") }}</h2>
+    <p class="muted">{{ _("A zip of spreadsheet files with this clinic's patients, visits, treatment, payments, medical history, notes and consents. The files themselves (X-rays and so on) are listed but not included. Treat the zip as confidential patient data.") }}</p>
+    <form method="post" action="{{ url_for('record.export_data') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">{{ _("Download export") }}</button></form>
   </section>
-  <section class="card"><h2>Import patients</h2>
-    <p class="muted">Bring a patient list from another system or a spreadsheet. You see what was understood before anything is added.</p>
-    <a class="btn primary" href="{{ url_for('record.import_start') }}">Start an import</a>
+  <section class="card"><h2>{{ _("Import patients") }}</h2>
+    <p class="muted">{{ _("Bring a patient list from another system or a spreadsheet. You see what was understood before anything is added.") }}</p>
+    <a class="btn primary" href="{{ url_for('record.import_start') }}">{{ _("Start an import") }}</a>
   </section>
-  <section class="card"><h2>Consent forms</h2>
-    <p class="muted">The wording patients read and agree to.</p>
-    <a class="btn" href="{{ url_for('record.consent_forms') }}">Edit consent forms</a>
+  <section class="card"><h2>{{ _("Medicines list") }}</h2>
+    <p class="muted">{{ _("The medicines your dentists prescribe, with the usual way to take them.") }}</p>
+    <a class="btn" href="{{ url_for('care.drugs') }}">{{ _("Medicines list") }}</a>
   </section>
-  <section class="card"><h2>Messages and online booking</h2>
-    <p class="muted">Reminder rules, message wording, campaigns, and the public booking page.</p>
-    <a class="btn" href="{{ url_for('comms.setup') }}">Set up messages</a>
+  <section class="card"><h2>{{ _("Letters") }}</h2>
+    <p class="muted">{{ _("Attendance letters, excuse from duty, reminders and your own, filled in from the record.") }}</p>
+    <a class="btn" href="{{ url_for('care.letter_templates') }}">{{ _("Edit letters") }}</a>
   </section>
-  <section class="card"><h2>Insurers and payers</h2>
-    <p class="muted">Who pays part of a bill, and their price lists.</p>
-    <a class="btn" href="{{ url_for('finance.payers') }}">Payers</a>
+  <section class="card"><h2>{{ _("Referrals") }}</h2>
+    <p class="muted">{{ _("Who you refer to, who refers to you, and where new patients come from.") }}</p>
+    <a class="btn" href="{{ url_for('care.referrers') }}">{{ _("Referrers") }}</a> <a class="btn" href="{{ url_for('care.referrals_open') }}">{{ _("Open referrals") }}</a>
   </section>
-  <section class="card"><h2>Key numbers</h2>
-    <p class="muted">Production, collections, no-shows, plan acceptance, chair time and who owes.</p>
-    <a class="btn" href="{{ url_for('ops.kpi_view') }}">Open key numbers</a>
+  <section class="card"><h2>{{ _("Diary set-up") }}</h2>
+    <p class="muted">{{ _("Each dentist's hours, time off, blocked time and appointment types.") }}</p>
+    <a class="btn" href="{{ url_for('diary.hours') }}">{{ _("Diary set-up") }}</a>
   </section>
-  <section class="card"><h2>Stock and suppliers</h2>
-    <p class="muted">Materials on the shelf, what to reorder, and what is about to expire.</p>
-    <a class="btn" href="{{ url_for('ops.stock_list') }}">Stock</a> <a class="btn" href="{{ url_for('ops.stock_suppliers') }}">Suppliers</a>
+  <section class="card"><h2>{{ _("Consent forms") }}</h2>
+    <p class="muted">{{ _("The wording patients read and agree to.") }}</p>
+    <a class="btn" href="{{ url_for('record.consent_forms') }}">{{ _("Edit consent forms") }}</a>
   </section>
-  <section class="card"><h2>Labs</h2>
-    <p class="muted">The dental laboratories you use, and how quickly they return work.</p>
-    <a class="btn" href="{{ url_for('ops.lab_labs') }}">Labs</a>
+  <section class="card"><h2>{{ _("Messages and online booking") }}</h2>
+    <p class="muted">{{ _("Reminder rules, message wording, campaigns, and the public booking page.") }}</p>
+    <a class="btn" href="{{ url_for('comms.setup') }}">{{ _("Set up messages") }}</a>
   </section>
-  <section class="card"><h2>API and webhooks</h2>
-    <p class="muted">Keys and addresses that let other programs read your data or hear about changes.</p>
-    <a class="btn" href="{{ url_for('ops.integrations') }}">API and webhooks</a>
+  <section class="card"><h2>{{ _("Insurers and payers") }}</h2>
+    <p class="muted">{{ _("Who pays part of a bill, and their price lists.") }}</p>
+    <a class="btn" href="{{ url_for('finance.payers') }}">{{ _("Payers") }}</a>
   </section>
-  <section class="card"><h2>Privacy and data rights</h2>
-    <p class="muted">Requests from people about their data, incidents, records kept too long, and a full copy of one patient's record.</p>
-    <a class="btn" href="{{ url_for('privacy.home') }}">Privacy</a>
+  <section class="card"><h2>{{ _("Key numbers") }}</h2>
+    <p class="muted">{{ _("Production, collections, no-shows, plan acceptance, chair time and who owes.") }}</p>
+    <a class="btn" href="{{ url_for('ops.kpi_view') }}">{{ _("Open key numbers") }}</a>
   </section>
-  <section class="card"><h2>Catalogue and settings</h2>
-    <p class="muted">Procedures and prices, opening hours, dentists and chairs.</p>
-    <a class="btn" href="{{ url_for('views.settings') }}">Settings</a>
+  <section class="card"><h2>{{ _("Stock and suppliers") }}</h2>
+    <p class="muted">{{ _("Materials on the shelf, what to reorder, and what is about to expire.") }}</p>
+    <a class="btn" href="{{ url_for('ops.stock_list') }}">{{ _("Stock") }}</a> <a class="btn" href="{{ url_for('ops.stock_suppliers') }}">{{ _("Suppliers") }}</a>
+  </section>
+  <section class="card"><h2>{{ _("Labs") }}</h2>
+    <p class="muted">{{ _("The dental laboratories you use, and how quickly they return work.") }}</p>
+    <a class="btn" href="{{ url_for('ops.lab_labs') }}">{{ _("Labs") }}</a>
+  </section>
+  <section class="card"><h2>{{ _("API and webhooks") }}</h2>
+    <p class="muted">{{ _("Keys and addresses that let other programs read your data or hear about changes.") }}</p>
+    <a class="btn" href="{{ url_for('ops.integrations') }}">{{ _("API and webhooks") }}</a>
+  </section>
+  {% if user.role == 'manager' %}<section class="card"><h2>{{ _("Move in from another system") }}</h2>
+    <p class="muted">{{ _("Bring records across from Open Dental, Dentrix, another system or a spreadsheet, with a full preview first.") }}</p>
+    <a class="btn" href="{{ url_for('migrate.home') }}">{{ _("Move in from another system") }}</a>
+  </section>{% endif %}
+  <section class="card"><h2>{{ _("Complaints and incidents") }}</h2>
+    <p class="muted">{{ _("Write down any complaint, and anything that went wrong or nearly did. Anyone can report; the manager follows each one through.") }}</p>
+    <div class="row"><a class="btn" href="{{ url_for('gov.complaint_new') }}">{{ _("Write down a complaint") }}</a><a class="btn" href="{{ url_for('gov.incident_new') }}">{{ _("Report an incident") }}</a>{% if user.role in ('manager', 'dentist') %}<a class="btn" href="{{ url_for('gov.home') }}">{{ _("The register") }}</a>{% endif %}</div>
+  </section>
+  {% if user.role != 'front_desk' %}<section class="card"><h2>{{ _("Aftercare sheets") }}</h2>
+    <p class="muted">{{ _("What to do after each kind of treatment, approved by a dentist and printed for the patient.") }}</p>
+    <a class="btn" href="{{ url_for('aftercare.home') }}">{{ _("Aftercare sheets") }}</a>
+  </section>{% endif %}
+  {% if user.role != 'front_desk' %}<section class="card"><h2>{{ _("Implant and materials register") }}</h2>
+    <p class="muted">{{ _("Find every patient with a given implant or lot, and work through a maker's recall.") }}</p>
+    <a class="btn" href="{{ url_for('implants.search') }}">{{ _("The register") }}</a>
+  </section>{% endif %}
+  <section class="card"><h2>{{ _("Patient forms") }}</h2>
+    <p class="muted">{{ _("The clinic's own forms for patients to fill in on their phone or the check-in tablet.") }}</p>
+    <a class="btn" href="{{ url_for('cforms.builder_list') }}">{{ _("Patient forms") }}</a>
+  </section>
+  <section class="card"><h2>{{ _("Equipment") }}</h2>
+    <p class="muted">{{ _("Every chair, compressor, X-ray unit and other item, with services, repairs and faults.") }}</p>
+    <a class="btn" href="{{ url_for('team.equipment') }}">{{ _("Equipment") }}</a>
+  </section>
+  <section class="card"><h2>{{ _("Imaging bridge") }}</h2>
+    <p class="muted">{{ _("Send X-rays from the sensor computer straight to the right patient.") }}</p>
+    <a class="btn" href="{{ url_for('care.imaging_setup') }}">{{ _("Imaging bridge") }}</a>
+  </section>
+  <section class="card"><h2>{{ _("Privacy and data rights") }}</h2>
+    <p class="muted">{{ _("Requests from people about their data, incidents, records kept too long, and a full copy of one patient's record.") }}</p>
+    <a class="btn" href="{{ url_for('privacy.home') }}">{{ _("Privacy") }}</a>
+  </section>
+  <section class="card"><h2>{{ _("Catalogue and settings") }}</h2>
+    <p class="muted">{{ _("Procedures and prices, opening hours, dentists and chairs.") }}</p>
+    <a class="btn" href="{{ url_for('views.settings') }}">{{ _("Settings") }}</a>
   </section>
 </div>
 {% endblock %}

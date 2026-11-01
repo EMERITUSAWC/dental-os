@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Image viewer") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _(kinds[f.kind]) }}, {{ (f.taken_on or f.created_at[:10])|date }}</h1>
+{% if info %}<section class="card"><p class="small">{{ _("DICOM file") }}: {{ info.patient_name or _("no name in the file") }}{% if info.patient_id %} ({{ info.patient_id }}){% endif %}{% if info.study_date %}, {{ info.study_date|date }}{% endif %}{% if info.modality %}, {{ info.modality }}{% endif %}{% if info.maker %}, {{ info.maker }}{% endif %}, {{ info.size }}{% if info.mm_per_px %}. {{ _("Measurements are in millimetres from the file's pixel size.") }}{% endif %}</p>
+  {% if mismatch %}<p class="flash error" role="alert">{{ _("The name inside this X-ray file does not match this patient. Check it was filed on the right record.") }}</p>{% endif %}</section>{% endif %}
+<div class="viewer" id="viewer" data-src="{{ url_for('record.file_preview', file_id=f.id) if f.mime == 'application/dicom' else url_for('record.file_get', file_id=f.id) }}"{% if info and info.mm_per_px %} data-mmpx="{{ info.mm_per_px }}"{% endif %} data-t-reallen="{{ _('Real length in mm') }}"
+  data-t-setscale="{{ _('Set the scale') }}" data-t-scaleset="{{ _('Scale set. Measurements are now in millimetres.') }}" data-t-length="{{ _('Length:') }}"
+  data-t-givescale="{{ _('Give the real length to set a scale.') }}" data-t-taptwo="{{ _('Tap two points.') }}" data-t-error="{{ _('The picture could not be opened.') }}">
+  <div class="row vtools">
+    <button type="button" data-act="zoomin" aria-label="{{ _('Zoom in') }}">+</button>
+    <button type="button" data-act="zoomout" aria-label="{{ _('Zoom out') }}">−</button>
+    <button type="button" data-act="fit">{{ _("Fit") }}</button>
+    <button type="button" data-act="rotate">{{ _("Turn") }}</button>
+    <button type="button" data-act="invert">{{ _("Invert") }}</button>
+    <label class="check" style="margin:0">{{ _("Brightness") }} <input type="range" min="20" max="250" value="100" data-ctl="brightness" style="width:110px"></label>
+    <label class="check" style="margin:0">{{ _("Contrast") }} <input type="range" min="20" max="300" value="100" data-ctl="contrast" style="width:110px"></label>
+    <button type="button" data-act="measure">{{ _("Measure") }}</button>
+    <button type="button" data-act="reset">{{ _("Reset") }}</button>
+  </div>
+  <canvas id="vcanvas" width="1000" height="640" aria-label="{{ _('X-ray or photo') }}"></canvas>
+  <p class="small muted" id="vstatus" aria-live="polite">{{ _("Drag to move. Use the mouse wheel or the buttons to zoom.") }}</p>
+  <p class="small muted">{{ _("To measure, press Measure and tap two points. The first time, give the real length of something you know (for example a 10 mm file) so later measurements are in millimetres. Nothing here changes the stored picture.") }}</p>
+</div>
+<p class="row"><a class="btn" href="{{ url_for('record.files_view', pid=p.id) }}">{{ _("Back to files") }}</a> <a class="btn" href="{{ url_for('record.file_get', file_id=f.id) }}">{{ _("Open the original") }}</a></p>
+<script src="{{ url_for('static', filename='viewer.js') }}" defer></script>
+{% endblock %}

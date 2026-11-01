@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Treatment not booked") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Treatment not booked") }}</h1>
+<p class="muted">{{ _("Planned treatment for patients who have no visit booked. The oldest come first. Call them, or add a task.") }}</p>
+<section class="card"><div class="tbl-wrap"><table><tr><th>{{ _("Planned on") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Treatment") }}</th><th>{{ _("Fee") }}</th><th></th></tr>
+  {% for r in rows %}<tr><td>{{ r.planned_on|date }}</td><td><a href="{{ url_for('views.patient_view', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a><br><span class="muted small">{{ r.phone|phone }}</span></td>
+    <td>{{ r.code_name }}{% if r.tooth %} {{ r.tooth|tooth }}{% endif %}</td><td class="nw">{{ r.fee_p|money }}</td>
+    <td><a class="btn small" href="{{ url_for('views.appointment_new', patient_id=r.patient_id) }}">{{ _("Book") }}</a></td></tr>
+  {% else %}<tr><td colspan="5" class="muted">{{ _("All planned treatment has a visit booked.") }}</td></tr>{% endfor %}</table></div></section>
+{% endblock %}

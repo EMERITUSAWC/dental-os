@@ -1,46 +1,46 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Instalments, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Instalments,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: instalments</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": instalments") }}</h1>
 {{ tabs(p, 'instalments') }}
 {% for r in rows %}{% set pl = r.plan %}
 <section class="card">
-  <div class="row spread"><h2>{{ pl.total_p|money }} in {{ pl.instalment_count }} parts, {{ frequencies[pl.frequency]|lower }}
-      <span class="pill {{ 'ok' if pl.status == 'completed' else 'warn' if pl.status == 'active' else 'bad' }}">{{ pl.status|capitalize }}</span></h2>
-    <span class="muted">Paid {{ r.paid|money }}, left {{ r.left|money }}</span></div>
+  <div class="row spread"><h2>{{ _("%(total)s in %(n)s parts, %(freq)s", total=pl.total_p|money, n=pl.instalment_count, freq=_(frequencies[pl.frequency])|lower) }}
+      <span class="pill {{ 'ok' if pl.status == 'completed' else 'warn' if pl.status == 'active' else 'bad' }}">{{ _(pl.status|capitalize) }}</span></h2>
+    <span class="muted">{{ _("Paid %(paid)s, left %(left)s", paid=r.paid|money, left=r.left|money) }}</span></div>
   {% if pl.note %}<p class="muted small">{{ pl.note }}</p>{% endif %}
   <div class="tbl-wrap"><table>
-    <tr><th>Due</th><th>Amount</th><th>Status</th><th></th></tr>
+    <tr><th>{{ _("Due") }}</th><th>{{ _("Amount") }}</th><th>{{ _("Status") }}</th><th></th></tr>
     {% for i in r.lines %}
     <tr><td class="nw">{{ i.due_on|date }}</td><td class="nw">{{ i.amount_p|money }}</td>
-      <td><span class="pill {{ 'ok' if i.status == 'paid' else 'warn' if i.status == 'due' and i.due_on < today.isoformat() else '' }}">{{ 'Overdue' if i.status == 'due' and i.due_on < today.isoformat() else i.status|capitalize }}</span></td>
+      <td><span class="pill {{ 'ok' if i.status == 'paid' else 'warn' if i.status == 'due' and i.due_on < today.isoformat() else '' }}">{{ _('Overdue') if i.status == 'due' and i.due_on < today.isoformat() else i.status|capitalize }}</span></td>
       <td>{% if i.status == 'due' and pl.status == 'active' %}
         <form method="post" action="{{ url_for('commercial.instalment_pay', inst_id=i.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
-          <select name="method" aria-label="Paid by" style="width:auto">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
-          <input name="reference" placeholder="Reference" aria-label="Reference" maxlength="80" style="width:110px"><button class="primary" type="submit">Paid</button></form>
-      {% elif i.payment_id %}<a href="{{ url_for('clinical.receipt', pay_id=i.payment_id) }}">Receipt</a>{% endif %}</td></tr>
+          <select name="method" aria-label="{{ _('Paid by') }}" style="width:auto">{% for k, v in methods.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+          <input name="reference" placeholder="{{ _('Reference') }}" aria-label="{{ _('Reference') }}" maxlength="80" style="width:110px"><button class="primary" type="submit">{{ _("Paid") }}</button></form>
+      {% elif i.payment_id %}<a href="{{ url_for('clinical.receipt', pay_id=i.payment_id) }}">{{ _("Receipt") }}</a>{% endif %}</td></tr>
     {% endfor %}
   </table></div>
-  {% if pl.status == 'active' and user.role == 'manager' %}<details><summary>Cancel this plan</summary>
+  {% if pl.status == 'active' and user.role == 'manager' %}<details><summary>{{ _("Cancel this plan") }}</summary>
     <form method="post" action="{{ url_for('commercial.instalment_cancel', plan_id=pl.id) }}" class="row" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      <input name="reason" placeholder="Why" aria-label="Reason" maxlength="150" required style="flex:1; min-width:200px"><button class="danger" type="submit">Cancel plan</button></form></details>{% endif %}
+      <input name="reason" placeholder="{{ _('Why') }}" aria-label="{{ _('Reason') }}" maxlength="150" required style="flex:1; min-width:200px"><button class="danger" type="submit">{{ _("Cancel plan") }}</button></form></details>{% endif %}
 </section>
 {% endfor %}
-<section class="card"><h2>Split a balance into instalments</h2>
-  <p class="muted small">Current balance owed: <strong>{{ balance|money }}</strong>. Each instalment you record is a normal payment on the account, with a receipt.</p>
+<section class="card"><h2>{{ _("Split a balance into instalments") }}</h2>
+  <p class="muted small">{{ _("Current balance owed:") }} <strong>{{ balance|money }}</strong>{{ _(". Each instalment you record is a normal payment on the account, with a receipt.") }}</p>
   <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
     <div class="grid three">
-      <div><label for="total">Total to spread</label><input id="total" name="total" inputmode="decimal" value="{{ balance|plain if balance > 0 else '' }}" required></div>
-      <div><label for="count">Number of payments</label><input id="count" name="count" type="number" min="2" max="36" value="3" required></div>
-      <div><label for="frequency">How often</label><select id="frequency" name="frequency">{% for k, v in frequencies.items() %}<option value="{{ k }}" {{ 'selected' if k == 'monthly' }}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label for="total">{{ _("Total to spread") }}</label><input id="total" name="total" inputmode="decimal" value="{{ balance|plain if balance > 0 else '' }}" required></div>
+      <div><label for="count">{{ _("Number of payments") }}</label><input id="count" name="count" type="number" min="2" max="36" value="3" required></div>
+      <div><label for="frequency">{{ _("How often") }}</label><select id="frequency" name="frequency">{% for k, v in frequencies.items() %}<option value="{{ k }}" {{ 'selected' if k == 'monthly' }}>{{ _(v) }}</option>{% endfor %}</select></div>
     </div>
     <div class="grid three">
-      <div><label for="start_on">First payment on</label><input id="start_on" type="date" name="start_on" value="{{ today.isoformat() }}"></div>
-      <div><label for="treatment_plan_id">For plan (optional)</label><select id="treatment_plan_id" name="treatment_plan_id"><option value="">None</option>{% for pl in plans %}<option value="{{ pl.id }}">{{ pl.title }}</option>{% endfor %}</select></div>
-      <div><label for="note">Note</label><input id="note" name="note" maxlength="200"></div>
+      <div><label for="start_on">{{ _("First payment on") }}</label><input id="start_on" type="date" name="start_on" value="{{ today.isoformat() }}"></div>
+      <div><label for="treatment_plan_id">{{ _("For plan (optional)") }}</label><select id="treatment_plan_id" name="treatment_plan_id"><option value="">{{ _("None") }}</option>{% for pl in plans %}<option value="{{ pl.id }}">{{ pl.title }}</option>{% endfor %}</select></div>
+      <div><label for="note">{{ _("Note") }}</label><input id="note" name="note" maxlength="200"></div>
     </div>
-    <p><button class="primary" type="submit">Create instalment plan</button></p>
+    <p><button class="primary" type="submit">{{ _("Create instalment plan") }}</button></p>
   </form>
 </section>
 {% endblock %}

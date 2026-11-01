@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Edit' if i else 'Add' }} stock item{% endblock %}
+{% block title %}{{ _('Edit stock item') if i else _('Add stock item') }}{% endblock %}
 {% block body %}
-<h1>{{ 'Edit ' ~ i.name if i else 'Add a stock item' }}</h1>
+<h1>{{ _('Edit %(name)s', name=i.name) if i else _('Add a stock item') }}</h1>
 {% macro v(name, default='') %}{{ f.get(name, default) if f else default }}{% endmacro %}
 <section class="card"><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
   <div class="grid three">
-    <div><label for="name">Name</label><input id="name" name="name" maxlength="100" required value="{{ v('name', i.name if i else '') }}"></div>
-    <div><label for="sku">Code</label><input id="sku" name="sku" maxlength="60" value="{{ v('sku', i.sku or '' if i else '') }}"></div>
-    <div><label for="loc">Where it is kept</label><input id="loc" name="location" maxlength="60" value="{{ v('location', i.location or '' if i else '') }}"></div>
-    <div><label for="unit">Counted in</label><input id="unit" name="unit" list="units" maxlength="20" required value="{{ v('unit', i.unit if i else 'each') }}"><datalist id="units">{% for u in units %}<option value="{{ u }}">{% endfor %}</datalist></div>
-    <div><label for="cat">Category</label><input id="cat" name="category" list="cats" maxlength="40" value="{{ v('category', i.category if i else 'General') }}"><datalist id="cats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist></div>
-    <div><label for="sup">Supplier</label><select id="sup" name="supplier_id"><option value="">None</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if i and i.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
-    <div><label for="rl">Reorder when at or below</label><input id="rl" name="reorder_level" inputmode="numeric" value="{{ v('reorder_level', i.reorder_level if i else 0) }}"></div>
-    <div><label for="rq">Usual order size</label><input id="rq" name="reorder_qty" inputmode="numeric" value="{{ v('reorder_qty', i.reorder_qty if i else 0) }}"></div>
-    <div><label for="cost">Cost of one</label><input id="cost" name="cost" inputmode="decimal" value="{{ v('cost', i.cost_p|plain if i else '') }}"></div>
+    <div><label for="name">{{ _("Name") }}</label><input id="name" name="name" maxlength="100" required value="{{ v('name', i.name if i else '') }}"></div>
+    <div><label for="sku">{{ _("Code") }}</label><input id="sku" name="sku" maxlength="60" value="{{ v('sku', i.sku or '' if i else '') }}"></div>
+    <div><label for="loc">{{ _("Where it is kept") }}</label><input id="loc" name="location" maxlength="60" value="{{ v('location', i.location or '' if i else '') }}"></div>
+    <div><label for="unit">{{ _("Counted in") }}</label><input id="unit" name="unit" list="units" maxlength="20" required value="{{ v('unit', i.unit if i else 'each') }}"><datalist id="units">{% for u in units %}<option value="{{ u }}">{% endfor %}</datalist></div>
+    <div><label for="cat">{{ _("Category") }}</label><input id="cat" name="category" list="cats" maxlength="40" value="{{ v('category', i.category if i else _('General')) }}"><datalist id="cats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist></div>
+    <div><label for="sup">{{ _("Supplier") }}</label><select id="sup" name="supplier_id"><option value="">{{ _("None") }}</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if i and i.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+    <div><label for="rl">{{ _("Reorder when at or below") }}</label><input id="rl" name="reorder_level" inputmode="numeric" value="{{ v('reorder_level', i.reorder_level if i else 0) }}"></div>
+    <div><label for="rq">{{ _("Usual order size") }}</label><input id="rq" name="reorder_qty" inputmode="numeric" value="{{ v('reorder_qty', i.reorder_qty if i else 0) }}"></div>
+    <div><label for="cost">{{ _("Cost of one") }}</label><input id="cost" name="cost" inputmode="decimal" value="{{ v('cost', i.cost_p|plain if i else '') }}"></div>
   </div>
-  {% if i %}<label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if i.active }}><span>In use. Untick to hide it from lists. Its history is kept.</span></label>{% endif %}
-  <p><button class="primary" type="submit">Save</button> <a href="{{ url_for('ops.stock_list') }}">Cancel</a></p>
+  {% if i %}<label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if i.active }}><span>{{ _("In use. Untick to hide it from lists. Its history is kept.") }}</span></label>{% endif %}
+  <p><button class="primary" type="submit">{{ _("Save") }}</button> <a href="{{ url_for('ops.stock_list') }}">{{ _("Cancel") }}</a></p>
 </form></section>
 {% endblock %}

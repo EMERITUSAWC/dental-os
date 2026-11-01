@@ -1,31 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Payers{% endblock %}
+{% block title %}{{ _("Payers") }}{% endblock %}
 {% block body %}
-<h1>Insurers and other payers</h1>
-<p class="muted">A payer is anyone who pays part of a patient's bill: an insurer, an employer, a government scheme. Each can have its own price list. A <strong>contracted</strong> payer is one whose prices the clinic accepts, so the difference from the clinic's own price is written off. For other payers the patient pays what the payer does not.</p>
+<div class="row spread"><h1>{{ _("Insurers and other payers") }}</h1>{% if clinic.country == 'GH' %}<form method="post" action="{{ url_for('ghclaims.nhis') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Add the NHIS") }}</button></form>{% endif %}</div>
+<p class="muted">{{ _("A payer is anyone who pays part of a patient's bill: an insurer, an employer, a government scheme. Each can have its own price list. A contracted payer is one whose prices the clinic accepts, so the difference from the clinic's own price is written off. For other payers the patient pays what the payer does not.") }}</p>
 {% for r in rows %}
 <section class="card"><form method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="payer_id" value="{{ r.id }}">
   <div class="grid three">
-    <div><label for="n{{ r.id }}">Name</label><input id="n{{ r.id }}" name="name" value="{{ r.name }}" maxlength="80"></div>
-    <div><label for="k{{ r.id }}">Kind</label><select id="k{{ r.id }}" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if r.kind == k }}>{{ v }}</option>{% endfor %}</select></div>
-    <div><label for="p{{ r.id }}">Phone</label><input id="p{{ r.id }}" name="phone" value="{{ r.phone or '' }}" maxlength="40"></div>
+    <div><label for="n{{ r.id }}">{{ _("Name") }}</label><input id="n{{ r.id }}" name="name" value="{{ r.name }}" maxlength="80"></div>
+    <div><label for="k{{ r.id }}">{{ _("Kind") }}</label><select id="k{{ r.id }}" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if r.kind == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="p{{ r.id }}">{{ _("Phone") }}</label><input id="p{{ r.id }}" name="phone" value="{{ r.phone or '' }}" maxlength="40"></div>
   </div>
   <div class="grid two">
-    <div><label for="e{{ r.id }}">Email for claims</label><input id="e{{ r.id }}" name="email" value="{{ r.email or '' }}" maxlength="120"></div>
-    <div><label for="o{{ r.id }}">Notes</label><input id="o{{ r.id }}" name="notes" value="{{ r.notes or '' }}" maxlength="300"></div>
+    <div><label for="e{{ r.id }}">{{ _("Email for claims") }}</label><input id="e{{ r.id }}" name="email" value="{{ r.email or '' }}" maxlength="120"></div>
+    <div><label for="o{{ r.id }}">{{ _("Notes") }}</label><input id="o{{ r.id }}" name="notes" value="{{ r.notes or '' }}" maxlength="300"></div>
   </div>
-  <div class="row"><label class="check" style="margin:0"><input type="checkbox" name="contracted" value="1" {{ 'checked' if r.contracted }}><span>Contracted (write off the difference)</span></label>
-    <label class="check" style="margin:0"><input type="checkbox" name="active" value="1" {{ 'checked' if r.active }}><span>In use</span></label></div>
-  <p class="row"><button type="submit">Save</button> <a class="btn" href="{{ url_for('finance.payer_fees', payer_id=r.id) }}">Price list</a></p>
+  <div class="row"><label class="check" style="margin:0"><input type="checkbox" name="contracted" value="1" {{ 'checked' if r.contracted }}><span>{{ _("Contracted (write off the difference)") }}</span></label>
+    <label class="check" style="margin:0"><input type="checkbox" name="active" value="1" {{ 'checked' if r.active }}><span>{{ _("In use") }}</span></label></div>
+  <p class="row"><button type="submit">{{ _("Save") }}</button> <a class="btn" href="{{ url_for('finance.payer_fees', payer_id=r.id) }}">{{ _("Price list") }}</a> <a class="btn" href="{{ url_for('ghclaims.covered', payer_id=r.id) }}">{{ _("What it covers") }}</a></p>
 </form></section>
 {% endfor %}
-<section class="card"><h2>New payer</h2><form method="post">
+<section class="card"><h2>{{ _("New payer") }}</h2><form method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="active" value="1">
-  <div class="grid three"><div><label for="nn">Name</label><input id="nn" name="name" maxlength="80" required></div>
-    <div><label for="nk">Kind</label><select id="nk" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
-    <div><label for="np">Phone</label><input id="np" name="phone" maxlength="40"></div></div>
-  <div class="grid two"><div><label for="ne">Email for claims</label><input id="ne" name="email" maxlength="120"></div><div><label for="no">Notes</label><input id="no" name="notes" maxlength="300"></div></div>
-  <label class="check"><input type="checkbox" name="contracted" value="1"><span>Contracted (write off the difference)</span></label>
-  <p><button class="primary" type="submit">Add payer</button></p></form></section>
+  <div class="grid three"><div><label for="nn">{{ _("Name") }}</label><input id="nn" name="name" maxlength="80" required></div>
+    <div><label for="nk">{{ _("Kind") }}</label><select id="nk" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="np">{{ _("Phone") }}</label><input id="np" name="phone" maxlength="40"></div></div>
+  <div class="grid two"><div><label for="ne">{{ _("Email for claims") }}</label><input id="ne" name="email" maxlength="120"></div><div><label for="no">{{ _("Notes") }}</label><input id="no" name="notes" maxlength="300"></div></div>
+  <label class="check"><input type="checkbox" name="contracted" value="1"><span>{{ _("Contracted (write off the difference)") }}</span></label>
+  <p><button class="primary" type="submit">{{ _("Add payer") }}</button></p></form></section>
 {% endblock %}

@@ -1,0 +1,15 @@
+{% macro fields(i, kinds) %}
+<div class="grid three">
+  <div><label for="e_name">{{ _("Name") }}</label><input id="e_name" name="name" value="{{ i.name if i else '' }}" placeholder="{{ _('For example Chair 1') }}" maxlength="80" required></div>
+  <div><label for="e_kind">{{ _("Kind") }}</label><select id="e_kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if i and i.kind == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="e_location">{{ _("Where it is") }}</label><input id="e_location" name="location" value="{{ i.location or '' if i else '' }}" maxlength="80"></div>
+  <div><label for="e_maker">{{ _("Maker") }}</label><input id="e_maker" name="maker" value="{{ i.maker or '' if i else '' }}" maxlength="80"></div>
+  <div><label for="e_model">{{ _("Model") }}</label><input id="e_model" name="model" value="{{ i.model or '' if i else '' }}" maxlength="80"></div>
+  <div><label for="e_serial">{{ _("Serial number") }}</label><input id="e_serial" name="serial" value="{{ i.serial or '' if i else '' }}" maxlength="80"></div>
+  <div><label for="e_bought">{{ _("Bought on") }}</label><input id="e_bought" type="date" name="bought_on" value="{{ i.bought_on or '' if i else '' }}"></div>
+  <div><label for="e_warranty">{{ _("Warranty until") }}</label><input id="e_warranty" type="date" name="warranty_until" value="{{ i.warranty_until or '' if i else '' }}"></div>
+  <div><label for="e_every">{{ _("Service every (months)") }}</label><input id="e_every" type="number" min="0" max="120" name="service_months" value="{{ i.service_months or '' if i else '12' }}"></div>
+  <div><label for="e_supplier">{{ _("Supplier or engineer") }}</label><input id="e_supplier" name="supplier" value="{{ i.supplier or '' if i else '' }}" maxlength="120"></div>
+</div>
+<label for="e_notes">{{ _("Notes") }}</label><input id="e_notes" name="notes" value="{{ i.notes or '' if i else '' }}" maxlength="1000">
+{% endmacro %}

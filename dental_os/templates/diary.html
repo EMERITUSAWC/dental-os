@@ -1,43 +1,51 @@
 {% extends "base.html" %}
 {% from "_status.html" import alert_mark %}
-{% block title %}Diary{% endblock %}
+{% from "_diary_nav.html" import diary_nav with context %}
+{% block title %}{{ _("Diary") }}{% endblock %}
 {% block body %}
+{{ diary_nav('day') }}
 <div class="row spread">
   <h1>{{ day|day }}</h1>
   <div class="row">
-    <a class="btn" href="{{ url_for('views.diary', date=prev) }}" aria-label="Previous day">&larr;</a>
-    <a class="btn" href="{{ url_for('views.diary', date=today) }}">Today</a>
-    <a class="btn" href="{{ url_for('views.diary', date=next) }}" aria-label="Next day">&rarr;</a>
-    <form method="get" class="row"><input type="date" name="date" value="{{ day }}" aria-label="Pick a date" style="width:auto">
-      <button type="submit">Go</button></form>
-    <a class="btn primary" href="{{ url_for('views.patients', book=1) }}">New appointment</a>
+    <a class="btn" href="{{ url_for('views.diary', date=prev) }}" aria-label="{{ _('Previous day') }}">←</a>
+    <a class="btn" href="{{ url_for('views.diary', date=today) }}">{{ _("Today") }}</a>
+    <a class="btn" href="{{ url_for('views.diary', date=next) }}" aria-label="{{ _('Next day') }}">→</a>
+    <form method="get" class="row"><input type="date" name="date" value="{{ day }}" aria-label="{{ _('Pick a date') }}" style="width:auto">
+      <button type="submit">{{ _("Go") }}</button></form>
+    <a class="btn primary" href="{{ url_for('views.patients', book=1) }}">{{ _("New appointment") }}</a>
   </div>
+</div>
+{% if closed %}<div class="flash error" role="status">{{ _("The clinic is closed this day") }}: {{ closed }}{% if user.role == 'manager' %} <a href="{{ url_for('closed.home') }}">{{ _("Closed days") }}</a>{% endif %}</div>{% endif %}
+<div>
 </div>
 
 {% if view.providers %}
 <div class="diary">
   <div class="dgrid" style="grid-template-columns: 70px repeat({{ view.providers|length }}, minmax(170px, 1fr)); grid-template-rows: auto repeat({{ view.row_count }}, 44px);">
     <div class="hd" style="grid-row:1;grid-column:1"></div>
-    {% for p in view.providers %}<div class="hd" style="grid-row:1;grid-column:{{ loop.index + 1 }}">{{ p.name }}</div>{% endfor %}
+    {% for p in view.providers %}<div class="hd" style="grid-row:1;grid-column:{{ loop.index + 1 }}">{{ p.name }}{% if p.id in view.off %}<br><span class="pill bad small">{{ _("Time off") }}{% for r in view.off[p.id] if r %}: {{ r }}{% endfor %}</span>{% endif %}</div>{% endfor %}
     {% for l in view.labels %}<div class="tm" style="grid-row:{{ l.grid_row }};grid-column:1">{{ l.label }}</div>
       {% for p in view.providers %}<div style="grid-row:{{ l.grid_row }};grid-column:{{ loop.index + 1 }}"></div>{% endfor %}
     {% endfor %}
+    {% for x in view.shade %}<div class="shade" style="grid-row:{{ x.grid_row }} / span {{ x.span }};grid-column:{{ x.col }}" aria-hidden="true"></div>{% endfor %}
+    {% for b in view.blocks %}<div class="block {{ 'hard' if b.hard else 'held' }}" style="grid-row:{{ b.grid_row }} / span {{ b.span }};grid-column:{{ b.col }}"><span class="small">{{ b.time }} {{ _(block_kinds.get(b.kind, b.kind)) }}{% if b.label %}: {{ b.label }}{% endif %}</span></div>{% endfor %}
     {% for c in view.cells %}
-      <a class="appt {{ 'confirmed' if c.row.confirmation == 'confirmed' }} {{ c.row.status if c.row.status == 'complete' }}"
+      <a class="appt c-{{ c.row.type_colour or 'none' }} {{ 'confirmed' if c.row.confirmation == 'confirmed' }} {{ c.row.status if c.row.status == 'complete' }}"
          style="grid-row:{{ c.grid_row }} / span {{ c.span }};grid-column:{{ c.col }}"
          href="{{ url_for('views.appointment_view', aid=c.row.id) }}">
         <strong>{{ c.time }}</strong> {{ c.row.first_name }} {{ c.row.last_name }}{{ alert_mark(c.row.patient_id) }}<br>
-        <span class="muted">{{ c.row.chair_name }}</span>
+        <span class="muted">{{ c.row.chair_name }}{% if c.row.type_name %}, {{ c.row.type_name }}{% endif %}</span>{% if c.stage != 'expected' %} <span class="pill small st-{{ c.stage }}">{{ {'waiting': _('Waiting'), 'in_chair': _('In the chair'), 'left': _('Has left')}[c.stage] }}</span>{% endif %}
       </a>
     {% endfor %}
   </div>
 </div>
-{% else %}<div class="card"><p>Add a dentist under Settings first.</p></div>{% endif %}
+{% else %}<div class="card"><p>{{ _("Add a dentist under Settings first.") }}</p></div>{% endif %}
 
 {% if view.broken %}
-<div class="card" style="margin-top:16px"><h2>Missed or cancelled</h2>
+<div class="card" style="margin-top:16px"><h2>{{ _("Missed or cancelled") }}</h2>
   {% for b in view.broken %}<p><a href="{{ url_for('views.appointment_view', aid=b.id) }}">{{ b.start_at|time }} {{ b.first_name }} {{ b.last_name }}</a>
-    <span class="pill bad">{{ b.break_reason }}</span></p>{% endfor %}
+    <span class="pill bad">{{ _('Did not come') if b.break_reason == 'missed' else _('Cancelled') }}</span>
+    <a class="small" href="{{ url_for('diary.gap', aid=b.id) }}">{{ _("Fill the gap") }}</a></p>{% endfor %}
 </div>
 {% endif %}
 {% endblock %}

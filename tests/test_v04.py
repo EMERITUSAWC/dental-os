@@ -8,6 +8,7 @@ from pathlib import Path
 
 from werkzeug.security import generate_password_hash
 
+from tests import dbmeta
 from dental_os import create_app, db as dbmod
 
 PW = "correct-horse-battery"
@@ -500,6 +501,7 @@ class PasswordTests(Base):
 
 
 class BackupTests(Base):
+    @dbmeta.sqlite_only
     def test_backup_command_writes_a_readable_copy(self):
         out = Path(self.tmp.name) / "bk"
         res = self.app.test_cli_runner().invoke(args=["backup", "--to", str(out), "--keep", "2"])
@@ -511,6 +513,7 @@ class BackupTests(Base):
 
 
 class UpgradeTests(unittest.TestCase):
+    @dbmeta.sqlite_only
     def test_old_database_is_upgraded_in_place(self):
         import sqlite3
         tmp = tempfile.TemporaryDirectory()

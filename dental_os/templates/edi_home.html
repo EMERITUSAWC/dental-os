@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_edi_tabs.html" import tabs with context %}
+{% block title %}{{ _("Electronic claims") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Electronic claims") }}</h1>
+{{ tabs('home') }}
+<section class="card">
+  <p>{{ _("Claims go to the payer through your clearinghouse in the standard US format (837D). Tick the claims, make the file, then upload it to the clearinghouse. Read its replies on the next tab: the receipt (999), the remittance (835) and cover check answers (271).") }}</p>
+  {% if s.usage == 'T' %}<p><span class="pill warn">{{ _("Test files") }}</span> {{ _("Files are marked as tests until a manager switches them to live in Set up.") }}</p>{% endif %}
+</section>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Claims for payers that take electronic claims") }}</h2>
+  {% if ready %}<div class="tbl-wrap"><table><tr><th></th><th>{{ _("Claim") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Payer") }}</th><th>{{ _("Amount") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for x in ready %}{% set c = x.c %}<tr>
+    <td>{% if not x.problems %}<input type="checkbox" name="claim_id" value="{{ c.id }}" aria-label="{{ _('Send claim') }} {{ c.claim_no }}" {{ 'checked' if c.status == 'draft' }}>{% endif %}</td>
+    <td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a>{% if c.kind == 'preauth' %} <span class="pill">{{ _("Pre-authorisation") }}</span>{% endif %}</td>
+    <td>{{ c.first_name }} {{ c.last_name }}</td><td>{{ c.payer_name }}</td><td>{{ c.total_fee_p|money }}</td>
+    <td>{% if x.problems %}<span class="pill bad">{{ _("Not ready") }}</span><ul class="small">{% for m in x.problems %}<li>{{ _(m) }}</li>{% endfor %}</ul>{% else %}{{ _("Not sent") if c.status == 'draft' else _("Sent, waiting") }}{% endif %}</td></tr>{% endfor %}</table></div>
+  <p><button class="primary" type="submit">{{ _("Make the claim file") }}</button></p>
+  {% else %}<p class="muted">{{ _("No claims waiting. Claims show here when their payer has a payer ID in Set up.") }}</p>{% endif %}
+</form>
+<section class="card"><h2>{{ _("Files") }}</h2>
+  {% if files %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("What") }}</th><th>{{ _("Status") }}</th><th>{{ _("By") }}</th></tr>
+  {% for f in files %}<tr><td class="nw"><a href="{{ url_for('edi.file_view', fid=f.id) }}">{{ f.created_at|date }} {{ f.created_at[11:16] }}</a></td><td>{{ _(kinds[f.kind]) }} ({{ f.kind }})</td>
+    <td><span class="pill {{ 'ok' if f.status in ('accepted', 'posted') else ('bad' if f.status == 'rejected' else '') }}">{{ {'made': _('Made'), 'accepted': _('Accepted'), 'rejected': _('Rejected'), 'posted': _('Read and saved')}[f.status] }}</span></td><td>{{ f.by_name or '' }}</td></tr>{% endfor %}</table></div>
+  {% else %}<p class="muted">{{ _("No files yet.") }}</p>{% endif %}
+</section>
+{% endblock %}

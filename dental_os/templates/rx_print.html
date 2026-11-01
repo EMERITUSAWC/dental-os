@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_letterhead.html" import letterhead with context %}
+{% block title %}{{ _d("Prescription") }}{% endblock %}
+{% block body %}
+<div class="sheet card printdoc">
+  {{ letterhead() }}
+  <h2>{{ _d("Prescription") }}{% if rx.status == 'cancelled' %} <span class="pill bad">{{ _d("CANCELLED") }}</span>{% endif %}</h2>
+  <table>
+    <tr><th>{{ _d("Date") }}</th><td>{{ rx.issued_on|date }}</td></tr>
+    <tr><th>{{ _d("Patient") }}</th><td>{{ p.first_name }} {{ p.last_name }}</td></tr>
+    <tr><th>{{ _d("Address") }}</th><td>{{ p.address or '' }}</td></tr>
+    <tr><th>{{ _d("Date of birth") }}</th><td>{% if p.dob %}{{ p.dob|date }}{% if age is not none %} ({{ _d("age %(n)s", n=age) }}){% endif %}{% endif %}</td></tr>
+  </table>
+  <ol class="rxitems">{% for it in items %}<li><strong>{{ it.name }} {{ it.strength }} {{ it.form }}</strong><br>{{ it.dose }}{% if it.days %}, {{ _d("for %(n)s days", n=it.days) }}{% endif %}{% if it.quantity %}<br>{{ _d("Supply:") }} {{ it.quantity }}{% endif %}{% if it.controlled %}<br><span class="pill warn">{{ _d("Controlled drug") }}</span>{% endif %}</li>{% endfor %}</ol>
+  {% if rx.notes %}<p>{{ rx.notes }}</p>{% endif %}
+  <div class="signblock">
+    <p>{{ _d("Signed:") }} ______________________________</p>
+    <p><strong>{{ rx.provider_name }}</strong>{% if rx.qualifications %}, {{ rx.qualifications }}{% endif %}<br>{{ _d("Dentist") }}{% if rx.reg_number %}, {{ rx.reg_body or _d("Registration") }} {{ rx.reg_number }}{% endif %}</p>
+  </div>
+  {% if rx.status == 'cancelled' %}<p class="muted">{{ _d("Cancelled:") }} {{ rx.cancel_reason }}</p>{% endif %}
+</div>
+<div class="row no-print">
+  {% if rx.status == 'issued' %}<button class="primary" data-print>{{ _("Print") }}</button>{% endif %}
+  <a class="btn" href="{{ url_for('care.prescriptions', pid=p.id) }}">{{ _("Back to prescriptions") }}</a>
+  {% if rx.override_reason %}<p class="muted small">{{ _("Written despite a warning:") }} {{ rx.override_reason }}</p>{% endif %}
+  {% if rx.status == 'issued' and user.role in ('manager', 'dentist') %}
+  <form method="post" action="{{ url_for('care.prescription_cancel', rx_id=rx.id) }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input name="reason" required maxlength="200" placeholder="{{ _('Why cancel it?') }}" aria-label="{{ _('Reason') }}" style="width:240px">
+    <button class="danger" type="submit">{{ _("Cancel prescription") }}</button></form>{% endif %}
+</div>
+{% endblock %}

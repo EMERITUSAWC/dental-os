@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Claim form") }} {{ c.claim_no }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><a class="btn" href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ _("Back") }}</a><button type="button" data-print>{{ _("Print") }}</button></div>
+<section class="card doc">
+  <div class="row spread"><div><strong>{{ g.clinic.name }}</strong>{% if g.clinic.phone %}<br>{{ g.clinic.phone|phone }}{% endif %}{% if g.clinic.address %}<br>{{ g.clinic.address }}{% endif %}</div><div><h1>{{ _("Claim form") }}</h1>{{ _("Claim") }} {{ c.claim_no }}</div></div>
+  <h2>{{ _("Payer and member") }}</h2>
+  <dl class="facts"><dt>{{ _("Payer") }}</dt><dd>{{ c.payer_name }}</dd><dt>{{ _("Member number") }}</dt><dd>{{ c.member_no or (cover.member_no if cover else '') }}</dd>
+    {% if cover and cover.holder_name %}<dt>{{ _("Policy holder") }}</dt><dd>{{ cover.holder_name }}</dd>{% endif %}
+    <dt>{{ _("Patient") }}</dt><dd>{{ p.first_name }} {{ p.last_name }}</dd><dt>{{ _("Born") }}</dt><dd>{{ p.dob|date if p.dob else '' }}</dd><dt>{{ _("Phone") }}</dt><dd>{{ p.phone|phone if p.phone else '' }}</dd></dl>
+  <h2>{{ _("Treatment") }}</h2>
+  <table><thead><tr><th>{{ _("Date") }}</th><th>{{ _("Diagnosis (ICD-10)") }}</th><th>{{ _("Treatment") }}</th><th>{{ _("Tooth") }}</th><th>{{ _("Fee") }}</th></tr></thead><tbody>
+  {% for it in items %}<tr><td>{{ it.done_on|date if it.done_on else '' }}</td><td>{% if it.dx_code %}{{ it.dx_code }} <span class="small">{{ dx.get(it.dx_code, '') }}</span>{% endif %}</td>
+    <td>{{ it.name }} <span class="small muted">{{ it.code }}</span></td><td>{{ it.tooth|tooth if it.tooth else '' }} {{ it.surfaces or '' }}</td><td class="nw">{{ it.fee_p|money }}</td></tr>{% endfor %}
+  <tr><td colspan="4"><strong>{{ _("Total") }}</strong></td><td class="nw"><strong>{{ c.total_fee_p|money }}</strong></td></tr></tbody></table>
+  <div class="grid two" style="margin-top:40px">
+    <p>{{ _("Patient's signature") }}: ____________________<br>{{ _("Date") }}: __________</p>
+    <p>{{ _("Dentist") }}: {{ items[0].provider_name if items and items[0].provider_name else '____________________' }}<br>{{ _("Signature and stamp") }}: ____________________</p></div>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Payment from %(payer)s", payer=payer.name) }}{% endblock %}
+{% block body %}
+<h1>{{ _("Payment from %(payer)s", payer=payer.name) }}</h1>
+{% if claims %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="payer_id" value="{{ payer.id }}">
+  <div class="grid three">
+    <div><label for="amount">{{ _("Amount received") }}</label><input id="amount" name="amount" inputmode="decimal" required value="{{ form.get('amount', '') }}"></div>
+    <div><label for="reference">{{ _("Payer's reference") }}</label><input id="reference" name="reference" maxlength="80" required value="{{ form.get('reference', '') }}"></div>
+    <div><label for="received_on">{{ _("Received on") }}</label><input id="received_on" type="date" name="received_on" value="{{ form.get('received_on', today.isoformat()) }}" max="{{ today.isoformat() }}"></div>
+  </div>
+  <p class="muted small">{{ _("Copy each claim's amount from the payer's list. The amounts must add up to what was received. Write off any part the payer will not pay, or tick Closes to end a claim.") }}</p>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Claim") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Still expected") }}</th><th>{{ _("Paid now") }}</th><th>{{ _("Write off") }}</th><th>{{ _("Closes") }}</th></tr>
+    {% for x in claims %}{% set c = x.claim %}<tr><td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a><br><span class="muted small">{{ c.submitted_on|date if c.submitted_on }}</span></td>
+      <td>{{ c.first_name }} {{ c.last_name }}</td><td class="nw">{{ x.owed|money }}</td>
+      <td><input name="amt_{{ c.id }}" inputmode="decimal" style="width:110px" value="{{ form.get('amt_%d' % c.id, '') }}" aria-label="{{ _('Paid now on claim %(no)s', no=c.claim_no) }}"></td>
+      <td><input name="wo_{{ c.id }}" inputmode="decimal" style="width:110px" value="{{ form.get('wo_%d' % c.id, '') }}" aria-label="{{ _('Write off on claim %(no)s', no=c.claim_no) }}"></td>
+      <td><input type="checkbox" name="final_{{ c.id }}" value="1" aria-label="{{ _('Closes claim %(no)s', no=c.claim_no) }}" {{ 'checked' if form.get('final_%d' % c.id) }}></td></tr>{% endfor %}
+  </table></div>
+  <label for="note">{{ _("Note (optional)") }}</label><input id="note" name="note" maxlength="300" value="{{ form.get('note', '') }}">
+  <p><button class="primary" type="submit">{{ _("Record the payment") }}</button></p>
+</form>
+{% else %}<div class="card"><p class="muted">{{ _("This payer has no sent claims waiting for payment.") }}</p></div>{% endif %}
+{% endblock %}

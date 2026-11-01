@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Copies and the internet") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Copies and the internet") }}</h1>
+<div class="grid two">
+<section class="card"><h2>{{ _("Off-site copy") }}</h2>
+  {% if not target %}<p class="flash error">{{ _("No off-site place is set yet. The person who runs the server sets OFFSITE_TARGET and OFFSITE_PASSPHRASE.") }}</p>
+  {% elif not locked %}<p class="flash error">{{ _("No passphrase is set, so no copy can be made. Set OFFSITE_PASSPHRASE.") }}</p>{% endif %}
+  {% if st.last_ok %}<p>{{ _("Last good copy") }}: <strong>{{ st.last_ok.created_at }} UTC</strong> {% if stale %}<span class="pill warn">{{ _("more than a day old") }}</span>{% else %}<span class="pill ok">{{ _("up to date") }}</span>{% endif %}</p>{% else %}<p>{{ _("No good copy has been made yet.") }}</p>{% endif %}
+  {% if st.last and not st.last.ok %}<p class="flash error">{{ _("The last try failed") }}: {{ st.last.detail }}</p>{% endif %}
+  <p class="muted small">{{ _("Each copy holds the whole database and every patient file, locked with the passphrase. Without the passphrase nobody can read it, so it can go to a USB disk or a cloud folder. If the passphrase is lost, the copies are lost too: keep it written down, away from the computer.") }}</p></section>
+<section class="card"><h2>{{ _("The internet") }}</h2>
+  {% if offline %}<p class="flash warn">{{ _("No internet since") }} {{ offline }} UTC.</p>{% else %}<p>{{ _("No problem found at the last check.") }}</p>{% endif %}
+  <p class="muted small">{{ _("Run on the clinic's own computer, Dental OS keeps working without the internet: the diary, records, charting and the till. Messages and online payments wait and go out when it is back.") }}</p></section>
+</div>
+<section class="card"><h2>{{ _("Recent tries") }}</h2>{% for r in st.recent %}<p class="small">{{ r.created_at }} UTC: {% if r.ok %}<span class="pill ok">{{ _("Good") }}</span> {{ (r.size_bytes / 1048576)|round(1) }} MB{% else %}<span class="pill bad">{{ _("Failed") }}</span> {{ r.detail }}{% endif %}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+<section class="card"><h2>{{ _("A restore drill") }}</h2>
+  {% if drill.last_ok %}<p>{{ _("Last good drill") }}: <strong>{{ drill.last_ok.created_at }} UTC</strong>{% if drill.last_ok.patients is not none %}, {{ drill.last_ok.patients }} {{ _("patients in the copy") }}{% endif %}
+    {% if drill.due %}<span class="pill warn">{{ _("due again") }}</span>{% else %}<span class="pill ok">{{ _("done this month") }}</span>{% endif %}</p>
+  {% else %}<p class="flash warn">{{ _("No restore drill has passed yet. Until one does, nobody knows the copies can really be opened.") }}</p>{% endif %}
+  {% if drill.last and not drill.last.ok %}<p class="flash error">{{ _("The last drill failed") }}: {{ _(drill.last.detail) if drill.last.detail else "" }}</p>{% endif %}
+  <p class="muted small">{{ _("Once a month, the person who runs the server should check that a copy really opens: flask offsite-drill. It unpacks the newest copy somewhere else and checks it, and changes nothing here.") }}</p></section>
+{% endblock %}

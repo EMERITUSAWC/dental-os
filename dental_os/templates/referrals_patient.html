@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Referrals") }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: {{ _("referrals") }}</h1>
+{{ tabs(p, 'referrals') }}
+<section class="card">
+  <h2>{{ _("Refer this patient") }}</h2>
+  {% if referrers %}
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="grid three">
+      <div><label for="referrer_id">{{ _("Refer to") }}</label><select id="referrer_id" name="referrer_id">{% for r in referrers %}<option value="{{ r.id }}">{{ r.name }}{% if r.specialty %}, {{ r.specialty }}{% endif %}</option>{% endfor %}</select></div>
+      <div><label for="provider_id">{{ _("Referring dentist") }}</label><select id="provider_id" name="provider_id">{% for pr in providers %}<option value="{{ pr.id }}">{{ pr.name }}</option>{% endfor %}</select></div>
+      <div><label for="urgency">{{ _("How urgent") }}</label><select id="urgency" name="urgency">{% for k, v in urgency.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    </div>
+    <label for="reason">{{ _("Reason for referral") }}</label><textarea id="reason" name="reason" rows="3" maxlength="2000" required>{{ form.get('reason', '') }}</textarea>
+    <label for="teeth">{{ _("Teeth (optional)") }}</label><input id="teeth" name="teeth" maxlength="80" value="{{ form.get('teeth', '') }}">
+    <label for="history">{{ _("Findings and history for the letter (optional)") }}</label><textarea id="history" name="history" rows="4" maxlength="4000">{{ form.get('history', '') }}</textarea>
+    <p class="muted small">{{ _("The letter also lists the patient's alerts and medicines from the record.") }}</p>
+    <p><button class="primary" type="submit">{{ _("Save the referral") }}</button></p>
+  </form>
+  {% else %}<p class="muted">{{ _("Add the specialists and hospitals you refer to first.") }} <a href="{{ url_for('care.referrers') }}">{{ _("Referrers") }}</a></p>{% endif %}
+</section>
+<section class="card"><h2>{{ _("Referrals") }}</h2>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Date") }}</th><th>{{ _("To") }}</th><th>{{ _("Reason") }}</th><th>{{ _("Status") }}</th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('care.referral', rid=r.id) }}">{{ r.created_at[:10]|date }}</a></td><td>{{ r.to_name }}</td><td>{{ r.reason[:80] }}</td>
+    <td><span class="pill {{ 'bad' if r.urgency == 'urgent' and r.status in ('draft', 'sent') }}">{{ _(statuses[r.status]) }}</span></td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("No referrals yet.") }}</p>{% endif %}
+</section>
+{% endblock %}

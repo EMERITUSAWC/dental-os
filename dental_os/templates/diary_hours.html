@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_diary_tabs.html" import tabs with context %}
+{% block title %}{{ _("Dentists' hours") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Diary set-up") }}</h1>
+{{ tabs(active) }}
+<form method="get" class="row card">
+  <label for="provider_id" style="margin:0">{{ _("Dentist") }}</label>
+  <select id="provider_id" name="provider_id" style="width:auto">{% for p in providers %}<option value="{{ p.id }}" {{ 'selected' if p.id == pid }}>{{ p.name }}</option>{% endfor %}</select>
+  <button type="submit">{{ _("Show") }}</button>
+</form>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="provider_id" value="{{ pid }}">
+  <h2>{{ _("Working hours") }}</h2>
+  {% if not own %}<p class="pill">{{ _("No hours set: this dentist works whenever the clinic is open.") }}</p>{% endif %}
+  <p class="muted small">{{ _("Leave a day empty if they do not work that day. A second span is for a split day, for example 08:00 to 12:00 and 14:00 to 18:00. Hours must sit inside the clinic's opening hours (%(open)s to %(close)s).", open=clinic.open_time, close=clinic.close_time) }}</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>{{ _("Day") }}</th><th>{{ _("Starts") }}</th><th>{{ _("Ends") }}</th><th>{{ _("Starts again") }}</th><th>{{ _("Ends") }}</th></tr>
+    {% for d, name in weekdays.items() %}{% set spans = own.get(d, []) %}
+    <tr><th>{{ _(name) }}{% if d not in open_days %} <span class="muted small">({{ _("clinic closed") }})</span>{% endif %}</th>
+      {% for k in (1, 2) %}{% set sp = spans[k - 1] if spans|length >= k else ('', '') %}
+      <td><input type="time" name="s{{ d }}_{{ k }}" value="{{ sp[0] }}" aria-label="{{ _(name) }} {{ _('start') }} {{ k }}" {{ 'disabled' if d not in open_days }}></td>
+      <td><input type="time" name="e{{ d }}_{{ k }}" value="{{ sp[1] }}" aria-label="{{ _(name) }} {{ _('end') }} {{ k }}" {{ 'disabled' if d not in open_days }}></td>{% endfor %}
+    </tr>{% endfor %}
+  </table></div>
+  <p class="row"><button class="primary" type="submit">{{ _("Save hours") }}</button>
+  {% if own %}<button type="submit" name="clear" value="1">{{ _("Use the clinic's hours instead") }}</button>{% endif %}</p>
+</form>
+{% endblock %}

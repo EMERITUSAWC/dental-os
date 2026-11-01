@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_equipment_fields.html" import fields with context %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block body %}
+<h1>{{ item.name }} <span class="muted small">{{ _(kinds[item.kind]) }}</span></h1>
+<p><a href="{{ url_for('team.equipment') }}">{{ _("Back to the register") }}</a></p>
+<section class="card"><p>{% if item.maker or item.model %}{{ item.maker or '' }} {{ item.model or '' }}. {% endif %}{% if item.serial %}{{ _("Serial number") }} {{ item.serial }}. {% endif %}{% if item.location %}{{ item.location }}. {% endif %}
+  {% if next %}{{ _("Next service") }}: {{ next.isoformat()|date }}.{% endif %}{% if item.fault_open %} <span class="pill bad">{{ _("A fault is open") }}</span>{% endif %}</p></section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Log a service, repair, check or fault") }}</h2>
+  <div class="grid three">
+    <div><label for="ev_kind">{{ _("What happened") }}</label><select id="ev_kind" name="kind">{% for k, v in event_kinds.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="ev_on">{{ _("Date") }}</label><input id="ev_on" type="date" name="done_on" value="{{ today }}"></div>
+    <div><label for="ev_by">{{ _("Done by") }}</label><input id="ev_by" name="done_by" maxlength="120"></div>
+    <div><label for="ev_cost">{{ _("Cost (optional)") }}</label><input id="ev_cost" name="cost" inputmode="decimal"></div>
+  </div>
+  <label for="ev_notes">{{ _("What was done, or what is wrong") }}</label><input id="ev_notes" name="notes" maxlength="1000" required>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+<section class="card"><h2>{{ _("History") }}</h2>{% for e in events %}<p><strong>{{ e.done_on|date }}</strong> {{ _(event_kinds[e.kind]) }}{% if e.done_by %}, {{ e.done_by }}{% endif %}{% if e.cost_p is not none %}, {{ e.cost_p|money }}{% endif %}: {{ e.notes }} <span class="muted small">{{ e.by_user or '' }}</span></p>{% else %}<p class="muted">{{ _("Nothing logged yet.") }}</p>{% endfor %}</section>
+{% if user.role == 'manager' %}<details class="card"><summary>{{ _("Change the details") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="edit">
+  {{ fields(item, kinds) }}<label class="check"><input type="checkbox" name="retired" value="1" {{ 'checked' if item.retired }}> <span>{{ _("No longer used") }}</span></label><p><button type="submit">{{ _("Save") }}</button></p></form></details>{% endif %}
+{% endblock %}

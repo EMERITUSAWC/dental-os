@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_report_table.html" import table with context %}
+{% block title %}{{ _("Report builder") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Report builder") }}</h1><a class="btn" href="{{ url_for('reports.saved_list') }}">{{ _("Saved reports") }}</a></div>
+<form method="get" class="card" id="rb">
+  {% if report %}<input type="hidden" name="report_id" value="{{ report.id }}">{% endif %}
+  <div class="row"><label for="dataset">{{ _("Report on") }}</label><select id="dataset" name="dataset">{% for k, v in datasets.items() %}<option value="{{ k }}" {{ 'selected' if spec.dataset == k }}>{{ _(v) }}</option>{% endfor %}</select>
+    <button type="submit">{{ _("Change") }}</button></div>
+  <h2>{{ _("Columns") }}</h2>
+  <div class="row">{% for k, c in cols.items() %}<label class="check"><input type="checkbox" name="col" value="{{ k }}" {{ 'checked' if k in spec.columns }}> <span>{{ _(c[0]) }}</span></label>{% endfor %}</div>
+  <h2>{{ _("Filters") }}</h2>
+  {% for i in range(4) %}{% set f = spec.filters[i] %}<div class="row">
+    <label class="sr-only" for="f{{ i }}c">{{ _("Column") }}</label><select id="f{{ i }}c" name="f{{ i }}_col"><option value="">{{ _("No filter") }}</option>{% for k, c in cols.items() %}<option value="{{ k }}" {{ 'selected' if f.col == k }}>{{ _(c[0]) }}</option>{% endfor %}</select>
+    <label class="sr-only" for="f{{ i }}o">{{ _("Test") }}</label><select id="f{{ i }}o" name="f{{ i }}_op">{% for k, v in ops.items() %}<option value="{{ k }}" {{ 'selected' if f.op == k }}>{{ _(v) }}</option>{% endfor %}</select>
+    <label class="sr-only" for="f{{ i }}v">{{ _("Value") }}</label><input id="f{{ i }}v" name="f{{ i }}_val" value="{{ f.value or '' }}" maxlength="100">
+  </div>{% endfor %}
+  <p class="muted small">{{ _("Dates are written 2026-10-01; a month alone, like 2026-10, also works with is and is at most.") }}</p>
+  <h2>{{ _("Group and total (optional)") }}</h2>
+  <div class="row">
+    <label for="group_by">{{ _("Group by") }}</label><select id="group_by" name="group_by"><option value="">{{ _("No grouping: list each row") }}</option>{% for k, c in cols.items() %}<option value="{{ k }}" {{ 'selected' if spec.group_by == k }}>{{ _(c[0]) }}</option>{% endfor %}</select>
+    <label for="agg">{{ _("Show") }}</label><select id="agg" name="agg">{% for k, v in aggs.items() %}<option value="{{ k }}" {{ 'selected' if spec.agg == k }}>{{ _(v) }}</option>{% endfor %}</select>
+    <label for="measure">{{ _("of") }}</label><select id="measure" name="measure"><option value="">{{ _("Rows") }}</option>{% for k, c in cols.items() if c[2] in ('money', 'number') %}<option value="{{ k }}" {{ 'selected' if spec.measure == k }}>{{ _(c[0]) }}</option>{% endfor %}</select>
+  </div>
+  <div class="row">
+    <label for="sort">{{ _("Sort by") }}</label><select id="sort" name="sort"><option value="">{{ _("Default") }}</option>{% if spec.group_by %}<option value="_value" {{ 'selected' if spec.sort == '_value' }}>{{ _("The total") }}</option>{% endif %}{% for k, c in cols.items() %}<option value="{{ k }}" {{ 'selected' if spec.sort == k }}>{{ _(c[0]) }}</option>{% endfor %}</select>
+    <label class="check"><input type="checkbox" name="desc" value="1" {{ 'checked' if spec.desc }}> <span>{{ _("Largest or newest first") }}</span></label>
+  </div>
+  <p><button class="primary" type="submit" name="run" value="1">{{ _("Run the report") }}</button></p>
+</form>
+{% if error %}<p class="flash error">{{ _(error) }}</p>{% endif %}
+{% if result %}<section class="card">{{ table(result) }}</section>
+<form method="post" action="{{ url_for('reports.save') }}" class="card row">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">{% if report %}<input type="hidden" name="report_id" value="{{ report.id }}">{% endif %}
+  <input type="hidden" name="dataset" value="{{ spec.dataset }}">{% for c in spec.columns %}<input type="hidden" name="col" value="{{ c }}">{% endfor %}
+  <input type="hidden" name="group_by" value="{{ spec.group_by }}"><input type="hidden" name="agg" value="{{ spec.agg }}"><input type="hidden" name="measure" value="{{ spec.measure }}">
+  <input type="hidden" name="sort" value="{{ spec.sort }}"><input type="hidden" name="desc" value="{{ '1' if spec.desc }}">
+  {% for f in spec.filters %}<input type="hidden" name="f{{ loop.index0 }}_col" value="{{ f.col }}"><input type="hidden" name="f{{ loop.index0 }}_op" value="{{ f.op }}"><input type="hidden" name="f{{ loop.index0 }}_val" value="{{ f.value }}">{% endfor %}
+  <label for="name">{{ _("Save as") }}</label><input id="name" name="name" value="{{ report.name if report else '' }}" maxlength="80" required>
+  <label class="check"><input type="checkbox" name="shared" value="1" {{ 'checked' if not report or report.shared }}> <span>{{ _("Let the team run it") }}</span></label>
+  <button type="submit">{{ _("Save") }}</button>
+</form>{% endif %}
+{% endblock %}

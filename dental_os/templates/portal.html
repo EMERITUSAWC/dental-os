@@ -19,7 +19,7 @@
 
 {% for q in d.quotes %}
 <section class="card"><h2>{{ _("Your quote: %(title)s", title=q.plan.title) }}</h2>
-  <table>{% for l in q.lines %}<tr><td>{{ l.code_name }}{% if l.tooth %}, {{ _("tooth") }} {{ l.tooth }}{% endif %}</td><td class="nw" style="text-align:right">{{ l.fee_p|money }}</td></tr>{% endfor %}
+  <table>{% for l in q.lines %}<tr><td>{{ l.code_name }}{% if l.tooth %}, {{ _("tooth") }} {{ l.tooth|tooth }}{% endif %}</td><td class="nw" style="text-align:right">{{ l.fee_p|money }}</td></tr>{% endfor %}
     <tr><th>{{ _("Total") }}</th><th class="nw" style="text-align:right">{{ q.total|money }}</th></tr></table>
   <form method="post" action="{{ url_for('public.portal_quote', token=token, plan_id=q.plan.id) }}">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
@@ -31,7 +31,7 @@
 </section>{% endfor %}
 
 <section class="card"><h2>{{ _("Your account") }}</h2>
-  {% if d.balance > 0 %}<p>{{ _("Amount due:") }} <strong>{{ d.balance|money }}</strong>. {{ _("Please ask the clinic how to pay.") }}</p>{% elif d.balance < 0 %}<p>{{ _("You have a credit of %(amount)s.", amount=(d.balance|abs)|money) }}</p>{% else %}<p>{{ _("Nothing is due.") }}</p>{% endif %}
+  {% if d.balance > 0 %}<p>{{ _("Amount due:") }} <strong>{{ d.balance|money }}</strong>. {% if pay_online %}<a class="btn primary" href="{{ url_for('paypub.portal_pay', token=token) }}">{{ _("Pay now") }}</a>{% else %}{{ _("Please ask the clinic how to pay.") }}{% endif %}</p>{% elif d.balance < 0 %}<p>{{ _("You have a credit of %(amount)s.", amount=(d.balance|abs)|money) }}</p>{% else %}<p>{{ _("Nothing is due.") }}</p>{% endif %}
 </section>
 
 <section class="card"><h2>{{ _("Your health form") }}</h2>

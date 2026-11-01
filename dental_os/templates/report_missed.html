@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Missed and cancelled visits") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Missed and cancelled visits") }}</h1>
+<form method="get" class="card row"><label for="start" style="margin:0">{{ _("From") }}</label><input id="start" type="date" name="start" value="{{ start }}" style="width:auto">
+  <label for="end" style="margin:0">{{ _("to") }}</label><input id="end" type="date" name="end" value="{{ end }}" style="width:auto"><button type="submit">{{ _("Show") }}</button></form>
+<section class="card"><div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Dentist") }}</th><th>{{ _("What happened") }}</th><th>{{ _("Booked again") }}</th></tr>
+  {% for a in rows %}<tr><td>{{ a.start_at[:10]|date }} {{ a.start_at|time }}</td><td><a href="{{ url_for('views.patient_view', pid=a.patient_id) }}">{{ a.first_name }} {{ a.last_name }}</a><br><span class="muted small">{{ a.phone|phone }}</span></td>
+    <td>{{ a.provider_name or '' }}</td><td>{{ _('Did not come') if a.break_reason == 'missed' else _('Cancelled') }}</td>
+    <td>{% if a.rebooked %}<span class="pill ok">{{ _("Yes") }}</span>{% else %}<a class="btn small" href="{{ url_for('views.appointment_new', patient_id=a.patient_id) }}">{{ _("Book") }}</a>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">{{ _("None in this period.") }}</td></tr>{% endfor %}</table></div></section>
+{% endblock %}

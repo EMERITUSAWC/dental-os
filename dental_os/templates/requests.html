@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% from "_msg_tabs.html" import tabs with context %}
-{% block title %}Booking requests{% endblock %}
+{% block title %}{{ _("Booking requests") }}{% endblock %}
 {% block body %}
-<h1>Messages</h1>
+<h1>{{ _("Messages") }}</h1>
 {{ tabs(active, attn) }}
-<p class="muted">People who asked for a visit on the online booking page. Nothing is booked until you accept. Accepting adds the visit to the diary.</p>
-<p class="row">{% for k, label in (('new', 'Waiting'), ('accepted', 'Accepted'), ('declined', 'Declined'), ('all', 'All')) %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('comms.requests_list', status=k) }}">{{ label }}</a>{% endfor %}</p>
+<p class="muted">{{ _("People who asked for a visit on the online booking page. Nothing is booked until you accept. Accepting adds the visit to the diary.") }}</p>
+<p class="row">{% for k, label in (('new', _('Waiting')), ('accepted', _('Accepted')), ('declined', _('Declined')), ('all', _('All'))) %}<a class="btn {{ 'primary' if status == k }}" href="{{ url_for('comms.requests_list', status=k) }}">{{ label }}</a>{% endfor %}</p>
 <section class="card"><div class="tbl-wrap"><table>
-  <tr><th>Who</th><th>Wants</th><th>For</th><th>Status</th></tr>
+  <tr><th>{{ _("Who") }}</th><th>{{ _("Wants") }}</th><th>{{ _("For") }}</th><th>{{ _("Status") }}</th></tr>
   {% for r in rows %}<tr><td><a href="{{ url_for('comms.request_show', rid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a><div class="muted small">{{ r.phone|phone }}</div></td>
-    <td class="nw">{{ r.wanted_start[:10]|date }}, {{ r.wanted_start|time }}<div class="muted small">{{ r.provider_name or 'First available' }}</div></td><td>{{ r.reason }}</td>
-    <td><span class="pill {{ 'ok' if r.status == 'accepted' else 'bad' if r.status == 'declined' else 'warn' }}">{{ {'new': 'Waiting', 'accepted': 'Accepted', 'declined': 'Declined'}[r.status] }}</span></td></tr>
-  {% else %}<tr><td colspan="4" class="muted">Nothing here.</td></tr>{% endfor %}
+    <td class="nw">{{ r.wanted_start[:10]|date }}, {{ r.wanted_start|time }}<div class="muted small">{{ r.provider_name or _('First available') }}</div></td><td>{{ r.reason }}</td>
+    <td><span class="pill {{ 'ok' if r.status == 'accepted' else 'bad' if r.status == 'declined' else 'warn' }}">{{ {'new': _('Waiting'), 'accepted': _('Accepted'), 'declined': _('Declined')}[r.status] }}</span></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("Nothing here.") }}</td></tr>{% endfor %}
 </table></div></section>
 {% endblock %}

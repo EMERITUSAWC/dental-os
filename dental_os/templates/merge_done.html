@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Records merged") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Records merged") }}</h1>
+<section class="card"><p>{{ _("Record") }} {{ m.dup_id }} {{ _("was merged into") }} <a href="{{ url_for('views.patient_view', pid=keep.id) }}">{{ keep.first_name }} {{ keep.last_name }}</a> ({{ _("record") }} {{ keep.id }}), {{ m.created_at|date }}.</p>
+  <h2>{{ _("What moved") }}</h2>{% for t, n in moved.items() %}<p class="small">{{ _(labels[t]) if t in labels else t }}: {{ n }}</p>{% else %}<p class="muted">{{ _("Nothing.") }}</p>{% endfor %}
+  {% if filled %}<h2>{{ _("Details filled in") }}</h2><p class="small">{{ filled|join(', ') }}</p>{% endif %}
+  {% if left %}<h2>{{ _("Left on the old record, to look at") }}</h2>{% for x in left %}<p class="flash error">{{ _(left_labels[x.what]) }}: {{ x.n }}</p>{% endfor %}<p><a href="{{ url_for('views.patient_view', pid=m.dup_id) }}">{{ _("Open the old record") }}</a></p>{% endif %}
+</section>
+{% endblock %}

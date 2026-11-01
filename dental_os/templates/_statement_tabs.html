@@ -1,0 +1,7 @@
+{% macro tabs(active) %}
+<nav class="tabs" aria-label="{{ _('Statements') }}">
+  <a href="{{ url_for('statements.home') }}" class="{{ 'on' if active == 'home' }}">{{ _("Statement runs") }}</a>
+  {% if user.role == 'manager' %}<a href="{{ url_for('statements.late_fees') }}" class="{{ 'on' if active == 'fees' }}">{{ _("Late fees") }}</a>{% endif %}
+  {% if user.role == 'manager' %}<a href="{{ url_for('finance.ageing_report') }}">{{ _("Who owes, by age") }}</a>{% endif %}
+</nav>
+{% endmacro %}

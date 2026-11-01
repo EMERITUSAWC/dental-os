@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Auto codes") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Auto codes") }}</h1><a class="btn" href="{{ url_for('clinical.catalogue') }}">{{ _("Procedures and prices") }}</a></div>
+<section class="card"><p class="muted small">{{ _("Staff pick a treatment by type, for example Composite filling, with the tooth and surfaces, and the right code is chosen for them: how many surfaces, and front or back tooth.") }}</p>
+  {% for r in rows %}<p><a href="{{ url_for('autocodes.group', gid=r.id) }}">{{ r.name }}</a>{% if not r.active %} <span class="small muted">{{ _("not in use") }}</span>{% endif %}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}</section>
+<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><label for="name">{{ _("New auto code") }}</label><input id="name" name="name" maxlength="80" placeholder="{{ _('Composite filling') }}"><button class="primary" type="submit">{{ _("Make it") }}</button></form>
+{% endblock %}

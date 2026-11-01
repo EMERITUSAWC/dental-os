@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Diagnoses") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Diagnoses") }}</h1><a class="btn" href="{{ url_for('finance.claims_list') }}">{{ _("Claims") }}</a></div>
+<section class="card"><p class="muted small">{{ _("The starter list is the dental block of the WHO's ICD-10, K00 to K14. Add other codes the clinic uses.") }}</p>
+  <table><tbody>{% for code, title in rows.items() %}<tr><td class="nw">{{ code }}</td><td>{{ title }}{% if code not in starter %} <span class="small muted">{{ _("added by the clinic") }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></section>
+<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="code">{{ _("Code") }}</label><input id="code" name="code" maxlength="8" class="narrow" placeholder="S02.5">
+  <label for="title">{{ _("Title") }}</label><input id="title" name="title" maxlength="200"><button type="submit">{{ _("Add") }}</button></form>
+{% endblock %}

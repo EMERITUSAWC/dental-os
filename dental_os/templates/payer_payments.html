@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Payments from payers") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Payments from payers") }}</h1><a class="btn" href="{{ url_for('finance.claims_list') }}">{{ _("Claims") }}</a></div>
+<form method="get" action="{{ url_for('finance.payer_payment_new') }}" class="card row">
+  <label for="payer_id" style="margin:0">{{ _("A payment came in from") }}</label>
+  <select id="payer_id" name="payer_id" style="width:auto">{% for pa in payers %}<option value="{{ pa.id }}">{{ pa.name }}</option>{% endfor %}</select>
+  <button class="primary" type="submit">{{ _("Split it across claims") }}</button>
+</form>
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Date") }}</th><th>{{ _("Payer") }}</th><th>{{ _("Reference") }}</th><th>{{ _("Amount") }}</th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('finance.payer_payment_show', pp_id=r.id) }}">{{ r.received_on|date }}</a></td><td>{{ r.payer_name }}</td><td>{{ r.reference }}</td><td class="nw">{{ r.amount_p|money }}</td></tr>{% endfor %}
+</table></div>{% else %}<p class="muted">{{ _("No payments from payers recorded this way yet.") }}</p>{% endif %}</section>
+{% endblock %}

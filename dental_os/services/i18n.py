@@ -1,6 +1,6 @@
 """Languages. The menus, the sign-in pages, the online booking page, a patient's private page and the printed documents a patient is
-handed (invoice, receipt, statement, quote, consent) can be shown in French as well as English. The rest of the staff screens are in
-English for now.
+handed (invoice, receipt, statement, quote, consent) can be shown in French as well as English. The daily staff screens (dashboard, diary, patients,
+appointments, treatment, account, messages, recalls) are French too. The rest of the staff screens are in English for now.
 
 How it works: the English wording in the templates is the key. If the language is French and the catalogue (i18n_fr.py) has the wording,
 the French is shown. If it has not, the English is shown, so a missing line never breaks a page. A test makes sure every wording marked

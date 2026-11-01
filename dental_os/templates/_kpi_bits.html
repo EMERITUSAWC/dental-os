@@ -1,10 +1,10 @@
-{% macro rate(v) %}{{ (v|string ~ '%') if v is not none else 'No data' }}{% endmacro %}
-{% macro delta(v) %}{% if v is none %}<span class="muted small">nothing to compare</span>{% elif v == 0 %}<span class="muted small">no change</span>{% elif v > 0 %}<span class="small up">up {{ v }}%</span>{% else %}<span class="small down">down {{ -v }}%</span>{% endif %}{% endmacro %}
+{% macro rate(v) %}{{ (v|string ~ '%') if v is not none else _('No data') }}{% endmacro %}
+{% macro delta(v) %}{% if v is none %}<span class="muted small">{{ _("nothing to compare") }}</span>{% elif v == 0 %}<span class="muted small">{{ _("no change") }}</span>{% elif v > 0 %}<span class="small up">{{ _("up") }} {{ v }}%</span>{% else %}<span class="small down">{{ _("down") }} {{ -v }}%</span>{% endif %}{% endmacro %}
 {% macro range_form(start, end, presets, action) %}
 <form method="get" action="{{ action }}" class="row no-print">
-  <input type="date" name="start" value="{{ start }}" aria-label="From" style="width:auto">
-  <input type="date" name="end" value="{{ end }}" aria-label="To" style="width:auto">
-  <button type="submit">Show</button>
+  <input type="date" name="start" value="{{ start }}" aria-label="{{ _('From') }}" style="width:auto">
+  <input type="date" name="end" value="{{ end }}" aria-label="{{ _('To') }}" style="width:auto">
+  <button type="submit">{{ _("Show") }}</button>
 </form>
-<p class="row small no-print">{% for label, s, e in presets %}<a href="{{ action }}?start={{ s }}&end={{ e }}">{{ label }}</a>{% endfor %}</p>
+<p class="row small no-print">{% for label, s, e in presets %}<a href="{{ action }}?start={{ s }}&end={{ e }}">{{ _(label) }}</a>{% endfor %}</p>
 {% endmacro %}

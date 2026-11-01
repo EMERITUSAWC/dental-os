@@ -1,30 +1,30 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Gum chart, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Gum chart,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
 <div class="row spread">
-  <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: gum chart, {{ chart.charted_on|date }}</h1>
-  <a class="btn" href="{{ url_for('record.perio_list', pid=p.id) }}">All charts</a>
+  <h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": gum chart,") }} {{ chart.charted_on|date }}</h1>
+  <a class="btn" href="{{ url_for('record.perio_list', pid=p.id) }}">{{ _("All charts") }}</a>
 </div>
 {{ tabs(p, 'perio') }}
 <div class="stats" style="grid-template-columns: repeat(4, 1fr)">
-  <div class="card"><div class="stat">{{ sum.bleeding_pct }}%</div><div class="muted">of sites bled</div></div>
-  <div class="card"><div class="stat">{{ sum.sites_4plus }}</div><div class="muted">sites 4 mm or more</div></div>
-  <div class="card"><div class="stat">{{ sum.sites_6plus }}</div><div class="muted">sites 6 mm or more</div></div>
-  <div class="card"><div class="stat">{{ sum.mean if sum.mean is not none else 'n/a' }}</div><div class="muted">average pocket (mm)</div></div>
+  <div class="card"><div class="stat">{{ sum.bleeding_pct }}%</div><div class="muted">{{ _("of sites bled") }}</div></div>
+  <div class="card"><div class="stat">{{ sum.sites_4plus }}</div><div class="muted">{{ _("sites 4 mm or more") }}</div></div>
+  <div class="card"><div class="stat">{{ sum.sites_6plus }}</div><div class="muted">{{ _("sites 6 mm or more") }}</div></div>
+  <div class="card"><div class="stat">{{ sum.mean if sum.mean is not none else 'n/a' }}</div><div class="muted">{{ _("average pocket (mm)") }}</div></div>
 </div>
-{% if change %}<p class="card small">Since the last chart: average pocket {{ '%+.1f'|format(change.mean) }} mm, bleeding {{ '%+.1f'|format(change.bleeding_pct) }} points, sites of 4 mm or more {{ '%+d'|format(change.sites_4plus) }}. Lower is better.</p>{% endif %}
-<section class="card"><h2>Score for each sixth of the mouth</h2>
-  <p class="row">{% for s in sum.sextants %}<span class="pill {{ 'bad' if s.score == 4 else 'warn' if s.score in (1, 3) else 'ok' if s.score == 0 else '' }}">{{ s.name }}: {{ s.score if s.score is not none else 'not charted' }}</span>{% endfor %}</p>
-  <p class="muted small">A simplified screening score: 0 healthy, 1 bleeding, 3 pockets of 4 to 5 mm, 4 pockets of 6 mm or more. It leaves out calculus and margin codes, so it guides but does not replace a full examination.</p>
+{% if change %}<p class="card small">{{ _("Since the last chart: average pocket %(mean)s mm, bleeding %(bleeding)s points, sites of 4 mm or more %(sites)s. Lower is better.", mean='%+.1f'|format(change.mean), bleeding='%+.1f'|format(change.bleeding_pct), sites='%+d'|format(change.sites_4plus)) }}</p>{% endif %}
+<section class="card"><h2>{{ _("Score for each sixth of the mouth") }}</h2>
+  <p class="row">{% for s in sum.sextants %}<span class="pill {{ 'bad' if s.score == 4 else 'warn' if s.score in (1, 3) else 'ok' if s.score == 0 else '' }}">{{ _(s.name) }}: {{ s.score if s.score is not none else 'not charted' }}</span>{% endfor %}</p>
+  <p class="muted small">{{ _("A simplified screening score: 0 healthy, 1 bleeding, 3 pockets of 4 to 5 mm, 4 pockets of 6 mm or more. It leaves out calculus and margin codes, so it guides but does not replace a full examination.") }}</p>
 </section>
-{% for arch_name, teeth in (('Upper teeth', upper), ('Lower teeth', lower)) %}
+{% for arch_name, teeth in ((_('Upper teeth'), upper), (_('Lower teeth'), lower)) %}
 <section class="card"><h2>{{ arch_name }}</h2>
   <div class="tbl-wrap"><table class="perio ro">
-    <tr><th></th>{% for t in teeth %}<th colspan="3" class="tn">{{ t }}</th>{% endfor %}</tr>
-    {% for row_name, idx in (('Buccal', 0), ('Lingual', 1)) %}
-    <tr><th class="rl">{{ row_name }} pocket</th>{% for t in teeth %}{% for s in order(t)[idx] %}{% set r = rows.get((t, s)) %}<td class="c {{ 'deep' if r and r.pocket_mm is not none and r.pocket_mm >= 6 else 'mid' if r and r.pocket_mm is not none and r.pocket_mm >= 4 }} {{ 'miss' if t in missing }}">{{ r.pocket_mm if r and r.pocket_mm is not none else '' }}{% if r and r.bleeding %}<i class="bl" title="bled"></i>{% endif %}</td>{% endfor %}{% endfor %}</tr>
-    <tr><th class="rl">recession</th>{% for t in teeth %}{% for s in order(t)[idx] %}{% set r = rows.get((t, s)) %}<td class="c small muted {{ 'miss' if t in missing }}">{{ r.recession_mm if r and r.recession_mm is not none else '' }}</td>{% endfor %}{% endfor %}</tr>
+    <tr><th></th>{% for t in teeth %}<th colspan="3" class="tn">{{ t|tooth }}</th>{% endfor %}</tr>
+    {% for row_name, idx in ((_('Buccal'), 0), (_('Lingual'), 1)) %}
+    <tr><th class="rl">{{ _("%(row)s pocket", row=row_name) }}</th>{% for t in teeth %}{% for s in order(t)[idx] %}{% set r = rows.get((t, s)) %}<td class="c {{ 'deep' if r and r.pocket_mm is not none and r.pocket_mm >= 6 else 'mid' if r and r.pocket_mm is not none and r.pocket_mm >= 4 }} {{ 'miss' if t in missing }}">{{ r.pocket_mm if r and r.pocket_mm is not none else '' }}{% if r and r.bleeding %}<i class="bl" title="{{ _('bled') }}"></i>{% endif %}</td>{% endfor %}{% endfor %}</tr>
+    <tr><th class="rl">{{ _("recession") }}</th>{% for t in teeth %}{% for s in order(t)[idx] %}{% set r = rows.get((t, s)) %}<td class="c small muted {{ 'miss' if t in missing }}">{{ r.recession_mm if r and r.recession_mm is not none else '' }}</td>{% endfor %}{% endfor %}</tr>
     {% endfor %}
   </table></div>
 </section>

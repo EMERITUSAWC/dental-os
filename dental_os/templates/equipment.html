@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_equipment_fields.html" import fields with context %}
+{% block title %}{{ _("Equipment") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Equipment") }}</h1><a class="btn" href="{{ url_for('team.equipment', all='1') }}">{{ _("Include items no longer used") }}</a></div>
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Item") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Where") }}</th><th>{{ _("Next service") }}</th><th>{{ _("Warranty") }}</th></tr>
+  {% for x in rows %}{% set i = x.item %}<tr><td><a href="{{ url_for('team.equipment_item', item_id=i.id) }}">{{ i.name }}</a>{% if i.fault_open %} <span class="pill bad">{{ _("fault") }}</span>{% endif %}{% if i.retired %} <span class="muted small">{{ _("no longer used") }}</span>{% endif %}</td>
+    <td>{{ _(kinds[i.kind]) }}</td><td>{{ i.location or '' }}</td>
+    <td class="nw">{% if x.next %}{{ x.next.isoformat()|date }}{% if x.overdue %} <span class="pill bad">{{ _("overdue") }}</span>{% elif x.soon %} <span class="pill warn">{{ _("soon") }}</span>{% endif %}{% elif x.no_date %}<span class="pill warn">{{ _("no service date") }}</span>{% endif %}</td>
+    <td class="nw">{% if i.warranty_until %}{{ i.warranty_until|date }}{% endif %}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("Nothing in the register yet.") }}</p>{% endif %}</section>
+{% if user.role == 'manager' %}<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("Add an item") }}</h2>{{ fields(None, kinds) }}<p><button class="primary" type="submit">{{ _("Add") }}</button></p></form>{% endif %}
+{% endblock %}

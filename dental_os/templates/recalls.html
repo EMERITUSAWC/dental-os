@@ -1,29 +1,34 @@
 {% extends "base.html" %}
-{% block title %}Recalls{% endblock %}
+{% block title %}{{ _("Recalls") }}{% endblock %}
 {% block body %}
-<h1>Time to bring back</h1>
-<p class="muted">Patients whose check-up is due within 30 days, with nothing booked yet. A recall is set automatically when a consultation or a clean is marked done.</p>
+<div class="row spread"><h1>{{ _("Time to bring back") }}</h1><a class="btn" href="{{ url_for('react.home') }}">{{ _("Not seen for a while") }}</a></div>
+<p class="muted">{{ _("Patients whose check-up is due within 30 days, with nothing booked yet. A recall is set automatically when a consultation or a clean is marked done.") }}</p>
 <div class="card">
   <div class="tbl-wrap"><table>
-    <tr><th>Patient</th><th>Due</th><th>Last asked</th><th></th></tr>
+    <tr><th>{{ _("Patient") }}</th><th>{{ _("Due") }}</th><th>{{ _("Last asked") }}</th><th></th></tr>
     {% for r in rows %}
     <tr>
       <td><a href="{{ url_for('views.patient_view', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a><div class="muted small">{{ r.type_name }}</div></td>
-      <td class="nw">{{ r.due_on|date }} {% if r.due_on < today %}<span class="pill bad">Overdue</span>{% endif %}</td>
-      <td class="muted">{{ r.contacted_on|date if r.contacted_on else 'Not yet' }}</td>
+      <td class="nw">{{ r.due_on|date }} {% if r.due_on < today %}<span class="pill bad">{{ _("Overdue") }}</span>{% endif %}</td>
+      <td class="muted">{{ r.contacted_on|date if r.contacted_on else _('Not yet') }}</td>
       <td><div class="row">
         {% if r.reminders_ok %}
         <form method="post" action="{{ url_for('clinical.recall_whatsapp', rid=r.id) }}" target="_blank">
-          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">WhatsApp</button></form>
-        {% else %}<span class="muted small">No consent</span>{% endif %}
-        <a class="btn" href="{{ url_for('views.appointment_new', patient_id=r.patient_id) }}">Book</a>
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">{{ _("WhatsApp") }}</button></form>
+        {% else %}<span class="muted small">{{ _("No consent") }}</span>{% endif %}
+        <a class="btn" href="{{ url_for('views.appointment_new', patient_id=r.patient_id) }}">{{ _("Book") }}</a>
         <form method="post" action="{{ url_for('clinical.recall_snooze', rid=r.id) }}">
-          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="days" value="30"><button type="submit">Not now</button></form>
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="days" value="30"><button type="submit">{{ _("Not now") }}</button></form>
         <form method="post" action="{{ url_for('clinical.recall_disable', rid=r.id) }}">
-          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">Stop</button></form>
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Stop") }}</button></form>
       </div></td>
     </tr>
-    {% else %}<tr><td colspan="4" class="muted">Nobody is due for a recall right now.</td></tr>{% endfor %}
+    {% else %}<tr><td colspan="4" class="muted">{{ _("Nobody is due for a recall right now.") }}</td></tr>{% endfor %}
   </table></div>
+  {% if pages > 1 %}<div class="row spread">
+    <span class="muted small">{{ _("Showing") }} {{ first }}-{{ last }} {{ _("of") }} {{ total }}</span>
+    <span class="row">{% if page > 1 %}<a class="btn" href="{{ url_for('clinical.recall_list', page=page - 1) }}">{{ _("Previous") }}</a>{% endif %}
+    {% if page < pages %}<a class="btn" href="{{ url_for('clinical.recall_list', page=page + 1) }}">{{ _("Next") }}</a>{% endif %}</span>
+  </div>{% endif %}
 </div>
 {% endblock %}

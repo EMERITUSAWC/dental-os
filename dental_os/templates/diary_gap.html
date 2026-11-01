@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Fill the gap") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Fill the gap") }}</h1>
+<section class="card"><p>{{ _("%(name)s's visit on %(day)s at %(time)s for %(n)s minutes was missed or cancelled.", name=a.first_name ~ ' ' ~ a.last_name, day=start|day, time=start|time, n=a.duration_min) }}</p>
+  <p class="muted small">{{ _("These people are on the waiting list and fit the time. People who asked for the earliest slot come first.") }}</p></section>
+<section class="card">
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("Wants") }}</th><th>{{ _("Length") }}</th><th></th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('views.patient_view', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a><br><span class="muted small">{{ r.phone|phone }}</span></td>
+    <td>{{ _("Earliest slot (ASAP)") if r.status == 'asap' else _("No time yet") }}<br><span class="muted small">{{ _(r.category) }}</span></td>
+    <td class="nw">{{ r.duration_min }} {{ _("minutes") }}</td>
+    <td><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="entry_id" value="{{ r.id }}"><button class="primary" type="submit">{{ _("Book into this time") }}</button></form></td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("Nobody on the waiting list fits this time.") }}</p>{% endif %}
+</section>
+{% endblock %}

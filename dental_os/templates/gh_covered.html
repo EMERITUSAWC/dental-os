@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ payer.name }}: {{ _("What it covers") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ payer.name }}: {{ _("What it covers") }}</h1><a class="btn" href="{{ url_for('finance.payers') }}">{{ _("Payers") }}</a></div>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <p class="muted small">{{ _("Tick the treatments this payer pays for. If none is ticked, the payer's usual shares apply to everything. Treatment not ticked is estimated at nothing, with a note.") }}</p>
+  {% if payer.name == 'NHIS' %}<p class="small">{{ _("The NHIA says the NHIS covers, for oral health: pain relief (incision and drainage, tooth extraction and temporary relief) and dental restoration (simple amalgam fillings and temporary dressing). Dentures are not covered. Check the NHIA's current benefits list.") }}</p>{% endif %}
+  <label class="check"><input type="checkbox" name="needs_dx" value="1" {{ 'checked' if payer.needs_dx }}> <span>{{ _("Every claim line needs a diagnosis") }}</span></label>
+  <div class="grid three">{% for c in codes %}<label class="check"><input type="checkbox" name="code" value="{{ c.id }}" {{ 'checked' if c.id in picked }}> <span>{{ c.name }} <span class="small muted">{{ c.code }}</span></span></label>{% endfor %}</div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+{% endblock %}

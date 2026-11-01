@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_statement_tabs.html" import tabs with context %}
+{% block title %}{{ _("Statement run") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Statement run") }}, {{ d.run.made_on|date }}</h1>
+  <div class="row"><a class="btn primary" href="{{ url_for('statements.run_print', rid=d.run.id) }}">{{ _("Print them all") }}</a>
+  {% if mail_on %}<form method="post" action="{{ url_for('statements.run_email_all', rid=d.run.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Email everyone with an address") }}</button></form>{% endif %}
+  <form method="post" action="{{ url_for('statements.run_printed', rid=d.run.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Mark the rest as printed") }}</button></form></div></div>
+{{ tabs('') }}
+<section class="card">
+  <p>{{ d.lines|length }} {{ _("patients") }}, {{ d.total_p|money }} {{ _("owed in all") }}{% if d.fees_p %}, {{ _("including late fees of") }} {{ d.fees_p|money }}{% endif %}. {{ _("Made by") }} {{ d.run.by_name or '' }}.</p>
+  <p class="muted small">{{ _("The WhatsApp message gives the patient's private link, where the balance and the Pay button are. It never says the amount.") }}</p>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("Owes") }}</th><th>{{ _("Late fee") }}</th><th>{{ _("Sent") }}</th><th></th></tr>
+  {% for i in d.lines %}<tr><td><a href="{{ url_for('finance.statement', pid=i.patient_id) }}">{{ i.first_name }} {{ i.last_name }}</a></td><td>{{ i.balance_p|money }}</td><td>{{ i.fee_p|money if i.fee_p }}</td>
+    <td class="nw">{% if i.sent_at %}{{ {'whatsapp': _("WhatsApp"), 'email': _("Email"), 'sms': _("SMS"), 'print': _("Printed")}.get(i.sent_how, '') }}{% endif %}</td>
+    <td>{% if mail_on and i.reminders_ok and i.email %}<form method="post" action="{{ url_for('statements.item_email', item_id=i.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Email") }}</button></form> {% endif %}{% if sms_on and i.reminders_ok and i.phone %}<form method="post" action="{{ url_for('sms.statement_sms', item_id=i.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("SMS") }}</button></form> {% endif %}{% if i.reminders_ok and i.phone %}<form method="post" action="{{ url_for('statements.item_whatsapp', item_id=i.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Send by WhatsApp") }}</button></form>{% else %}<span class="muted small">{{ _("No messages: print it") }}</span>{% endif %}</td></tr>{% endfor %}</table></div>
+</section>
+{% endblock %}

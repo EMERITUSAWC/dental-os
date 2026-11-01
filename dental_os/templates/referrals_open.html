@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Open referrals") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Open referrals") }}</h1><a class="btn" href="{{ url_for('care.referrers') }}">{{ _("Referrers") }}</a></div>
+<section class="card">
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Patient") }}</th><th>{{ _("To") }}</th><th>{{ _("How urgent") }}</th><th>{{ _("Status") }}</th><th>{{ _("Since") }}</th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('care.referral', rid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a></td><td>{{ r.to_name }}</td>
+    <td><span class="pill {{ 'bad' if r.urgency == 'urgent' else ('warn' if r.urgency == 'soon') }}">{{ _(urgency[r.urgency]) }}</span></td>
+    <td>{{ _(statuses[r.status]) }}</td><td>{{ (r.sent_on or r.created_at[:10])|date }}</td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("No open referrals.") }}</p>{% endif %}
+</section>
+{% endblock %}

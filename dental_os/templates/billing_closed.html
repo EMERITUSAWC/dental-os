@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Account paused") }}{% endblock %}
+{% block body %}
+<section class="card"><h1>{{ _("This clinic's account is") }} {{ _(states[state])|lower }}</h1>
+  {% if clinic.state_reason %}<p>{{ clinic.state_reason }}</p>{% endif %}
+  <p>{{ _("The clinic's records are safe and still belong to the clinic. A manager can take a full copy of them below, or pay any open bill to carry on.") }}</p>
+  {% if user.role == 'manager' %}<div class="row"><form method="post" action="{{ url_for('record.export_data') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="primary" type="submit">{{ _("Download a full copy of the data") }}</button></form><a class="btn" href="{{ url_for('billing.home') }}">{{ _("Billing") }}</a></div>{% endif %}</section>
+{% endblock %}

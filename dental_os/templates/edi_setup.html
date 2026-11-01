@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_edi_tabs.html" import tabs with context %}
+{% block title %}{{ _("Electronic claims set-up") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Electronic claims set-up") }}</h1>
+{{ tabs('setup') }}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Your clearinghouse") }}</h2>
+  <div class="grid three">
+    <div><label for="submitter_id">{{ _("Your submitter ID") }}</label><input id="submitter_id" name="submitter_id" value="{{ s.submitter_id or '' }}"></div>
+    <div><label for="submitter_name">{{ _("Submitter name") }}</label><input id="submitter_name" name="submitter_name" value="{{ s.submitter_name or '' }}"></div>
+    <div><label for="usage">{{ _("Files") }}</label><select id="usage" name="usage"><option value="T" {{ 'selected' if s.usage == 'T' }}>{{ _("Test") }}</option><option value="P" {{ 'selected' if s.usage == 'P' }}>{{ _("Live") }}</option></select></div>
+    <div><label for="receiver_id">{{ _("Clearinghouse receiver ID") }}</label><input id="receiver_id" name="receiver_id" value="{{ s.receiver_id or '' }}"></div>
+    <div><label for="receiver_name">{{ _("Clearinghouse name") }}</label><input id="receiver_name" name="receiver_name" value="{{ s.receiver_name or '' }}"></div>
+    <div></div>
+    <div><label for="contact_name">{{ _("Contact name") }}</label><input id="contact_name" name="contact_name" value="{{ s.contact_name or '' }}"></div>
+    <div><label for="contact_phone">{{ _("Contact phone") }}</label><input id="contact_phone" name="contact_phone" value="{{ s.contact_phone or '' }}"></div>
+  </div>
+  <h2>{{ _("The practice") }}</h2>
+  <div class="grid three">
+    <div><label for="billing_npi">{{ _("Practice NPI") }}</label><input id="billing_npi" name="billing_npi" value="{{ s.billing_npi or '' }}" inputmode="numeric" maxlength="10"></div>
+    <div><label for="tax_id">{{ _("Tax ID (EIN)") }}</label><input id="tax_id" name="tax_id" value="{{ s.tax_id or '' }}" inputmode="numeric"></div>
+    <div><label for="taxonomy">{{ _("Taxonomy code") }}</label><input id="taxonomy" name="taxonomy" value="{{ s.taxonomy or '' }}" placeholder="1223G0001X"></div>
+  </div>
+  <label for="billing_address">{{ _("Street address") }}</label><input id="billing_address" name="billing_address" value="{{ s.billing_address or '' }}" maxlength="55">
+  <div class="grid three">
+    <div><label for="billing_city">{{ _("City") }}</label><input id="billing_city" name="billing_city" value="{{ s.billing_city or '' }}"></div>
+    <div><label for="billing_state">{{ _("State") }}</label><input id="billing_state" name="billing_state" value="{{ s.billing_state or '' }}" maxlength="2"></div>
+    <div><label for="billing_zip">{{ _("ZIP+4") }}</label><input id="billing_zip" name="billing_zip" value="{{ s.billing_zip or '' }}"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="codes">
+  <h2>{{ _("Payer IDs") }}</h2>
+  {% for p in payers %}<div class="row"><label for="payer_{{ p.id }}">{{ p.name }}</label><input id="payer_{{ p.id }}" name="payer_{{ p.id }}" value="{{ p.edi_payer_id or '' }}"></div>{% else %}<p class="muted">{{ _("No payers yet.") }}</p>{% endfor %}
+  <h2>{{ _("Dentists' NPIs") }}</h2>
+  {% for p in providers %}<div class="row"><label for="npi_{{ p.id }}">{{ p.name }}</label><input id="npi_{{ p.id }}" name="npi_{{ p.id }}" value="{{ p.npi or '' }}" inputmode="numeric" maxlength="10"></div>{% endfor %}
+  <h2>{{ _("CDT codes") }}</h2>
+  <p class="muted small">{{ _("CDT is the American Dental Association's licensed code set, so it is not included. Type the code for each procedure from your own CDT licence.") }}</p>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Code") }}</th><th>{{ _("Procedure") }}</th><th>{{ _("CDT code") }}</th></tr>
+  {% for c in codes %}<tr><td>{{ c.code }}</td><td>{{ c.name }}</td><td><label class="sr-only" for="cdt_{{ c.id }}">{{ _("CDT code") }}</label><input id="cdt_{{ c.id }}" name="cdt_{{ c.id }}" value="{{ c.cdt_code or '' }}" maxlength="5" class="narrow"></td></tr>{% endfor %}</table></div>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+</form>
+{% endblock %}

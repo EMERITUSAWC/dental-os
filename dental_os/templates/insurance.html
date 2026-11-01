@@ -1,71 +1,87 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Insurance, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Insurance,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: insurance</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": insurance") }}</h1>
 {{ tabs(p, 'insurance') }}
-<section class="card"><h2>Cover</h2>
+<section class="card"><h2>{{ _("Cover") }}</h2>
   {% for c in covers %}{% set cv = c.cover %}
-  <div class="row spread" style="margin-bottom:8px">
-    <span><strong>{{ cv.payer_name }}</strong>{% if cv.member_no %}, member {{ cv.member_no }}{% endif %}{% if cv.holder_name %}, holder {{ cv.holder_name }}{% endif %}:
-      pays {{ cv.coverage_pct }}%{% if cv.annual_max_p %}, {{ c.left|money }} of {{ cv.annual_max_p|money }} left this year{% endif %}
-      {% if cv.valid_from or cv.valid_to %}<span class="muted small">({{ cv.valid_from|date if cv.valid_from else '' }} to {{ cv.valid_to|date if cv.valid_to else 'open' }})</span>{% endif %}
-      {% if not c.in_force %}<span class="pill warn">Not in force today</span>{% endif %}</span>
-    <form method="post" action="{{ url_for('finance.cover_end', cover_id=cv.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">End cover</button></form>
+  <div class="coverbox">
+  <div class="row spread" style="margin-bottom:4px">
+    <span>{% if covers|length > 1 %}<span class="pill {{ 'ok' if cv.cover_rank == 1 }}">{{ _("Pays first") if cv.cover_rank == 1 else _("Pays second") }}</span> {% endif %}<strong>{{ cv.payer_name }}</strong>{% if cv.member_no %}{{ _(", member %(no)s", no=cv.member_no) }}{% endif %}{% if cv.holder_name %}{{ _(", holder %(name)s", name=cv.holder_name) }}{% endif %}{{ _(": pays %(pct)s%%", pct=cv.coverage_pct) }}{% if cv.annual_max_p %}{{ _(", %(left)s of %(max)s left this year", left=c.left|money, max=cv.annual_max_p|money) }}{% endif %}
+      {% if cv.valid_from or cv.valid_to %}<span class="muted small">({{ _("%(start)s to %(end)s", **{'start': cv.valid_from|date if cv.valid_from else '', 'end': cv.valid_to|date if cv.valid_to else _('open')}) }})</span>{% endif %}
+      {% if not c.in_force %}<span class="pill warn">{{ _("Not in force today") }}</span>{% endif %}</span>
+    <span class="row">
+      {% if cv.cover_rank != 1 %}<form method="post" action="{{ url_for('finance.cover_main', cover_id=cv.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Make this pay first") }}</button></form>{% endif %}
+      <a class="btn small" href="{{ url_for('finance.cover_benefits', cover_id=cv.id) }}">{{ _("Cover terms") }}</a>
+      {% if clinic.country == 'US' %}<a class="btn small" href="{{ url_for('edi.cover_details', cover_id=cv.id) }}">{{ _("US claim details") }}</a>{% endif %}
+      <form method="post" action="{{ url_for('finance.cover_end', cover_id=cv.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("End cover") }}</button></form></span>
   </div>
-  {% else %}<p class="muted">No cover recorded. This patient pays the clinic directly.</p>{% endfor %}
-  <details><summary>Add cover</summary>
+  <p class="small muted">{% if cv.deductible_p %}{{ _("Excess %(amount)s a year, %(left)s still to pay.", amount=cv.deductible_p|money, left=c.sum.ded_left|money) }} {% endif %}
+    {% if cv.ortho_max_p %}{{ _("Orthodontic limit %(amount)s, %(left)s left.", amount=cv.ortho_max_p|money, left=c.sum.ortho_left|money) }} {% endif %}
+    {% if c.rules %}{{ _("Own shares for %(n)s kinds of treatment.", n=c.rules|length) }} {% endif %}{% if c.limits %}{{ _("%(n)s how-often limits.", n=c.limits) }} {% endif %}
+    {{ _("Benefit year %(start)s to %(end)s.", start=c.sum.year_start|date, end=c.sum.year_end|date) }}</p>
+  <form method="post" action="{{ url_for('finance.cover_verify', cover_id=cv.id) }}" class="row small">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    {% if cv.verified_on %}<span class="pill ok">{{ _("Checked %(day)s", day=cv.verified_on|date) }}</span> <span class="muted">{{ cv.verify_note }}</span>{% else %}<span class="pill warn">{{ _("Not checked with the payer") }}</span>{% endif %}
+    <input name="note" maxlength="300" placeholder="{{ _('Who confirmed it, what they said') }}" aria-label="{{ _('Cover check') }}" style="width:260px"><button type="submit" class="small">{{ _("Record a check") }}</button>
+  </form>
+  </div>
+  {% else %}<p class="muted">{{ _("No cover recorded. This patient pays the clinic directly.") }}</p>{% endfor %}
+  <details><summary>{{ _("Add cover") }}</summary>
     {% if payers %}
     <form method="post" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
       <div class="grid three">
-        <div><label for="payer_id">Payer</label><select id="payer_id" name="payer_id">{% for pa in payers %}<option value="{{ pa.id }}">{{ pa.name }}</option>{% endfor %}</select></div>
-        <div><label for="member_no">Member number</label><input id="member_no" name="member_no" maxlength="60"></div>
-        <div><label for="holder_name">Policy holder</label><input id="holder_name" name="holder_name" maxlength="100"></div>
+        <div><label for="payer_id">{{ _("Payer") }}</label><select id="payer_id" name="payer_id">{% for pa in payers %}<option value="{{ pa.id }}">{{ pa.name }}</option>{% endfor %}</select></div>
+        <div><label for="member_no">{{ _("Member number") }}</label><input id="member_no" name="member_no" maxlength="60"></div>
+        <div><label for="holder_name">{{ _("Policy holder") }}</label><input id="holder_name" name="holder_name" maxlength="100"></div>
       </div>
       <div class="grid three">
-        <div><label for="coverage_pct">Payer covers (%)</label><input id="coverage_pct" name="coverage_pct" type="number" min="0" max="100" value="80"></div>
-        <div><label for="annual_max">Yearly maximum (empty for none)</label><input id="annual_max" name="annual_max" inputmode="decimal"></div>
+        <div><label for="coverage_pct">{{ _("Payer covers (%)") }}</label><input id="coverage_pct" name="coverage_pct" type="number" min="0" max="100" value="80"></div>
+        <div><label for="annual_max">{{ _("Yearly maximum (empty for none)") }}</label><input id="annual_max" name="annual_max" inputmode="decimal"></div>
         <div></div>
       </div>
-      <div class="grid three"><div><label for="valid_from">From</label><input id="valid_from" type="date" name="valid_from"></div><div><label for="valid_to">Until</label><input id="valid_to" type="date" name="valid_to"></div><div></div></div>
-      <p><button class="primary" type="submit">Add cover</button></p></form>
-    {% else %}<p class="muted">No payers set up yet. {% if user.role == 'manager' %}<a href="{{ url_for('finance.payers') }}">Add one</a>.{% else %}A manager needs to add them.{% endif %}</p>{% endif %}
+      <div class="grid three"><div><label for="valid_from">{{ _("From") }}</label><input id="valid_from" type="date" name="valid_from"></div><div><label for="valid_to">{{ _("Until") }}</label><input id="valid_to" type="date" name="valid_to"></div><div></div></div>
+      <p><button class="primary" type="submit">{{ _("Add cover") }}</button></p></form>
+    {% else %}<p class="muted">{{ _("No payers set up yet.") }} {% if user.role == 'manager' %}<a href="{{ url_for('finance.payers') }}">{{ _("Add one") }}</a>.{% else %}{{ _("A manager needs to add them.") }}{% endif %}</p>{% endif %}
   </details>
 </section>
 
 {% if est_cover %}
-<section class="card"><h2>Estimate for planned work</h2>
-  <p class="muted small">Using {{ est_cover.payer_name }}. An estimate is not a promise. The payer decides.</p>
+<section class="card"><h2>{{ _("Estimate for planned work") }}</h2>
+  <p class="muted small">{{ _("Using %(payer)s. An estimate is not a promise. The payer decides.", payer=(est_covers|map(attribute='payer_name')|join(' + '))) }}</p>
   <div class="tbl-wrap"><table>
-    <tr><th>Treatment</th><th>Fee</th><th>Payer expected</th><th>Patient pays</th></tr>
-    {% for r, e in estimates %}<tr><td>{{ r.code_name }}{% if r.tooth %}, tooth {{ r.tooth }}{% endif %}</td><td class="nw">{{ r.fee_p|money }}</td><td class="nw">{{ e.payer_p|money }}</td><td class="nw">{{ e.patient_p|money }}</td></tr>
-    {% else %}<tr><td colspan="4" class="muted">Nothing planned.</td></tr>{% endfor %}
-    {% if estimates %}<tr><th>Total</th><th class="nw">{{ estimates|sum(attribute='0.fee_p')|money }}</th><th class="nw">{{ (estimates|map(attribute='1.payer_p')|sum)|money }}</th><th class="nw">{{ (estimates|map(attribute='1.patient_p')|sum)|money }}</th></tr>{% endif %}
+    <tr><th>{{ _("Treatment") }}</th><th>{{ _("Fee") }}</th><th>{{ _("Payer expected") }}</th>{% if est_covers|length > 1 %}<th>{{ _("Second payer") }}</th>{% endif %}<th>{{ _("Patient pays") }}</th></tr>
+    {% for r, e in estimates %}<tr><td>{{ r.code_name }}{% if r.tooth %}{{ _(", tooth") }} {{ r.tooth|tooth }}{% endif %}{% if e.notes %}<br><span class="muted small">{% for n in e.notes %}{{ _(n) }} {% endfor %}</span>{% endif %}</td><td class="nw">{{ r.fee_p|money }}</td>
+      <td class="nw">{{ e.first_p|money }}</td>{% if est_covers|length > 1 %}<td class="nw">{{ e.second_p|money }}</td>{% endif %}<td class="nw">{{ e.patient_p|money }}</td></tr>
+    {% else %}<tr><td colspan="5" class="muted">{{ _("Nothing planned.") }}</td></tr>{% endfor %}
+    {% if estimates %}<tr><th>{{ _("Total") }}</th><th class="nw">{{ estimates|sum(attribute='0.fee_p')|money }}</th><th class="nw">{{ (estimates|map(attribute='1.first_p')|sum)|money }}</th>{% if est_covers|length > 1 %}<th class="nw">{{ (estimates|map(attribute='1.second_p')|sum)|money }}</th>{% endif %}<th class="nw">{{ (estimates|map(attribute='1.patient_p')|sum)|money }}</th></tr>{% endif %}
   </table></div>
 </section>
 {% endif %}
 
 {% if covers %}
-<section class="card"><h2>Make a claim</h2>
-  {% if claimable %}
-  <form method="post" action="{{ url_for('finance.claim_create', pid=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="claim">
-    {% for r in claimable %}<label class="check"><input type="checkbox" name="procedure_id" value="{{ r.id }}"><span>{{ r.done_on|date }}: {{ r.code_name }}{% if r.tooth %}, tooth {{ r.tooth }}{% endif %} ({{ r.fee_p|money }})</span></label>{% endfor %}
-    <div class="row" style="margin-top:8px"><select name="cover_id" aria-label="Cover" style="width:auto">{% for c in covers %}<option value="{{ c.cover.id }}">{{ c.cover.payer_name }}</option>{% endfor %}</select>
-      <button class="primary" type="submit">Make claim</button></div></form>
-  {% else %}<p class="muted">No finished work waiting to be claimed.</p>{% endif %}
-  {% if preauthable %}<details style="margin-top:8px"><summary>Ask the payer to approve planned work first (pre-authorisation)</summary>
-    <form method="post" action="{{ url_for('finance.claim_create', pid=p.id) }}" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="preauth">
-      {% for r in preauthable %}<label class="check"><input type="checkbox" name="procedure_id" value="{{ r.id }}"><span>{{ r.code_name }}{% if r.tooth %}, tooth {{ r.tooth }}{% endif %} ({{ r.fee_p|money }})</span></label>{% endfor %}
-      <div class="row" style="margin-top:8px"><select name="cover_id" aria-label="Cover" style="width:auto">{% for c in covers %}<option value="{{ c.cover.id }}">{{ c.cover.payer_name }}</option>{% endfor %}</select>
-        <button type="submit">Make pre-authorisation</button></div></form></details>{% endif %}
+<section class="card"><h2>{{ _("Make a claim") }}</h2>
+  {% for c in covers %}{% set cv = c.cover %}
+  {% if covers|length > 1 %}<h3>{{ cv.payer_name }}</h3>{% endif %}
+  {% if c.claimable %}
+  <form method="post" action="{{ url_for('finance.claim_create', pid=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="claim"><input type="hidden" name="cover_id" value="{{ cv.id }}">
+    {% for r in c.claimable %}<label class="check"><input type="checkbox" name="procedure_id" value="{{ r.id }}"><span>{{ r.done_on|date }}: {{ r.code_name }}{% if r.tooth %}{{ _(", tooth") }} {{ r.tooth|tooth }}{% endif %} ({{ r.fee_p|money }})</span></label>{% endfor %}
+    <p><button class="primary" type="submit">{{ _("Make claim") }}</button></p></form>
+  {% else %}<p class="muted">{{ _("No finished work waiting to be claimed.") }}</p>{% endif %}
+  {% if c.preauthable %}<details style="margin-top:8px"><summary>{{ _("Ask the payer to approve planned work first (pre-authorisation)") }}</summary>
+    <form method="post" action="{{ url_for('finance.claim_create', pid=p.id) }}" style="margin-top:8px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="kind" value="preauth"><input type="hidden" name="cover_id" value="{{ cv.id }}">
+      {% for r in c.preauthable %}<label class="check"><input type="checkbox" name="procedure_id" value="{{ r.id }}"><span>{{ r.code_name }}{% if r.tooth %}{{ _(", tooth") }} {{ r.tooth|tooth }}{% endif %} ({{ r.fee_p|money }})</span></label>{% endfor %}
+      <p><button type="submit">{{ _("Make pre-authorisation") }}</button></p></form></details>{% endif %}
+  {% endfor %}
 </section>
 {% endif %}
-<section class="card"><h2>Claims</h2>
+<section class="card"><h2>{{ _("Claims") }}</h2>
   <div class="tbl-wrap"><table>
-    <tr><th>No.</th><th>Payer</th><th>Kind</th><th>Total</th><th>Expected</th><th>Paid</th><th>Status</th></tr>
-    {% for c in claims %}<tr><td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a></td><td>{{ c.payer_name }}</td><td>{{ 'Pre-authorisation' if c.kind == 'preauth' else 'Claim' }}</td>
-      <td class="nw">{{ c.total_fee_p|money }}</td><td class="nw">{{ c.estimate_p|money }}</td><td class="nw">{{ c.paid_p|money }}</td><td><span class="pill {{ 'ok' if c.status in ('paid', 'approved') else 'bad' if c.status == 'rejected' else 'warn' if c.status in ('submitted', 'partly_paid') else '' }}">{{ statuses[c.status] }}</span></td></tr>
-    {% else %}<tr><td colspan="7" class="muted">No claims yet.</td></tr>{% endfor %}
+    <tr><th>{{ _("No.") }}</th><th>{{ _("Payer") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Total") }}</th><th>{{ _("Expected") }}</th><th>{{ _("Paid") }}</th><th>{{ _("Status") }}</th></tr>
+    {% for c in claims %}<tr><td><a href="{{ url_for('finance.claim_show', claim_id=c.id) }}">{{ c.claim_no }}</a></td><td>{{ c.payer_name }}</td><td>{{ _('Pre-authorisation') if c.kind == 'preauth' else _('Claim') }}</td>
+      <td class="nw">{{ c.total_fee_p|money }}</td><td class="nw">{{ c.estimate_p|money }}</td><td class="nw">{{ c.paid_p|money }}</td><td><span class="pill {{ 'ok' if c.status in ('paid', 'approved') else 'bad' if c.status == 'rejected' else 'warn' if c.status in ('submitted', 'partly_paid') else '' }}">{{ _(statuses[c.status]) }}</span></td></tr>
+    {% else %}<tr><td colspan="7" class="muted">{{ _("No claims yet.") }}</td></tr>{% endfor %}
   </table></div>
 </section>
 {% endblock %}

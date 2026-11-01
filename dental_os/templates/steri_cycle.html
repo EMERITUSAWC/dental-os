@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Cycle") }} {{ c.cycle_no }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ c.steriliser }}, {{ _("cycle") }} {{ c.cycle_no }}</h1>
+  <a class="btn" href="{{ url_for('steri.labels', cycle_id=c.id) }}">{{ _("Print labels") }}</a></div>
+{{ tabs('') }}
+<section class="card">
+  <p><span class="pill {{ 'ok' if c.result == 'pass' else ('bad' if c.result == 'fail' else 'warn') }}">{{ _(cycle_results[c.result]) }}</span> {{ c.started_at|date }} {{ c.started_at[11:16] }}, {{ c.by_name or '' }}</p>
+  <dl class="facts">
+    {% if c.program %}<dt>{{ _("Programme") }}</dt><dd>{{ c.program }}</dd>{% endif %}
+    {% if c.machine_cycle_no %}<dt>{{ _("Machine's cycle number") }}</dt><dd>{{ c.machine_cycle_no }}</dd>{% endif %}
+    {% if c.temp_tenths %}<dt>{{ _("Temperature") }}</dt><dd>{{ '%.1f' % (c.temp_tenths / 10) }} °C</dd>{% endif %}
+    {% if c.pressure_kpa %}<dt>{{ _("Pressure") }}</dt><dd>{{ c.pressure_kpa }} kPa</dd>{% endif %}
+    {% if c.hold_seconds %}<dt>{{ _("Holding time") }}</dt><dd>{{ c.hold_seconds // 60 }}:{{ '%02d' % (c.hold_seconds % 60) }}</dd>{% endif %}
+    <dt>{{ _("Machine reached its numbers") }}</dt><dd>{{ _("Yes") if c.mechanical_ok else _("No") }}</dd>
+    <dt>{{ _("Indicators changed") }}</dt><dd>{{ _("Yes") if c.indicator_ok else _("No") }}</dd>
+    <dt>{{ _("Implants") }}</dt><dd>{{ _("Yes") if c.implants else _("No") }}</dd>
+    {% if c.notes %}<dt>{{ _("Notes") }}</dt><dd>{{ c.notes }}</dd>{% endif %}
+  </dl>
+  {% if c.result == 'held' %}
+    {% if spore %}{% for t in spore %}<p>{{ _(tests[t.kind]) }}, {{ _("lot") }} {{ t.lot }}: {{ _(results[t.result]) }}</p>{% endfor %}{% endif %}
+    <form method="post" action="{{ url_for('steri.test_add') }}" class="row">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="sid" value="{{ c.steriliser_id }}"><input type="hidden" name="cycle_id" value="{{ c.id }}">
+      <input type="hidden" name="kind" value="spore"><input type="hidden" name="back" value="{{ url_for('steri.cycle_view', cycle_id=c.id) }}">
+      <label class="sr-only" for="lot">{{ _("Lot number (spore tests)") }}</label><input id="lot" name="lot" placeholder="{{ _('Lot number (spore tests)') }}" maxlength="40" required>
+      <button type="submit" name="result" value="pending">{{ _("Spore test put in with this load") }}</button>
+      <button type="submit" name="result" value="pass">{{ _("Spore test passed") }}</button><button type="submit" name="result" value="fail">{{ _("Spore test failed") }}</button>
+    </form>
+  {% endif %}
+</section>
+<section class="card"><h2>{{ _("Packs") }}</h2>
+  <div class="tbl-wrap"><table><tr><th>{{ _("Code") }}</th><th>{{ _("What is in it") }}</th><th>{{ _("Use by") }}</th><th>{{ _("Status") }}</th><th>{{ _("Used on") }}</th></tr>
+  {% for k in packs %}<tr><td><a href="{{ url_for('steri.pack_find', code=k.code) }}">{{ k.code }}</a></td><td>{{ k.contents }}</td><td class="nw">{{ k.expires_on|date }}</td><td>{{ _(pack_status[k.status]) }}</td>
+    <td>{% if k.used_on %}<a href="{{ url_for('views.patient_view', pid=k.used_on) }}">{{ k.first_name }} {{ k.last_name }}</a>{% endif %}</td></tr>{% endfor %}</table></div>
+</section>
+{% endblock %}

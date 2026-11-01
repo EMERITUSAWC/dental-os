@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_edi_tabs.html" import tabs with context %}
+{% block title %}{{ _("Remittance") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Remittance") }}: {{ r.payer_name }}</h1>
+{{ tabs('import') }}
+<section class="card">
+  <dl class="facts"><dt>{{ _("Amount paid") }}</dt><dd><strong>{{ r.total_p|money }}</strong></dd>
+    <dt>{{ _("Reference") }}</dt><dd>{{ r.trace }} ({{ r.method }})</dd>{% if r.paid_on %}<dt>{{ _("Date") }}</dt><dd>{{ r.paid_on|date }}</dd>{% endif %}</dl>
+  {% if r.plb_p %}<p class="flash error">{{ _("This remittance has adjustments at the practice level (PLB). Post it by hand on the payer payment screen.") }}</p>{% endif %}
+  {% if not r.ok and not r.plb_p %}<p class="flash error">{{ _("The claims that could be matched do not add up to the amount paid. Post it by hand on the payer payment screen.") }}</p>{% endif %}
+</section>
+<section class="card"><div class="tbl-wrap"><table><tr><th>{{ _("Claim") }}</th><th>{{ _("Result") }}</th><th>{{ _("Charged") }}</th><th>{{ _("Paid") }}</th><th>{{ _("Adjustments") }}</th></tr>
+  {% for x in r.claims %}<tr><td>{% if x.claim %}<a href="{{ url_for('finance.claim_show', claim_id=x.claim.id) }}">{{ x.claim.claim_no }}</a>{% else %}{{ x.ref }}{% endif %}</td>
+    <td>{{ _(clp.get(x.status, x.status)) }}{% if x.problem %}<br><span class="pill bad">{{ _(x.problem) }}</span>{% endif %}</td>
+    <td>{{ x.charge_p|money }}</td><td>{{ x.paid_p|money }}</td>
+    <td class="small">{% for a in x.adjust %}{{ a.group }}-{{ a.reason }}: {{ a.amount_p|money }} ({{ _(groups.get(a.group, a.group)) }})<br>{% endfor %}</td></tr>{% endfor %}</table></div>
+  <p class="muted small">{{ _("Contract adjustments (CO) are written off. What the patient owes (PR) stays on their account. Denied claims are marked rejected with the payer's reason codes.") }}</p>
+  {% if r.ok %}<form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="confirm" value="1"><textarea name="text" hidden>{{ text }}</textarea>
+    <button class="primary" type="submit">{{ _("Post this remittance") }}</button></form>{% endif %}
+</section>
+{% endblock %}

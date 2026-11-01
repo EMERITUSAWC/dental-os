@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Leave kiosk mode") }}{% endblock %}
+{% block body %}
+<form method="post" class="card login" autocomplete="off"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h1>{{ _("Leave kiosk mode") }}</h1>
+  <label for="username">{{ _("Staff username") }}</label><input id="username" name="username" required autocomplete="off">
+  <label for="password">{{ _("Password") }}</label><input id="password" type="password" name="password" required autocomplete="off">
+  <p class="row"><button class="primary" type="submit">{{ _("Leave kiosk mode") }}</button><a class="btn" href="{{ url_for('practice.kiosk') }}">{{ _("Back") }}</a></p>
+</form>
+{% endblock %}

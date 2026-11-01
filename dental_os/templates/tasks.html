@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Tasks") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Tasks") }}</h1>
+<p class="row">{% for k, label in (('mine', _('Mine')), ('all', _('Everyone')), ('done', _('Done'))) %}<a class="btn {{ 'primary' if view == k }}" href="{{ url_for('practice.tasks', view=k) }}">{{ label }}</a>{% endfor %}</p>
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("New task") }}</h2>
+  <label for="title">{{ _("What needs doing") }}</label><input id="title" name="title" maxlength="150" required>
+  <div class="grid three">
+    <div><label for="assigned_to">{{ _("Who") }}</label><select id="assigned_to" name="assigned_to"><option value="">{{ _("Me") }}</option>{% for u in users %}<option value="{{ u.id }}">{{ u.display_name }}</option>{% endfor %}</select></div>
+    <div><label for="due_on">{{ _("By when (optional)") }}</label><input id="due_on" type="date" name="due_on"></div>
+    <div><label for="priority">{{ _("Priority") }}</label><select id="priority" name="priority">{% for k, v in priorities.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="grid two">
+    <div><label for="repeat">{{ _("Repeats") }}</label><select id="repeat" name="repeat">{% for k, v in repeats.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+    <div><label for="detail">{{ _("More detail (optional)") }}</label><input id="detail" name="detail" maxlength="1000"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Add task") }}</button></p>
+</form>
+<section class="card">
+  {% for x in rows %}{% set t = x.t %}
+  <div class="taskline {{ 'late' if x.late }}">
+    <div class="row spread">
+      <span><strong>{{ t.title }}</strong>{% if t.priority != 'normal' %} <span class="pill {{ 'bad' if t.priority == 'urgent' else 'warn' }}">{{ _(priorities[t.priority]) }}</span>{% endif %}
+        {% if t.patient_id %} <a href="{{ url_for('views.patient_view', pid=t.patient_id) }}">{{ t.first_name }} {{ t.last_name }}</a>{% endif %}</span>
+      <span class="small muted">{% if t.due_on %}{{ _("due") }} {{ t.due_on|date }}{% if x.late %} <span class="pill bad">{{ _("late") }}</span>{% elif x.today %} <span class="pill warn">{{ _("today") }}</span>{% endif %}{% endif %}
+        {% if t.repeat != 'none' %} · {{ _(repeats[t.repeat]) }}{% endif %} · {{ t.assigned_name or _('No one yet') }}</span>
+    </div>
+    {% if t.detail %}<p class="small">{{ t.detail }}</p>{% endif %}
+    {% if t.status == 'open' %}<div class="row">
+      <form method="post" action="{{ url_for('practice.task_action', tid=t.id, action='done') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="back" value="{{ request.full_path }}"><button type="submit" class="small primary">{{ _("Done") }}</button></form>
+      <form method="post" action="{{ url_for('practice.task_action', tid=t.id, action='assign') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="back" value="{{ request.full_path }}">
+        <select name="assigned_to" aria-label="{{ _('Give to') }}" style="width:auto" class="small">{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if u.id == t.assigned_to }}>{{ u.display_name }}</option>{% endfor %}</select><button type="submit" class="small">{{ _("Give to") }}</button></form>
+      <form method="post" action="{{ url_for('practice.task_action', tid=t.id, action='cancelled') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="back" value="{{ request.full_path }}"><button type="submit" class="small link">{{ _("Not needed") }}</button></form>
+    </div>{% else %}<p class="small muted">{{ _("Closed") }} {{ t.closed_at[:10]|date if t.closed_at }}{% if t.close_note %}: {{ t.close_note }}{% endif %}</p>{% endif %}
+  </div>
+  {% else %}<p class="muted">{{ _("Nothing here.") }}</p>{% endfor %}
+</section>
+{% endblock %}

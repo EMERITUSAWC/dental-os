@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}Consents, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("Consents,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: consents</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": consents") }}</h1>
 {{ tabs(p, 'consents') }}
-<section class="card"><h2>Record a consent</h2>
+<section class="card"><h2>{{ _("Record a consent") }}</h2>
   {% if templates %}
   <p class="row">{% for t in templates %}<a class="btn {{ 'primary' if selected == t.id }}" href="{{ url_for('record.consents_view', pid=p.id, template=t.id) }}">{{ t.name }}</a>{% endfor %}</p>
   {% set tpl = (templates|selectattr('id', 'equalto', selected)|list|first) if selected else None %}
@@ -13,29 +13,29 @@
   <form method="post">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="template_id" value="{{ tpl.id }}">
     <div class="grid two">
-      <div><label for="signer_name">Full name of the person signing</label><input id="signer_name" name="signer_name" required maxlength="120"></div>
-      <div><label for="relation">Who is signing</label><select id="relation" name="relation">
-        <option value="self">The patient</option><option value="parent">Parent</option><option value="guardian">Legal guardian</option><option value="other">Other authorised person</option></select></div>
+      <div><label for="signer_name">{{ _("Full name of the person signing") }}</label><input id="signer_name" name="signer_name" required maxlength="120"></div>
+      <div><label for="relation">{{ _("Who is signing") }}</label><select id="relation" name="relation">
+        <option value="self">{{ _("The patient") }}</option><option value="parent">{{ _("Parent") }}</option><option value="guardian">{{ _("Legal guardian") }}</option><option value="other">{{ _("Other authorised person") }}</option></select></div>
     </div>
-    <label for="method">How it was signed</label>
-    <select id="method" name="method"><option value="typed">Typed on this screen, with the patient present</option><option value="paper">On paper (scan it under Files)</option></select>
-    <label for="note">Note</label><input id="note" name="note" maxlength="200">
-    <label class="check"><input type="checkbox" name="agreed" value="1" required><span>The person above has read this form, has had the chance to ask questions, and agreed.</span></label>
-    <p><button class="primary" type="submit">Record consent</button></p>
+    <label for="method">{{ _("How it was signed") }}</label>
+    <select id="method" name="method"><option value="typed">{{ _("Typed on this screen, with the patient present") }}</option><option value="paper">{{ _("On paper (scan it under Files)") }}</option></select>
+    <label for="note">{{ _("Note") }}</label><input id="note" name="note" maxlength="200">
+    <label class="check"><input type="checkbox" name="agreed" value="1" required><span>{{ _("The person above has read this form, has had the chance to ask questions, and agreed.") }}</span></label>
+    <p><button class="primary" type="submit">{{ _("Record consent") }}</button></p>
   </form>
-  {% else %}<p class="muted">Pick a form above to read it with the patient and record their consent.</p>{% endif %}
-  {% else %}<p class="muted">There are no consent forms yet. A manager can add them under Tools.</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Pick a form above to read it with the patient and record their consent.") }}</p>{% endif %}
+  {% else %}<p class="muted">{{ _("There are no consent forms yet. A manager can add them under Tools.") }}</p>{% endif %}
 </section>
-<section class="card"><h2>Recorded</h2>
+<section class="card"><h2>{{ _("Recorded") }}</h2>
   {% for c in rows %}
   <div class="row spread" style="margin-bottom:8px">
-    <span><a href="{{ url_for('record.consent_show', consent_id=c.id) }}">{{ c.title }}</a>, signed by {{ c.signer_name }} ({{ {'self': 'the patient', 'parent': 'parent', 'guardian': 'legal guardian', 'other': 'authorised person'}[c.signer_relation] }}) on {{ c.signed_at[:10]|date }}
-      {% if c.status == 'withdrawn' %}<span class="pill bad">Withdrawn {{ c.withdrawn_on|date }}</span>{% endif %}</span>
+    <span><a href="{{ url_for('record.consent_show', consent_id=c.id) }}">{{ c.title }}</a>{{ _(", signed by") }} {{ c.signer_name }} ({{ {'self': _('the patient'), 'parent': _('parent'), 'guardian': _('legal guardian'), 'other': _('authorised person')}[c.signer_relation] }}{{ _(") on") }} {{ c.signed_at[:10]|date }}
+      {% if c.status == 'withdrawn' %}<span class="pill bad">{{ _("Withdrawn") }} {{ c.withdrawn_on|date }}</span>{% endif %}</span>
     {% if c.status == 'active' %}
     <form method="post" action="{{ url_for('record.consent_withdraw', consent_id=c.id) }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
-      <input name="reason" placeholder="Reason" aria-label="Reason for withdrawing" maxlength="200" style="width:200px" required><button type="submit">Withdraw</button></form>
+      <input name="reason" placeholder="{{ _('Reason') }}" aria-label="{{ _('Reason for withdrawing') }}" maxlength="200" style="width:200px" required><button type="submit">{{ _("Withdraw") }}</button></form>
     {% endif %}
   </div>
-  {% else %}<p class="muted">None recorded.</p>{% endfor %}
+  {% else %}<p class="muted">{{ _("None recorded.") }}</p>{% endfor %}
 </section>
 {% endblock %}

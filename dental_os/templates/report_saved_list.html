@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Saved reports") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Saved reports") }}</h1>{% if user.role == 'manager' %}<a class="btn primary" href="{{ url_for('reports.builder') }}">{{ _("New report") }}</a>{% endif %}</div>
+<section class="card">{% for r in rows %}<p><a href="{{ url_for('reports.saved', report_id=r.id) }}">{{ r.name }}</a> <span class="muted small">{{ r.by_name or '' }}{% if not r.shared %}, {{ _("only you") }}{% endif %}</span></p>{% else %}<p class="muted">{{ _("No saved reports yet.") }}</p>{% endfor %}</section>
+{% endblock %}

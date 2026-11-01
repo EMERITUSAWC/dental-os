@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Pay link") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Pay link for %(name)s", name=link.first_name ~ ' ' ~ link.last_name) }}</h1>
+<section class="card">
+  <dl class="facts"><dt>{{ _("Amount") }}</dt><dd><strong>{{ link.amount_p|money }}</strong></dd><dt>{{ _("For") }}</dt><dd>{{ link.description }}</dd>
+    <dt>{{ _("Status") }}</dt><dd><span class="pill {{ 'ok' if link.status == 'paid' else ('bad' if link.status == 'failed' else '') }}">{{ _(statuses[link.status]) }}</span>{% if link.error %} <span class="small">{{ link.error }}</span>{% endif %}</dd>
+    <dt>{{ _("Works until") }}</dt><dd>{{ link.expires_at|date }}</dd></dl>
+  {% if link.status == 'open' %}
+  <p class="keybox">{{ url }}</p>
+  <div class="row">{% if wa %}<a class="btn primary" href="{{ wa }}" target="_blank" rel="noopener">{{ _("Send by WhatsApp") }}</a>{% endif %}
+    <form method="post" action="{{ url_for('payments.link_action', ref=link.ref, action='check') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Check if it is paid") }}</button></form>
+    <form method="post" action="{{ url_for('payments.link_action', ref=link.ref, action='cancel') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="danger">{{ _("Cancel the link") }}</button></form></div>
+  <p class="muted small">{{ _("Or the patient scans this at the desk:") }}</p><div class="qr">{{ qr_svg|safe }}</div>
+  <p class="muted small">{{ _("Message:") }} {{ text }}</p>
+  {% elif link.status == 'paid' %}<p><a class="btn" href="{{ url_for('clinical.receipt', pay_id=link.payment_id) }}">{{ _("See the receipt") }}</a></p>{% endif %}
+  <p><a href="{{ url_for('payments.patient_links', pid=link.patient_id) }}">{{ _("All pay links for this patient") }}</a></p>
+</section>
+{% endblock %}

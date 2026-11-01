@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Book the family") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Book the family") }}: <a href="{{ url_for('views.patient_view', pid=patient.id) }}">{{ patient.first_name }} {{ patient.last_name }}</a></h1>
+{% if people|length < 2 %}<div class="card"><p>{{ _("Link family members first: set the family head on each person's record.") }}</p></div>{% else %}
+<form method="get" class="card">
+  <input type="hidden" name="find" value="1">
+  <p class="muted small">{{ _("Tick who is coming. They are booked one after another with the same dentist, in the order shown.") }}</p>
+  {% for p in people %}<div class="row">
+    <label class="check" style="margin:0;min-width:220px"><input type="checkbox" name="m{{ p.id }}" value="1" {{ 'checked' if p.id in chosen or not searched }}> <span>{{ p.first_name }} {{ p.last_name }}</span></label>
+    <select name="d{{ p.id }}" aria-label="{{ _('Length for %(name)s', name=p.first_name) }}" style="width:auto">{% for d in durations %}<option value="{{ d }}" {{ 'selected' if chosen.get(p.id, 30) == d }}>{{ d }} {{ _("minutes") }}</option>{% endfor %}</select>
+  </div>{% endfor %}
+  <div class="grid three">
+    <div><label for="provider_id">{{ _("Dentist") }}</label><select id="provider_id" name="provider_id">{% for p in providers %}<option value="{{ p.id }}" {{ 'selected' if p.id == provider_id }}>{{ p.name }}</option>{% endfor %}</select></div>
+    <div><label for="date">{{ _("Day") }}</label><input id="date" type="date" name="date" value="{{ day }}"></div>
+    <div><label for="category">{{ _("Reason") }}</label><select id="category" name="category">{% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == category }}>{{ _(c) }}</option>{% endfor %}</select></div>
+  </div>
+  <p><button type="submit">{{ _("Find times") }}</button></p>
+</form>
+{% if searched %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="provider_id" value="{{ provider_id }}"><input type="hidden" name="date" value="{{ day }}"><input type="hidden" name="category" value="{{ category }}">
+  {% for pid, mins in chosen.items() %}<input type="hidden" name="m{{ pid }}" value="1"><input type="hidden" name="d{{ pid }}" value="{{ mins }}">{% endfor %}
+  <h2>{{ _("Times that fit everyone") }}</h2>
+  {% if chosen|length < 2 %}<p class="muted">{{ _("Tick at least two people.") }}</p>
+  {% elif slots %}<div class="slots" role="radiogroup" aria-label="{{ _('Times that fit everyone') }}">
+    {% for s in slots %}<label><input type="radio" name="time" value="{{ s.time }}" required><span>{{ s.label }}</span></label>{% endfor %}</div>
+    <p class="muted small">{{ _("In this order:") }} {% for pid in chosen %}{{ names[pid] }}{{ ", " if not loop.last }}{% endfor %}</p>
+    <p><button class="primary" type="submit">{{ _("Book them all") }}</button></p>
+  {% else %}<p class="muted">{{ _("No time that day fits everyone one after another. Try another day or dentist.") }}</p>{% endif %}
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,25 +1,42 @@
 {% extends "base.html" %}
 {% from "_patient_nav.html" import tabs with context %}
-{% block title %}New gum chart, {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block title %}{{ _("New gum chart,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
 {% block body %}
-<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>: new gum chart</h1>
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": new gum chart") }}</h1>
 {{ tabs(p, 'perio') }}
 <form method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-  <p class="muted small">For each tooth, enter pocket depth and recession in whole millimetres at six points, and tick where it bled. Leave a point empty if it was not measured. Teeth marked missing on the tooth chart are greyed out. Distal points are away from the middle of the mouth.</p>
-  {% for arch_name, teeth in (('Upper teeth', upper), ('Lower teeth', lower)) %}
+  {% if voice_on %}
+  <section class="card" id="voice-panel" data-lang="en-GB" data-cloud="{{ 1 if voice_cloud else 0 }}" data-notation="{{ clinic.tooth_notation }}">
+    <h2>{{ _("Voice entry") }}</h2>
+    <p class="row"><button type="button" id="voice-speak">{{ _("Speak") }}</button> <button type="button" id="voice-stop">{{ _("Stop") }}</button>
+      <span id="voice-status" class="muted small" aria-live="polite">{{ _("Not listening.") }}</span></p>
+    <p id="voice-now" class="voice-state" aria-live="polite"></p>
+    <label for="voice-text">{{ _("Or type what you would say, then press Enter") }}</label>
+    <div class="row"><input id="voice-text" autocomplete="off" placeholder="{{ _('tooth sixteen 3 2 3 4 3 3') }}"> <button type="button" id="voice-apply">{{ _("Apply") }}</button></div>
+    <ol id="voice-log" class="small muted" aria-label="{{ _('What was heard') }}"></ol>
+    <details class="small"><summary>{{ _("What you can say") }}</summary>
+      <p>{{ _("Say “tooth sixteen” (or “tooth one six”) to choose a tooth. Then say the pocket depths in the order they appear on the chart: three on the cheek side, then three on the tongue side. When the sixth is in, it moves to the next tooth by itself.") }}</p>
+      <p>{{ _("Say “recession” to start recession numbers (“minus two” for below the gum line), “pocket” to go back to depths, and “bleeding” then the point numbers one to six, or “all”. Also: “next tooth”, “back”, “skip” (leave a point empty), “undo”.") }}</p>
+      <p>{{ _("Always read the numbers back on the chart before you save. Speech recognition mishears: “two” can come out as “to”, and “three two” can come out as “thirty-two”. The screen reads the sound as digits where it can and tells you what it ignored. Nothing is saved until you press Save gum chart. Speech is English only for now.") }}</p>
+    </details>
+  </section>
+  <script src="{{ url_for('static', filename='voice.js') }}" defer></script>
+  {% endif %}
+  <p class="muted small">{{ _("For each tooth, enter pocket depth and recession in whole millimetres at six points, and tick where it bled. Leave a point empty if it was not measured. Teeth marked missing on the tooth chart are greyed out. Distal points are away from the middle of the mouth.") }}</p>
+  {% for arch_name, teeth in ((_('Upper teeth'), upper), (_('Lower teeth'), lower)) %}
   <section class="card"><h2>{{ arch_name }}</h2>
     <div class="tbl-wrap"><table class="perio">
-      <tr><th></th>{% for t in teeth %}<th colspan="3" class="tn {{ 'q' if loop.index == 8 }}">{{ t }}</th>{% endfor %}</tr>
-      {% for row_name, idx in (('Buccal', 0), ('Lingual', 1)) %}
-      <tr><th class="rl">{{ row_name }} pocket</th>{% for t in teeth %}{% for s in order(t)[idx] %}<td><input class="mm" type="number" inputmode="numeric" min="0" max="15" name="pk_{{ t }}_{{ s }}" value="{{ form.get('pk_%d_%s' % (t, s), '') }}" aria-label="Tooth {{ t }} {{ s }} pocket" {{ 'disabled' if t in missing }}></td>{% endfor %}{% endfor %}</tr>
-      <tr><th class="rl">bleeding</th>{% for t in teeth %}{% for s in order(t)[idx] %}<td class="c"><input type="checkbox" name="bl_{{ t }}_{{ s }}" value="1" {{ 'checked' if form.get('bl_%d_%s' % (t, s)) }} aria-label="Tooth {{ t }} {{ s }} bleeding" {{ 'disabled' if t in missing }}></td>{% endfor %}{% endfor %}</tr>
-      <tr><th class="rl">recession</th>{% for t in teeth %}{% for s in order(t)[idx] %}<td><input class="mm" type="number" inputmode="numeric" min="-5" max="15" name="rc_{{ t }}_{{ s }}" value="{{ form.get('rc_%d_%s' % (t, s), '') }}" aria-label="Tooth {{ t }} {{ s }} recession" {{ 'disabled' if t in missing }}></td>{% endfor %}{% endfor %}</tr>
+      <tr><th></th>{% for t in teeth %}<th colspan="3" class="tn {{ 'q' if loop.index == 8 }}">{{ t|tooth }}</th>{% endfor %}</tr>
+      {% for row_name, idx in ((_('Buccal'), 0), (_('Lingual'), 1)) %}
+      <tr><th class="rl">{{ _("%(row)s pocket", row=row_name) }}</th>{% for t in teeth %}{% for s in order(t)[idx] %}<td><input class="mm" type="number" inputmode="numeric" min="0" max="15" name="pk_{{ t }}_{{ s }}" value="{{ form.get('pk_%d_%s' % (t, s), '') }}" aria-label="Tooth {{ t }} {{ s }} pocket" {{ 'disabled' if t in missing }}></td>{% endfor %}{% endfor %}</tr>
+      <tr><th class="rl">{{ _("bleeding") }}</th>{% for t in teeth %}{% for s in order(t)[idx] %}<td class="c"><input type="checkbox" name="bl_{{ t }}_{{ s }}" value="1" {{ 'checked' if form.get('bl_%d_%s' % (t, s)) }} aria-label="Tooth {{ t }} {{ s }} bleeding" {{ 'disabled' if t in missing }}></td>{% endfor %}{% endfor %}</tr>
+      <tr><th class="rl">{{ _("recession") }}</th>{% for t in teeth %}{% for s in order(t)[idx] %}<td><input class="mm" type="number" inputmode="numeric" min="-5" max="15" name="rc_{{ t }}_{{ s }}" value="{{ form.get('rc_%d_%s' % (t, s), '') }}" aria-label="Tooth {{ t }} {{ s }} recession" {{ 'disabled' if t in missing }}></td>{% endfor %}{% endfor %}</tr>
       {% endfor %}
     </table></div>
   </section>
   {% endfor %}
-  <section class="card"><label for="notes">Notes</label><input id="notes" name="notes" maxlength="500" value="{{ form.get('notes', '') }}">
-    <p><button class="primary" type="submit">Save gum chart</button></p></section>
+  <section class="card"><label for="notes">{{ _("Notes") }}</label><input id="notes" name="notes" maxlength="500" value="{{ form.get('notes', '') }}">
+    <p><button class="primary" type="submit">{{ _("Save gum chart") }}</button></p></section>
 </form>
 {% endblock %}

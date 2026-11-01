@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Find a pack") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Find a pack") }}</h1>
+{{ tabs('find') }}
+<form method="get" class="card row"><label for="code">{{ _("Pack code") }}</label><input id="code" name="code" value="{{ code }}" autofocus autocomplete="off"><button class="primary" type="submit">{{ _("Find") }}</button></form>
+{% if k %}<section class="card">
+  <h2>{{ k.code }}: {{ k.contents }}</h2>
+  <p><span class="pill {{ 'ok' if k.status == 'stored' and k.expires_on >= today else ('warn' if k.status in ('held', 'used') else 'bad') }}">{{ _(pack_status[k.status]) }}</span>
+    {% if k.status == 'stored' and k.expires_on < today %} <span class="pill bad">{{ _("Past its use-by date") }}</span>{% endif %}</p>
+  <dl class="facts">
+    <dt>{{ _("Cycle") }}</dt><dd><a href="{{ url_for('steri.cycle_view', cycle_id=k.cycle_id) }}">{{ k.steriliser }}, {{ k.cycle_no }}</a></dd>
+    <dt>{{ _("Use by") }}</dt><dd>{{ k.expires_on|date }}</dd>
+    {% if k.used_on %}<dt>{{ _("Used on") }}</dt><dd><a href="{{ url_for('views.patient_view', pid=k.used_on) }}">{{ k.first_name }} {{ k.last_name }}</a>, {{ k.used_at|date }}</dd>{% endif %}
+    {% if k.back_reason %}<dt>{{ _("Sent back because") }}</dt><dd>{{ k.back_reason }}</dd>{% endif %}
+  </dl>
+  {% if k.status not in ('used', 'reprocessed') %}<form method="post" action="{{ url_for('steri.pack_back') }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="code" value="{{ k.code }}">
+    <label class="sr-only" for="reason">{{ _("Why") }}</label><input id="reason" name="reason" placeholder="{{ _('Why, for example wrap torn') }}" maxlength="200" required>
+    <button type="submit">{{ _("Send back for cleaning") }}</button></form>{% endif %}
+</section>{% endif %}
+{% endblock %}

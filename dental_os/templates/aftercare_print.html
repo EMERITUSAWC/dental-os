@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _d("Aftercare") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><a class="btn" href="{{ url_for('aftercare.patient', pid=p.id) }}">{{ _("Back") }}</a><button type="button" data-print>{{ _("Print") }}</button></div>
+{% for title, body, in_lang in sheets %}<section class="card doc" style="page-break-after:always">
+  <p class="small">{{ g.clinic.name }}{% if g.clinic.phone %}, {{ g.clinic.phone|phone }}{% endif %}</p>
+  <h1>{{ title }}</h1><p>{{ _d("For %(name)s", name=p.first_name ~ ' ' ~ p.last_name) }}</p>
+  <div style="white-space:pre-wrap">{{ body }}</div>
+</section>{% endfor %}
+{% endblock %}

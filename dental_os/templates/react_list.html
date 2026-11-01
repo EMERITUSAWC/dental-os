@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Not seen for a while") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Not seen for a while") }}</h1>
+  <form method="get" class="row"><label for="months">{{ _("Last visit more than") }}</label><select id="months" name="months">{% for m in choices %}<option value="{{ m }}" {{ 'selected' if m == months }}>{{ m }} {{ _("months ago") }}</option>{% endfor %}</select><button type="submit">{{ _("Show") }}</button></form></div>
+<p class="muted">{{ _("Patients seen before, but not since then, with nothing booked and nothing on the waiting list. The message never mentions treatment or money.") }}</p>
+{% if rows %}<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="all"><input type="hidden" name="months" value="{{ months }}">
+  <span>{{ rows|length }} {{ _("patients") }}.</span><button class="primary" type="submit">{{ _("Add a message for everyone who agreed to messages") }}</button> <a class="btn" href="{{ url_for('comms.queue') }}">{{ _("The send list") }}</a></form>{% endif %}
+<div class="card"><div class="tbl-wrap"><table>
+  <tr><th>{{ _("Patient") }}</th><th>{{ _("Last visit") }}</th><th>{{ _("Last contact") }}</th><th>{{ _("Planned, not done") }}</th><th></th></tr>
+  {% for r in rows %}<tr><td><a href="{{ url_for('views.patient_view', pid=r.id) }}">{{ r.first_name }} {{ r.last_name }}</a><br><span class="small muted">{{ r.phone|phone }}</span></td>
+    <td>{{ r.last_visit|date }}</td><td>{{ (r.last_message or r.last_contact)|date if (r.last_message or r.last_contact) else _('None') }}</td>
+    <td>{{ r.planned_p|money if r.planned_p else '' }}</td>
+    <td class="row">{% if r.queued %}<span class="pill">{{ _("Message waiting") }}</span>{% elif r.reminders_ok %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="pid" value="{{ r.id }}"><input type="hidden" name="months" value="{{ months }}"><button type="submit">{{ _("Add a message") }}</button></form>{% else %}<span class="small muted">{{ _("No messages agreed") }}</span>{% endif %}
+      <a class="btn" href="{{ url_for('care.contacts', pid=r.id) }}">{{ _("Write down a call") }}</a>
+      <details><summary>{{ _("Put aside") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="hold"><input type="hidden" name="pid" value="{{ r.id }}"><input type="hidden" name="months" value="{{ months }}">
+        <label for="re{{ r.id }}">{{ _("Why") }}</label><select id="re{{ r.id }}" name="reason">{% for k, v in reasons.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+        <label for="hm{{ r.id }}">{{ _("For how many months") }}</label><input id="hm{{ r.id }}" name="hold_months" type="number" min="1" max="120" value="12" class="narrow">
+        <label for="hn{{ r.id }}">{{ _("Note (optional)") }}</label><input id="hn{{ r.id }}" name="note" maxlength="300"><button type="submit">{{ _("Put aside") }}</button></form></details></td></tr>
+  {% else %}<tr><td colspan="5" class="muted">{{ _("Nobody. Everyone seen before has been back recently or has something booked.") }}</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

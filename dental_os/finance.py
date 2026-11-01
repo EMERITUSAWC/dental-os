@@ -3,7 +3,7 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 
 from .auth import manager_required
 from .db import get_db
-from .services import ageing, billing, insurance as INS, invoices as INV, money
+from .services import ageing, benefits as BEN, billing, insurance as INS, invoices as INV, money, payerpay as PP
 from .services.timeutil import parse_date
 from .views import _document_for, _patient_or_404, _today
 
@@ -87,16 +87,138 @@ def patient_insurance(pid):
     planned = db.execute("""SELECT pr.*, c.name AS code_name FROM procedures pr JOIN procedure_codes c ON c.id = pr.code_id
                             WHERE pr.clinic_id = ? AND pr.patient_id = ? AND pr.status = 'planned' ORDER BY pr.id""", (cid, pid)).fetchall()
     cover, ests = INS.estimate_lines(db, g.clinic, pid, [{"code_id": r["code_id"], "fee_p": r["fee_p"]} for r in planned])
+    est_covers = INS.estimate_covers(db, g.clinic, pid)
     cover_status = []
     today = _today()
     for c in covers:
-        used = INS.used_this_year(db, cid, c["id"], today)
-        cover_status.append({"cover": c, "used": used, "left": (max(c["annual_max_p"] - used, 0) if c["annual_max_p"] else None),
-                             "in_force": INS._in_force(c, today)})
+        sm = BEN.summary(db, g.clinic, c, today)
+        cover_status.append({"cover": c, "used": sm["max_used"], "left": sm["max_left"], "sum": sm, "in_force": INS._in_force(c, today),
+                             "claimable": INS.unclaimed(db, cid, pid, "claim", c["id"]),
+                             "preauthable": INS.unclaimed(db, cid, pid, "preauth", c["id"]),
+                             "rules": BEN.category_rules(db, cid, c["id"]), "limits": len(BEN.limits(db, cid, c["id"]))})
     return render_template("insurance.html", p=patient, covers=cover_status, payers=INS.list_payers(db, cid, active_only=True),
-                           estimates=list(zip(planned, ests)), est_cover=cover, claims=INS.claims_for_patient(db, cid, pid),
+                           estimates=list(zip(planned, ests)), est_cover=cover, est_covers=est_covers, claims=INS.claims_for_patient(db, cid, pid),
                            claimable=INS.unclaimed(db, cid, pid, "claim"), preauthable=INS.unclaimed(db, cid, pid, "preauth"),
                            statuses=INS.CLAIM_STATUS)
+
+
+@bp.route("/cover/<int:cover_id>/benefits", methods=["GET", "POST"])
+def cover_benefits(cover_id):
+    db, cid = get_db(), g.clinic["id"]
+    cover = INS.get_cover(db, cid, cover_id)
+    if not cover or not cover["active"]:
+        abort(404)
+    p = _patient_or_404(cover["patient_id"])
+    categories = [r[0] for r in db.execute("SELECT DISTINCT category FROM procedure_codes WHERE clinic_id = ? ORDER BY category", (cid,))]
+    codes = db.execute("SELECT * FROM procedure_codes WHERE clinic_id = ? AND active = 1 ORDER BY category, name", (cid,)).fetchall()
+    if request.method == "POST":
+        try:
+            cats = {}
+            for i, cat in enumerate(categories):
+                raw = (request.form.get(f"pct_{i}") or "").strip()
+                wait = (request.form.get(f"wait_{i}") or "").strip()
+                try:
+                    cats[cat] = (int(raw) if raw else None, int(wait) if wait else 0)
+                except ValueError:
+                    raise INS.InsuranceError("Use whole numbers for shares and waiting periods.")
+            lims = []
+            for i in range(6):
+                code_id = request.form.get(f"lim_code_{i}", type=int)
+                if not code_id:
+                    continue
+                times, months = request.form.get(f"lim_times_{i}", type=int), request.form.get(f"lim_months_{i}", type=int)
+                if not times or not months:
+                    raise INS.InsuranceError("A limit is 1 to 50 times in 1 to 120 months.")
+                lims.append((code_id, times, months))
+            ortho = _opt_amount("ortho_max")
+            INS.save_benefit_terms(db, g.clinic, g.user["id"], cover_id, _opt_amount("deductible") or 0, request.form.get("on_preventive") == "1",
+                                   request.form.get("year_start_month", type=int) or 1, ortho, _opt_date("waiting_from"), cats, lims)
+            flash("Cover terms saved.", "ok")
+            return redirect(url_for("finance.patient_insurance", pid=p["id"]))
+        except (INS.InsuranceError, ValueError) as exc:
+            db.rollback()
+            flash(str(exc), "error")
+        return redirect(url_for("finance.cover_benefits", cover_id=cover_id))
+    rules = BEN.category_rules(db, cid, cover_id)
+    lims = list(BEN.limits(db, cid, cover_id).values())
+    return render_template("cover_benefits.html", p=p, cover=cover, categories=categories, rules=rules, codes=codes, lims=lims,
+                           months=[(m, _month_name(m)) for m in range(1, 13)])
+
+
+def _month_name(m):
+    return ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")[m - 1]
+
+
+@bp.post("/cover/<int:cover_id>/main")
+def cover_main(cover_id):
+    db = get_db()
+    try:
+        pid = INS.make_main(db, g.clinic, g.user["id"], cover_id)
+    except LookupError:
+        abort(404)
+    flash("That cover now pays first.", "ok")
+    return redirect(url_for("finance.patient_insurance", pid=pid))
+
+
+@bp.post("/cover/<int:cover_id>/verify")
+def cover_verify(cover_id):
+    db = get_db()
+    cover = INS.get_cover(db, g.clinic["id"], cover_id)
+    if not cover:
+        abort(404)
+    try:
+        INS.verify(db, g.clinic, g.user["id"], cover_id, request.form.get("note"))
+        flash("Cover check recorded.", "ok")
+    except INS.InsuranceError as exc:
+        db.rollback()
+        flash(str(exc), "error")
+    return redirect(url_for("finance.patient_insurance", pid=cover["patient_id"]))
+
+
+# ----------------------------------------------------------------------------- one payment from a payer across many claims
+@bp.get("/payer-payments")
+def payer_payments():
+    db = get_db()
+    return render_template("payer_payments.html", rows=PP.recent(db, g.clinic["id"]), payers=INS.list_payers(db, g.clinic["id"]))
+
+
+@bp.route("/payer-payments/new", methods=["GET", "POST"])
+def payer_payment_new():
+    db, cid = get_db(), g.clinic["id"]
+    payer_id = request.values.get("payer_id", type=int)
+    payer = db.execute("SELECT * FROM payers WHERE id = ? AND clinic_id = ?", (payer_id, cid)).fetchone() if payer_id else None
+    if not payer:
+        flash("Pick a payer from the list.", "error")
+        return redirect(url_for("finance.payer_payments"))
+    claims = PP.open_claims(db, cid, payer_id)
+    if request.method == "POST":
+        try:
+            allocations = []
+            for x in claims:
+                k = x["claim"]["id"]
+                raw, wo = (request.form.get(f"amt_{k}") or "").strip(), (request.form.get(f"wo_{k}") or "").strip()
+                allocations.append({"claim_id": k, "amount_p": money.parse_money(raw, g.clinic["currency"], allow_zero=True) if raw else 0,
+                                    "writeoff_p": money.parse_money(wo, g.clinic["currency"], allow_zero=True) if wo else 0,
+                                    "final": request.form.get(f"final_{k}") == "1"})
+            total_raw = (request.form.get("amount") or "").strip()
+            pp_id = PP.post(db, g.clinic, g.user["id"], payer_id, request.form.get("received_on"),
+                            money.parse_money(total_raw, g.clinic["currency"], allow_zero=True) if total_raw else None,
+                            request.form.get("reference"), allocations, request.form.get("note"))
+            flash("Payment from the payer recorded on each patient's account.", "ok")
+            return redirect(url_for("finance.payer_payment_show", pp_id=pp_id))
+        except (PP.PayerPayError, ValueError) as exc:
+            db.rollback()
+            flash(str(exc), "error")
+    return render_template("payer_payment_new.html", payer=payer, claims=claims, form=request.form, today=_today())
+
+
+@bp.get("/payer-payments/<int:pp_id>")
+def payer_payment_show(pp_id):
+    db, cid = get_db(), g.clinic["id"]
+    pp = PP.get(db, cid, pp_id)
+    if not pp:
+        abort(404)
+    return render_template("payer_payment.html", pp=pp, lines=PP.lines(db, cid, pp_id), statuses=INS.CLAIM_STATUS)
 
 
 @bp.post("/cover/<int:cover_id>/end")
@@ -132,7 +254,7 @@ def claims_list():
     db = get_db()
     status = request.args.get("status", "open")
     return render_template("claims.html", rows=INS.claim_list(db, g.clinic, status), status=status, statuses=INS.CLAIM_STATUS,
-                           awaiting=INS.awaiting_total(db, g.clinic["id"]))
+                           awaiting=INS.awaiting_total(db, g.clinic["id"]), by_payer=PP.ageing_by_payer(db, g.clinic))
 
 
 @bp.get("/claims/<int:claim_id>")

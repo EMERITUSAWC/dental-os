@@ -10,7 +10,7 @@ How claims touch the account. Finished work is already a charge. When a payer pa
 and the reports all keep working without special cases."""
 from datetime import date
 
-from . import audit, billing
+from . import audit, benefits as BEN, billing
 from .timeutil import now_local
 
 PAYER_KINDS = {"insurer": "Insurer", "employer": "Employer", "government": "Government scheme", "other": "Other"}
@@ -95,7 +95,7 @@ def allowed_fee(db, cid, payer_id, code_id, clinic_fee_p):
 # ----------------------------------------------------------------------------- patient cover
 def covers_for(db, cid, pid, active_only=True):
     sql = ("SELECT pc.*, p.name AS payer_name, p.contracted FROM patient_cover pc JOIN payers p ON p.id = pc.payer_id "
-           "WHERE pc.clinic_id = ? AND pc.patient_id = ?" + (" AND pc.active = 1" if active_only else "") + " ORDER BY pc.id")
+           "WHERE pc.clinic_id = ? AND pc.patient_id = ?" + (" AND pc.active = 1" if active_only else "") + " ORDER BY pc.active DESC, pc.cover_rank, pc.id")
     return db.execute(sql, (cid, pid)).fetchall()
 
 
@@ -112,10 +112,12 @@ def add_cover(db, clinic, user_id, pid, payer_id, member_no, holder_name, covera
         raise InsuranceError("The yearly maximum must be more than zero, or left empty for no limit.")
     if valid_from and valid_to and valid_to < valid_from:
         raise InsuranceError("The end date is before the start date.")
+    rank = db.execute("SELECT COALESCE(MAX(cover_rank), 0) + 1 FROM patient_cover WHERE clinic_id = ? AND patient_id = ? AND active = 1",
+                      (cid, pid)).fetchone()[0]
     cur = db.execute("""INSERT INTO patient_cover(clinic_id, patient_id, payer_id, member_no, holder_name, coverage_pct, annual_max_p,
-                        valid_from, valid_to) VALUES (?,?,?,?,?,?,?,?,?)""",
+                        valid_from, valid_to, cover_rank) VALUES (?,?,?,?,?,?,?,?,?,?)""",
                      (cid, pid, payer_id, (member_no or "").strip()[:60] or None, (holder_name or "").strip()[:100] or None,
-                      coverage_pct, annual_max_p, valid_from or None, valid_to or None))
+                      coverage_pct, annual_max_p, valid_from or None, valid_to or None, min(rank, 9)))
     audit.log(db, cid, user_id, "cover.add", "patient", pid, payer["name"][:60])
     return cur.lastrowid
 
@@ -126,60 +128,132 @@ def end_cover(db, clinic, user_id, cover_id):
     if not row:
         raise LookupError("cover")
     db.execute("UPDATE patient_cover SET active = 0 WHERE id = ?", (cover_id,))
+    _renumber(db, cid, row["patient_id"])
     audit.log(db, cid, user_id, "cover.end", "patient", row["patient_id"])
     return row["patient_id"]
 
 
+def _renumber(db, cid, pid, first=None):
+    rows = db.execute("SELECT id FROM patient_cover WHERE clinic_id = ? AND patient_id = ? AND active = 1 ORDER BY cover_rank, id",
+                      (cid, pid)).fetchall()
+    ids = [r["id"] for r in rows]
+    if first in ids:
+        ids.remove(first)
+        ids.insert(0, first)
+    for n, i in enumerate(ids, start=1):
+        db.execute("UPDATE patient_cover SET cover_rank = ? WHERE id = ?", (n, i))
+
+
+def make_main(db, clinic, user_id, cover_id):
+    cid = clinic["id"]
+    row = db.execute("SELECT * FROM patient_cover WHERE id = ? AND clinic_id = ? AND active = 1", (cover_id, cid)).fetchone()
+    if not row:
+        raise LookupError("cover")
+    _renumber(db, cid, row["patient_id"], first=cover_id)
+    audit.log(db, cid, user_id, "cover.main", "patient", row["patient_id"])
+    return row["patient_id"]
+
+
+def get_cover(db, cid, cover_id):
+    return db.execute("""SELECT pc.*, p.name AS payer_name, p.contracted FROM patient_cover pc JOIN payers p ON p.id = pc.payer_id
+                         WHERE pc.id = ? AND pc.clinic_id = ?""", (cover_id, cid)).fetchone()
+
+
+def save_benefit_terms(db, clinic, user_id, cover_id, deductible_p, on_preventive, year_start_month, ortho_max_p, waiting_from,
+                       categories, limits_rows):
+    """categories: {category: (pct or None to use the general share, waiting_months)}. limits_rows: [(code_id, times, months)]."""
+    cid = clinic["id"]
+    cover = get_cover(db, cid, cover_id)
+    if not cover or not cover["active"]:
+        raise InsuranceError("That cover was not found.")
+    if deductible_p is not None and deductible_p < 0:
+        raise InsuranceError("The excess cannot be negative.")
+    if ortho_max_p is not None and ortho_max_p <= 0:
+        raise InsuranceError("The orthodontic limit must be more than zero, or left empty for none.")
+    if year_start_month not in range(1, 13):
+        raise InsuranceError("Pick the month the benefit year starts.")
+    clean_cats = {}
+    for cat, (pct, waiting) in categories.items():
+        if pct is None and not waiting:
+            continue
+        if pct is not None and not 0 <= pct <= 100:
+            raise InsuranceError("Each share must be from 0 to 100.")
+        if not 0 <= (waiting or 0) <= 60:
+            raise InsuranceError("A waiting period is from 0 to 60 months.")
+        clean_cats[cat] = (cover["coverage_pct"] if pct is None else pct, waiting or 0)
+    clean_lims = {}
+    for code_id, times, months in limits_rows:
+        if not db.execute("SELECT 1 FROM procedure_codes WHERE id = ? AND clinic_id = ?", (code_id, cid)).fetchone():
+            raise InsuranceError("Pick a procedure from the list.")
+        if not (1 <= times <= 50 and 1 <= months <= 120):
+            raise InsuranceError("A limit is 1 to 50 times in 1 to 120 months.")
+        clean_lims[code_id] = (times, months)
+    db.execute("""UPDATE patient_cover SET deductible_p = ?, deductible_on_preventive = ?, year_start_month = ?, ortho_max_p = ?,
+                  waiting_from = ? WHERE id = ?""",
+               (deductible_p or 0, 1 if on_preventive else 0, year_start_month, ortho_max_p, waiting_from or None, cover_id))
+    db.execute("DELETE FROM cover_benefits WHERE clinic_id = ? AND cover_id = ?", (cid, cover_id))
+    for cat, (pct, waiting) in clean_cats.items():
+        db.execute("INSERT INTO cover_benefits(clinic_id, cover_id, category, pct, waiting_months) VALUES (?,?,?,?,?)",
+                   (cid, cover_id, cat, pct, waiting))
+    db.execute("DELETE FROM cover_limits WHERE clinic_id = ? AND cover_id = ?", (cid, cover_id))
+    for code_id, (times, months) in clean_lims.items():
+        db.execute("INSERT INTO cover_limits(clinic_id, cover_id, code_id, times, months) VALUES (?,?,?,?,?)",
+                   (cid, cover_id, code_id, times, months))
+    audit.log(db, cid, user_id, "cover.benefits", "patient", cover["patient_id"])
+    return cover["patient_id"]
+
+
+def verify(db, clinic, user_id, cover_id, note):
+    cid = clinic["id"]
+    cover = get_cover(db, cid, cover_id)
+    if not cover or not cover["active"]:
+        raise InsuranceError("That cover was not found.")
+    note = (note or "").strip()[:300]
+    if not note:
+        raise InsuranceError("Write who you spoke to or what the payer confirmed.")
+    db.execute("UPDATE patient_cover SET verified_on = ?, verified_by = ?, verify_note = ? WHERE id = ?",
+               (_today(clinic).isoformat(), user_id, note, cover_id))
+    audit.log(db, cid, user_id, "cover.verify", "patient", cover["patient_id"])
+    return cover["patient_id"]
+
+
 def _in_force(cover, today):
-    iso = today.isoformat()
-    return cover["active"] and (not cover["valid_from"] or cover["valid_from"] <= iso) and (not cover["valid_to"] or cover["valid_to"] >= iso)
+    return BEN.in_force(cover, today)
 
 
 def used_this_year(db, cid, cover_id, today):
-    """How much of the yearly maximum is spoken for: what payers paid, or are expected to pay on open claims, this calendar year."""
-    start, end = f"{today.year}-01-01", f"{today.year}-12-31"
-    return db.execute(
-        """SELECT COALESCE(SUM(CASE WHEN paid_p > 0 THEN paid_p ELSE estimate_p END), 0) FROM claims
-           WHERE clinic_id = ? AND cover_id = ? AND kind = 'claim' AND status NOT IN ('rejected','cancelled')
-           AND date(created_at) BETWEEN ? AND ?""", (cid, cover_id, start, end)).fetchone()[0]
+    """How much of the yearly maximum is spoken for in the benefit year: what payers paid, or are expected to pay on open claims."""
+    cover = db.execute("SELECT * FROM patient_cover WHERE id = ? AND clinic_id = ?", (cover_id, cid)).fetchone()
+    return BEN.max_used(db, cid, cover, today) if cover else 0
 
 
 def estimate(db, clinic, cover, code_id, fee_p, today=None, remaining_p=None):
-    """What the payer and the patient are each expected to pay for one line. Returns minor units.
-    remaining_p is the yearly maximum still available, passed in so a list of lines shares one pool."""
-    cid = clinic["id"]
+    """What one payer is expected to pay for one line, on its own. Returns minor units. See services/benefits.py."""
     today = today or _today(clinic)
-    allowed = allowed_fee(db, cid, cover["payer_id"], code_id, fee_p)
-    contracted = bool(db.execute("SELECT contracted FROM payers WHERE id = ?", (cover["payer_id"],)).fetchone()["contracted"])
-    if not _in_force(cover, today):
-        return {"allowed_p": allowed, "payer_p": 0, "patient_p": fee_p, "writeoff_p": 0, "in_force": False}
-    payer = allowed * cover["coverage_pct"] // 100
-    if cover["annual_max_p"] is not None:
-        if remaining_p is None:
-            remaining_p = max(cover["annual_max_p"] - used_this_year(db, cid, cover["id"], today), 0)
-        payer = min(payer, remaining_p)
-    writeoff = max(fee_p - allowed, 0) if contracted else 0
-    patient = max(fee_p - payer - writeoff, 0)
-    return {"allowed_p": allowed, "payer_p": payer, "patient_p": patient, "writeoff_p": writeoff, "in_force": True}
+    code = db.execute("SELECT * FROM procedure_codes WHERE id = ? AND clinic_id = ?", (code_id, clinic["id"])).fetchone()
+    pool = BEN.pools(db, clinic["id"], cover, today)
+    if remaining_p is not None:
+        pool["max_left"] = remaining_p
+    return BEN.line(db, clinic, cover, code, fee_p, today, pool, cover["patient_id"])
 
 
 def estimate_lines(db, clinic, pid, lines):
-    """lines: [{'code_id', 'fee_p'}]. Uses the patient's first cover in force. Returns (cover, [estimate per line]) or (None, [])."""
-    today = _today(clinic)
-    covers = [c for c in covers_for(db, clinic["id"], pid) if _in_force(c, today)]
+    """lines: [{'code_id', 'fee_p'}]. Uses the patient's covers in force, the main one first and a second payer after it.
+    Returns (main cover, [result per line]) or (None, []). Each result has payer_p (both payers together) and patient_p."""
+    covers, results = BEN.estimate_plan(db, clinic, pid, lines, _today(clinic))
     if not covers:
         return None, []
-    cover = covers[0]
-    remaining = None
-    if cover["annual_max_p"] is not None:
-        remaining = max(cover["annual_max_p"] - used_this_year(db, clinic["id"], cover["id"], today), 0)
     out = []
-    for ln in lines:
-        est = estimate(db, clinic, cover, ln["code_id"], ln["fee_p"], today, remaining)
-        if remaining is not None:
-            remaining = max(remaining - est["payer_p"], 0)
-        out.append(est)
-    return cover, out
+    for r in results:
+        first, sec = r["first"], r["second"]
+        out.append({"allowed_p": first["allowed_p"], "payer_p": first["payer_p"] + (sec["payer_p"] if sec else 0),
+                    "first_p": first["payer_p"], "second_p": sec["payer_p"] if sec else 0, "writeoff_p": first["writeoff_p"],
+                    "patient_p": r["patient_p"], "notes": r["notes"], "in_force": first["in_force"]})
+    return covers[0], out
+
+
+def estimate_covers(db, clinic, pid):
+    return BEN.covers_in_order(db, clinic["id"], pid, _today(clinic))[:2]
 
 
 # ----------------------------------------------------------------------------- claims
@@ -195,15 +269,35 @@ def claim_items(db, cid, claim_id):
                          WHERE i.claim_id = ? AND i.clinic_id = ? ORDER BY i.id""", (claim_id, cid)).fetchall()
 
 
-def unclaimed(db, cid, pid, kind):
-    """Finished (for a claim) or planned (for a pre-authorisation) work that is not already on an open or paid claim."""
+def unclaimed(db, cid, pid, kind, cover_id=None):
+    """Finished (for a claim) or planned (for a pre-authorisation) work not already on an open or paid claim to this cover.
+    With no cover given: not on any such claim at all."""
     status = "done" if kind == "claim" else "planned"
+    same = "AND cl.cover_id = ?" if cover_id else ""
+    args = [cid, pid, status, kind] + ([cover_id] if cover_id else [])
     return db.execute(
-        """SELECT pr.*, c.name AS code_name FROM procedures pr JOIN procedure_codes c ON c.id = pr.code_id
+        f"""SELECT pr.*, c.name AS code_name FROM procedures pr JOIN procedure_codes c ON c.id = pr.code_id
            WHERE pr.clinic_id = ? AND pr.patient_id = ? AND pr.status = ? AND NOT EXISTS (
              SELECT 1 FROM claim_items ci JOIN claims cl ON cl.id = ci.claim_id
-             WHERE ci.procedure_id = pr.id AND cl.kind = ? AND cl.status NOT IN ('rejected','cancelled'))
-           ORDER BY pr.id""", (cid, pid, status, kind)).fetchall()
+             WHERE ci.procedure_id = pr.id AND cl.kind = ? AND cl.status NOT IN ('rejected','cancelled') {same})
+           ORDER BY pr.id""", args).fetchall()
+
+
+def _first_payer_share(db, clinic, pid, cover, proc, day):
+    """For a second payer: what the main payer is expected to pay on this line, and what the patient then owes."""
+    cid = clinic["id"]
+    row = db.execute("""SELECT ci.estimate_p, ci.allowed_p, p.contracted, c.paid_p, c.status FROM claim_items ci
+                        JOIN claims c ON c.id = ci.claim_id JOIN payers p ON p.id = c.payer_id
+                        WHERE ci.procedure_id = ? AND ci.clinic_id = ? AND c.kind = 'claim' AND c.cover_id != ?
+                        AND c.status NOT IN ('rejected','cancelled') ORDER BY c.id LIMIT 1""", (proc["id"], cid, cover["id"])).fetchone()
+    if row:
+        writeoff = max(proc["fee_p"] - row["allowed_p"], 0) if row["contracted"] else 0
+        return {"payer_p": row["estimate_p"], "writeoff_p": writeoff, "patient_p": max(proc["fee_p"] - row["estimate_p"] - writeoff, 0)}
+    main = [c for c in BEN.covers_in_order(db, cid, pid, day) if c["id"] != cover["id"] and c["cover_rank"] < cover["cover_rank"]]
+    if not main:
+        return None
+    code = db.execute("SELECT * FROM procedure_codes WHERE id = ?", (proc["code_id"],)).fetchone()
+    return BEN.line(db, clinic, main[0], code, proc["fee_p"], day, BEN.pools(db, cid, main[0], day), pid, exclude=(proc["id"],))
 
 
 def create_claim(db, clinic, user_id, pid, cover_id, procedure_ids, kind="claim"):
@@ -217,24 +311,37 @@ def create_claim(db, clinic, user_id, pid, cover_id, procedure_ids, kind="claim"
     wanted = {int(x) for x in procedure_ids}
     if not wanted:
         raise InsuranceError("Tick the treatment to claim for.")
-    rows = [r for r in unclaimed(db, cid, pid, kind) if r["id"] in wanted]
+    rows = [r for r in unclaimed(db, cid, pid, kind, cover_id) if r["id"] in wanted]
     if len(rows) != len(wanted):
         raise InsuranceError("Some of that treatment is not available to claim. It may already be on another claim.")
+    if kind == "claim" and db.execute("SELECT needs_dx FROM payers WHERE id = ?", (cover["payer_id"],)).fetchone()["needs_dx"]:
+        if any(not db.execute("SELECT dx_code FROM procedures WHERE id = ?", (r["id"],)).fetchone()["dx_code"] for r in rows):
+            raise InsuranceError("This payer needs a diagnosis on every line. Add it on the treatment list first.")
     billing._begin(db)
     claim_no = db.execute("SELECT COALESCE(MAX(claim_no), 0) + 1 FROM claims WHERE clinic_id = ?", (cid,)).fetchone()[0]
     cur = db.execute("INSERT INTO claims(clinic_id, claim_no, patient_id, payer_id, cover_id, kind, created_by) VALUES (?,?,?,?,?,?,?)",
                      (cid, claim_no, pid, cover["payer_id"], cover_id, kind, user_id))
-    remaining = None
     today = _today(clinic)
-    if cover["annual_max_p"] is not None:
-        remaining = max(cover["annual_max_p"] - used_this_year(db, cid, cover_id, today), 0)
+    pool = BEN.pools(db, cid, cover, today)
+    rules, lims = BEN.category_rules(db, cid, cover_id), BEN.limits(db, cid, cover_id)
+    others = tuple(r["id"] for r in rows)
     total = est_total = 0
     for r in rows:
-        est = estimate(db, clinic, cover, r["code_id"], r["fee_p"], today, remaining)
-        if remaining is not None:
-            remaining = max(remaining - est["payer_p"], 0)
-        db.execute("INSERT INTO claim_items(clinic_id, claim_id, procedure_id, fee_p, allowed_p, estimate_p) VALUES (?,?,?,?,?,?)",
-                   (cid, cur.lastrowid, r["id"], r["fee_p"], est["allowed_p"], est["payer_p"]))
+        code = db.execute("SELECT * FROM procedure_codes WHERE id = ?", (r["code_id"],)).fetchone()
+        day = BEN.parse_date(r["done_on"]) if (kind == "claim" and r["done_on"]) else today
+        est = BEN.line(db, clinic, cover, code, r["fee_p"], day, pool, pid, exclude=others, rules=rules, lims=lims)
+        if cover["cover_rank"] > 1:
+            first = _first_payer_share(db, clinic, pid, cover, r, day)
+            if first is not None:
+                pays = min(est["payer_p"], first["patient_p"])
+                if pool["max_left"] is not None:
+                    pool["max_left"] += est["payer_p"] - pays
+                est["payer_p"] = pays
+        dx = db.execute("SELECT dx_code FROM procedures WHERE id = ?", (r["id"],)).fetchone()["dx_code"]
+        db.execute("""INSERT INTO claim_items(clinic_id, claim_id, procedure_id, fee_p, allowed_p, estimate_p, deductible_p, note, dx_code)
+                      VALUES (?,?,?,?,?,?,?,?,?)""",
+                   (cid, cur.lastrowid, r["id"], r["fee_p"], est["allowed_p"], est["payer_p"], est["deductible_p"],
+                    " ".join(est["notes"])[:300] or None, dx))
         total += r["fee_p"]
         est_total += est["payer_p"]
     db.execute("UPDATE claims SET total_fee_p = ?, estimate_p = ? WHERE id = ?", (total, est_total, cur.lastrowid))
@@ -292,20 +399,22 @@ def cancel(db, clinic, user_id, claim_id):
     audit.log(db, cid, user_id, "claim.cancel", "claim", claim_id)
 
 
-def record_payer_payment(db, clinic, user_id, claim_id, amount_p, reference, writeoff_p=0, writeoff_note=None, final=False):
+def record_payer_payment(db, clinic, user_id, claim_id, amount_p, reference, writeoff_p=0, writeoff_note=None, final=False, allow_zero=False):
     """The payer has paid. Records a payment by insurance matched to the claim, and an optional write-off for the
     part that will never be paid. 'final' closes the claim even if less than the estimate was paid."""
     cid = clinic["id"]
     c = _claim(db, cid, claim_id, ("submitted", "partly_paid"))
     if c["kind"] != "claim":
         raise InsuranceError("A pre-authorisation is not paid. Raise a claim once the work is done.")
-    if amount_p <= 0:
+    if amount_p < 0 or (amount_p == 0 and not (allow_zero and (writeoff_p > 0 or final))):
         raise InsuranceError("The amount must be more than zero.")
     if writeoff_p < 0:
         raise InsuranceError("The write-off cannot be negative.")
+    pay_id = None
     try:
-        billing.record_payment(db, clinic, user_id, c["patient_id"], amount_p, "insurance", reference,
-                               f"Claim {c['claim_no']}", claim_id=claim_id)
+        if amount_p:
+            pay_id = billing.record_payment(db, clinic, user_id, c["patient_id"], amount_p, "insurance", reference,
+                                            f"Claim {c['claim_no']}", claim_id=claim_id)
         if writeoff_p:
             billing.add_adjustment(db, clinic, user_id, c["patient_id"], -writeoff_p, "write_off",
                                    (writeoff_note or "").strip() or f"Claim {c['claim_no']} difference")
@@ -316,6 +425,7 @@ def record_payer_payment(db, clinic, user_id, claim_id, amount_p, reference, wri
     status = "paid" if (final or paid + wo >= c["estimate_p"]) else "partly_paid"
     db.execute("UPDATE claims SET paid_p = ?, writeoff_p = ?, status = ? WHERE id = ?", (paid, wo, status, claim_id))
     audit.log(db, cid, user_id, "claim.paid", "claim", claim_id)
+    return pay_id
 
 
 def claims_for_patient(db, cid, pid):

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_diary_tabs.html" import tabs with context %}
+{% block title %}{{ _("Time off") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Diary set-up") }}</h1>
+{{ tabs(active) }}
+{% if clashes %}<section class="card"><h2>{{ _("Visits booked during time off") }}</h2>
+  <p class="muted small">{{ _("These were booked before the time off was added. Move them.") }}</p>
+  {% for c in clashes %}<p><a href="{{ url_for('views.appointment_reschedule', aid=c.appt.id) }}">{{ c.appt.start_at|day }}, {{ c.appt.start_at|time }}: {{ c.appt.first_name }} {{ c.appt.last_name }}</a> <span class="muted">({{ c.off.provider_name }})</span></p>{% endfor %}
+</section>{% endif %}
+{% if providers %}
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <h2>{{ _("Add time off") }}</h2>
+  <div class="grid three">
+    <div><label for="provider_id">{{ _("Dentist") }}</label><select id="provider_id" name="provider_id">{% for p in providers %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+    <div><label for="start_date">{{ _("First day") }}</label><input id="start_date" type="date" name="start_date" value="{{ today }}" required></div>
+    <div><label for="end_date">{{ _("Last day") }}</label><input id="end_date" type="date" name="end_date" value="{{ today }}"></div>
+  </div>
+  <div class="grid three">
+    <div><label for="start_time">{{ _("From (only for part of one day)") }}</label><input id="start_time" type="time" name="start_time"></div>
+    <div><label for="end_time">{{ _("Ends at") }}</label><input id="end_time" type="time" name="end_time"></div>
+    <div><label for="reason">{{ _("Reason (optional)") }}</label><input id="reason" name="reason" maxlength="120" placeholder="{{ _('for example annual leave, course') }}"></div>
+  </div>
+  <p><button class="primary" type="submit">{{ _("Add time off") }}</button></p>
+</form>
+{% else %}<div class="card"><p>{{ _("Add a dentist under Settings first.") }}</p></div>{% endif %}
+<section class="card"><h2>{{ _("Coming up") }}</h2>
+  {% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("Dentist") }}</th><th>{{ _("When") }}</th><th>{{ _("Reason") }}</th><th></th></tr>
+  {% for r in rows %}<tr><td>{{ r.provider_name }}</td>
+    <td>{{ r.start_date|date }}{% if r.end_date != r.start_date %} {{ _("to") }} {{ r.end_date|date }}{% endif %}{% if r.start_time %}, {{ r.start_time }} {{ _("to") }} {{ r.end_time or '' }}{% endif %}</td>
+    <td>{{ r.reason or '' }}</td>
+    <td><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button class="link" type="submit" name="remove" value="{{ r.id }}">{{ _("Remove") }}</button></form></td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">{{ _("No time off coming up.") }}</p>{% endif %}
+</section>
+{% endblock %}

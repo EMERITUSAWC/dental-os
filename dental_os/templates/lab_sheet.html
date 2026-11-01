@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Lab job sheet{% endblock %}
+{% block title %}{{ _("Lab job sheet") }}{% endblock %}
 {% block body %}
-<div class="row no-print"><button class="primary" data-print>Print</button> <a href="{{ url_for('ops.lab_case', case_id=c.id) }}">Back to the case</a></div>
+<div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button> <a href="{{ url_for('ops.lab_case', case_id=c.id) }}">{{ _("Back to the case") }}</a></div>
 <div class="sheet card">
-  <h1>Lab job sheet</h1>
+  <h1>{{ _("Lab job sheet") }}</h1>
   <table>
-    <tr><th>From</th><td>{{ clinic.name }}{% if clinic.phone %}, {{ clinic.phone|phone }}{% endif %}</td></tr>
-    <tr><th>To</th><td>{{ c.lab_name }}</td></tr>
-    <tr><th>Case number</th><td>{{ c.id }}{% if c.remake_of %} (remake of {{ c.remake_of }}){% endif %}</td></tr>
-    <tr><th>Patient</th><td>{{ c.first_name }} {{ c.last_name }}</td></tr>
-    <tr><th>Dentist</th><td>{{ c.provider_name or '' }}</td></tr>
-    <tr><th>Job</th><td>{{ c.kind }}</td></tr>
-    <tr><th>Tooth</th><td>{{ c.tooth or '' }}</td></tr>
-    <tr><th>Shade</th><td>{{ c.shade or '' }}</td></tr>
-    <tr><th>Sent</th><td>{{ c.sent_on|date if c.sent_on else '' }}</td></tr>
-    <tr><th>Wanted back by</th><td>{{ c.due_on|date if c.due_on else '' }}</td></tr>
-    <tr><th>Instructions</th><td>{{ c.instructions or '' }}</td></tr>
+    <tr><th>{{ _("From") }}</th><td>{{ clinic.name }}{% if clinic.phone %}, {{ clinic.phone|phone }}{% endif %}</td></tr>
+    <tr><th>{{ _("To") }}</th><td>{{ c.lab_name }}</td></tr>
+    <tr><th>{{ _("Case number") }}</th><td>{{ c.id }}{% if c.remake_of %} {{ _("(remake of %(n)s)", n=c.remake_of) }}{% endif %}</td></tr>
+    <tr><th>{{ _("Patient") }}</th><td>{{ c.first_name }} {{ c.last_name }}</td></tr>
+    <tr><th>{{ _("Dentist") }}</th><td>{{ c.provider_name or '' }}</td></tr>
+    <tr><th>{{ _("Job") }}</th><td>{{ c.kind }}</td></tr>
+    <tr><th>{{ _("Tooth") }}</th><td>{{ c.tooth or '' }}</td></tr>
+    <tr><th>{{ _("Shade") }}</th><td>{{ c.shade or '' }}</td></tr>
+    <tr><th>{{ _("Sent") }}</th><td>{{ c.sent_on|date if c.sent_on else '' }}</td></tr>
+    <tr><th>{{ _("Wanted back by") }}</th><td>{{ c.due_on|date if c.due_on else '' }}</td></tr>
+    <tr><th>{{ _("Instructions") }}</th><td>{{ c.instructions or '' }}</td></tr>
   </table>
-  <p class="small muted">Printed {{ today|date }}.</p>
+  <p class="small muted">{{ _("Printed") }} {{ today|date }}.</p>
 </div>
 {% endblock %}

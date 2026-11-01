@@ -1,0 +1,10 @@
+{% macro tabs(active) %}
+<nav class="tabs" aria-label="{{ _('Sterilisation') }}">
+  <a href="{{ url_for('steri.home') }}" class="{{ 'on' if active == 'home' }}">{{ _("Today's checks") }}</a>
+  <a href="{{ url_for('steri.cycle_new') }}" class="{{ 'on' if active == 'new' }}">{{ _("Record a cycle") }}</a>
+  <a href="{{ url_for('steri.cycles') }}" class="{{ 'on' if active == 'cycles' }}">{{ _("Cycles") }}</a>
+  <a href="{{ url_for('steri.shelf') }}" class="{{ 'on' if active == 'shelf' }}">{{ _("Packs") }}</a>
+  <a href="{{ url_for('steri.pack_find') }}" class="{{ 'on' if active == 'find' }}">{{ _("Find a pack") }}</a>
+  {% if user.role == 'manager' %}<a href="{{ url_for('steri.setup') }}" class="{{ 'on' if active == 'setup' }}">{{ _("Set up") }}</a>{% endif %}
+</nav>
+{% endmacro %}

@@ -1,12 +1,13 @@
 {% macro tabs(active, attn) %}
-<nav class="tabs" aria-label="Messages">
-  <a href="{{ url_for('comms.queue') }}" class="{{ 'on' if active == 'queue' }}">To send{% if attn.queue %} <span class="badge">{{ attn.queue }}</span>{% endif %}</a>
-  <a href="{{ url_for('comms.replies') }}" class="{{ 'on' if active == 'replies' }}">Replies{% if attn.replies %} <span class="badge">{{ attn.replies }}</span>{% endif %}</a>
-  <a href="{{ url_for('comms.requests_list') }}" class="{{ 'on' if active == 'requests' }}">Booking requests{% if attn.requests %} <span class="badge">{{ attn.requests }}</span>{% endif %}</a>
-  {% if user.role in ('manager', 'dentist', 'assistant') %}<a href="{{ url_for('comms.forms') }}" class="{{ 'on' if active == 'forms' }}">Health forms{% if attn.intake %} <span class="badge">{{ attn.intake }}</span>{% endif %}</a>{% endif %}
+<nav class="tabs" aria-label="{{ _('Messages') }}">
+  <a href="{{ url_for('comms.queue') }}" class="{{ 'on' if active == 'queue' }}">{{ _("To send") }}{% if attn.queue %} <span class="badge">{{ attn.queue }}</span>{% endif %}</a>
+  <a href="{{ url_for('comms.replies') }}" class="{{ 'on' if active == 'replies' }}">{{ _("Replies") }}{% if attn.replies %} <span class="badge">{{ attn.replies }}</span>{% endif %}</a>
+  <a href="{{ url_for('comms.requests_list') }}" class="{{ 'on' if active == 'requests' }}">{{ _("Booking requests") }}{% if attn.requests %} <span class="badge">{{ attn.requests }}</span>{% endif %}</a>
+  {% if user.role in ('manager', 'dentist', 'assistant') %}<a href="{{ url_for('comms.forms') }}" class="{{ 'on' if active == 'forms' }}">{{ _("Health forms") }}{% if attn.intake %} <span class="badge">{{ attn.intake }}</span>{% endif %}</a>{% endif %}
+  <a href="{{ url_for('voice.calls') }}" class="{{ 'on' if active == 'calls' }}">{{ _("Calls") }}</a>
   {% if user.role == 'manager' %}
-  <a href="{{ url_for('comms.campaigns') }}" class="{{ 'on' if active == 'campaigns' }}">Campaigns</a>
-  <a href="{{ url_for('comms.setup') }}" class="{{ 'on' if active == 'setup' }}">Set up</a>
+  <a href="{{ url_for('comms.campaigns') }}" class="{{ 'on' if active == 'campaigns' }}">{{ _("Campaigns") }}</a>
+  <a href="{{ url_for('comms.setup') }}" class="{{ 'on' if active == 'setup' }}">{{ _("Set up") }}</a>
   {% endif %}
 </nav>
 {% endmacro %}

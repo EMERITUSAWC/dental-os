@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Pack labels") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><h1>{{ _("Pack labels") }}</h1><button class="primary" type="button" data-print>{{ _("Print") }}</button></div>
+{% if not packs %}<p class="muted">{{ _("No packs from this cycle can be used, so there is nothing to label.") }}</p>{% endif %}
+<div class="labels">{% for k, svg in packs %}
+  <div class="label"><div class="qr">{{ svg|safe }}</div>
+    <div><strong>{{ k.code }}</strong><br>{{ k.contents }}<br>{{ c.steriliser }}, {{ _("cycle") }} {{ c.cycle_no }}, {{ c.started_at|date }}<br>{{ _("Use by") }} {{ k.expires_on|date }}{% if k.status == 'held' %}<br><strong>{{ _("HELD: wait for the spore test") }}</strong>{% endif %}</div></div>
+{% endfor %}</div>
+{% endblock %}

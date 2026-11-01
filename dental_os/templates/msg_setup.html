@@ -26,6 +26,46 @@
   <p class="muted small">Every message needs a person to open it. Patients who have not agreed are never queued.</p>
 </section>
 
+<section class="card" id="whatsapp-api"><h2>WhatsApp Business API</h2>
+  <p class="muted small">Optional. Without it, staff open WhatsApp and press send, which needs nothing from Meta. With it, messages go from the clinic's own WhatsApp Business number, and you see when each one was delivered or read. It needs a Meta developer app with the WhatsApp product, a verified business, and templates that Meta has approved. Meta charges for some conversations. Check their current price list for Ghana before you switch it on.</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="wa_account">
+    <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if wa.acct.enabled }}><span>Use the WhatsApp Business API</span></label>
+    <div class="grid two">
+      <div><label for="wa_pid">Phone number ID</label><input id="wa_pid" name="phone_number_id" value="{{ wa.acct.phone_number_id or '' }}" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="wa_ver">API version</label><input id="wa_ver" name="api_version" value="{{ wa.acct.api_version }}" autocomplete="off"></div>
+      <div><label for="wa_tok">Access token {% if wa.has_token %}<span class="pill ok">saved</span>{% endif %}</label><input id="wa_tok" name="access_token" type="password" autocomplete="off" placeholder="{{ 'Leave empty to keep the saved one' if wa.has_token else '' }}"></div>
+      <div><label for="wa_sec">App secret {% if wa.has_secret %}<span class="pill ok">saved</span>{% endif %}</label><input id="wa_sec" name="app_secret" type="password" autocomplete="off" placeholder="{{ 'Leave empty to keep the saved one' if wa.has_secret else '' }}"></div>
+    </div>
+    <p class="muted small">The token and the secret are stored encrypted and are never shown again. Use a permanent token made for a system user, not the 24-hour test token.</p>
+    <label class="check"><input type="checkbox" name="auto_send" value="1" {{ 'checked' if wa.acct.auto_send }}><span>Send the send list by itself (needs <code>flask send-whatsapp</code> on the server's scheduler). Off means a person presses Send.</span></label>
+    <label for="wa_url">Address for Meta (Webhooks, callback URL)</label><input id="wa_url" value="{{ wa.url }}" readonly>
+    <label for="wa_vt">Verify token</label><input id="wa_vt" value="{{ wa.acct.verify_token }}" readonly>
+    <label class="check"><input type="checkbox" name="new_hook_key" value="1"><span>Make a new address (you must give Meta the new one)</span></label>
+    <p class="row"><button class="primary" type="submit">Save</button><button type="submit" name="action" value="wa_check" formnovalidate>Check the connection</button></p>
+    <p class="muted small">At Meta, under WhatsApp, Configuration, paste the address and the verify token, then subscribe to the <code>messages</code> field. Our server answers Meta only if the message is signed with your app secret.</p>
+  </form>
+
+  <h3>Templates</h3>
+  <p class="muted small">Write each template at Meta first (category Utility for reminders and confirmations, Marketing for birthdays and offers), wait for approval, then fill it in here. The text below is your own wording with the fields turned into {{ '{{1}}' }}, {{ '{{2}}' }} and so on, so you can paste it into Meta. The fields go in the order shown. A message with no template here can still be sent through the API during the 24 hours after the patient writes to you.</p>
+  {% for r in wa.rows %}
+  <form method="post" style="margin-bottom:14px"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="wa_template"><input type="hidden" name="kind" value="{{ r.kind }}"><input type="hidden" name="lang" value="{{ r.lang }}">
+    <strong>{{ r.label }}, {{ r.lang_name }}</strong>{% if r.map %} <span class="pill ok">set</span>{% endif %}
+    {% if r.text %}<div class="muted small">For Meta: {{ r.text }}</div>{% endif %}
+    <div class="grid three">
+      <div><label for="tn_{{ r.kind }}_{{ r.lang }}">Template name</label><input id="tn_{{ r.kind }}_{{ r.lang }}" name="template_name" value="{{ r.map.template_name if r.map else '' }}" autocomplete="off"></div>
+      <div><label for="tl_{{ r.kind }}_{{ r.lang }}">Language code at Meta</label><input id="tl_{{ r.kind }}_{{ r.lang }}" name="language_code" value="{{ r.map.language_code if r.map else r.lang }}" autocomplete="off"></div>
+      <div><label for="tp_{{ r.kind }}_{{ r.lang }}">Fields in order</label><input id="tp_{{ r.kind }}_{{ r.lang }}" name="params" value="{{ r.map.params if r.map else r.order|join(',') }}" autocomplete="off"></div>
+    </div>
+    <p><button type="submit">Save (empty name removes it)</button></p>
+  </form>
+  {% endfor %}
+  <p class="muted small">Fields you can send: {{ wa.fields|join(', ') }}. Treatment details and money stay out of messages.</p>
+
+  {% if wa.unmatched %}<h3>Messages from numbers we do not know</h3>
+  <p class="muted small">These did not match a patient's phone number, so they are not on any record. They are forgotten after 30 days.</p>
+  {% for u in wa.unmatched %}<div class="small">{{ u.created_at[:16] }} UTC, {{ u.detail }}</div>{% endfor %}{% endif %}
+</section>
+
 <section class="card"><h2>Online booking page</h2>
   <p class="muted small">A page anyone can open to ask for a visit. It shows real free times, but each request waits on the Booking requests tab until staff accept it.</p>
   <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="booking">

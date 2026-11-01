@@ -1,0 +1,2 @@
+# Optional: only for running on PostgreSQL (see README, "Running on PostgreSQL").
+psycopg[binary]>=3.1

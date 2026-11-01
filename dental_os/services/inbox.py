@@ -54,7 +54,7 @@ def unread(db, cid):
                    ORDER BY x.id DESC LIMIT 1) AS last_body
            FROM messages m JOIN patients p ON p.id = m.patient_id
            WHERE m.clinic_id = ? AND m.direction = 'in' AND m.read_at IS NULL
-           GROUP BY p.id ORDER BY last_at DESC""", (cid,)).fetchall()
+           GROUP BY p.id, m.clinic_id ORDER BY last_at DESC""", (cid,)).fetchall()
 
 
 def thread(db, cid, pid, limit=40):

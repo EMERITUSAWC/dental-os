@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_steri_tabs.html" import tabs with context %}
+{% block title %}{{ _("Cycles") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Cycles") }}</h1>
+{{ tabs('cycles') }}
+<section class="card">{% if rows %}<div class="tbl-wrap"><table><tr><th>{{ _("When") }}</th><th>{{ _("Steriliser") }}</th><th>{{ _("Cycle") }}</th><th>{{ _("Programme") }}</th><th>{{ _("Packs") }}</th><th>{{ _("Result") }}</th></tr>
+  {% for c in rows %}<tr><td class="nw">{{ c.started_at|date }} {{ c.started_at[11:16] }}</td><td>{{ c.steriliser }}</td><td><a href="{{ url_for('steri.cycle_view', cycle_id=c.id) }}">{{ c.cycle_no }}</a></td><td>{{ c.program or '' }}</td><td>{{ c.packs }}</td>
+    <td><span class="pill {{ 'ok' if c.result == 'pass' else ('bad' if c.result == 'fail' else 'warn') }}">{{ _(cycle_results[c.result]) }}</span></td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">{{ _("No cycles yet.") }}</p>{% endif %}</section>
+{% endblock %}

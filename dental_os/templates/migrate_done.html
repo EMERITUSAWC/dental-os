@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Move in from another system") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ r.file_name }}</h1><a class="btn" href="{{ url_for('migrate.home') }}">{{ _("Back") }}</a></div>
+<section class="card"><p><span class="pill {{ 'ok' if r.status == 'done' else '' }}">{% if r.status == 'done' %}{{ _("Imported") }}{% else %}{{ _("Cancelled") }}{% endif %}</span> {{ r.finished_at|date if r.finished_at }}</p>
+  {% if s.counts %}<table><tbody>{% for k, v in kinds.items() %}{% if s.counts[k] or s.already[k] %}<tr><td>{{ _(v) }}</td><td>{{ s.counts[k] }}</td><td class="small muted">{{ s.already[k] }} {{ _("already here") }}</td></tr>{% endif %}{% endfor %}</tbody></table>
+  {% if s.no_phone %}<p>{{ s.no_phone }} {{ _("patients have no phone number that could be read. They are brought in with the phone empty; add it when they next call or visit.") }}</p>{% endif %}{% endif %}
+  <p class="muted small">{{ _("The uploaded file has been deleted.") }}</p></section>
+{% endblock %}

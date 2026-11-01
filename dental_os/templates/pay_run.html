@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ r.provider_name }}: {{ _("Pay statement") }}{% endblock %}
+{% block body %}
+<div class="row spread no-print"><a class="btn" href="{{ url_for('pay.provider', provider_id=r.provider_id) }}">{{ r.provider_name }}</a><button type="button" data-print>{{ _("Print") }}</button></div>
+<section class="card doc">
+  <h1>{{ _("Pay statement") }}: {{ r.provider_name }}</h1>
+  <p>{{ g.clinic.name }}. {{ r.period_from|date }} {{ _("to") }} {{ r.period_to|date }}. <span class="pill {{ 'ok' if r.status == 'paid' else ('warn' if r.status == 'draft' else '') }}">{{ _(statuses[r.status]) }}</span>{% if r.paid_on %} {{ r.paid_on|date }}{% if r.paid_ref %}, {{ r.paid_ref }}{% endif %}{% endif %}</p>
+  <h2>{{ _("The figures") }}</h2>
+  <dl class="facts">
+    <dt>{{ _("Work done (gross production)") }}</dt><dd>{{ f.gross_production|money }} ({{ _("items") }}: {{ f.procedures }})</dd>
+    <dt>{{ _("Discounts and write-offs on that work") }}</dt><dd>{{ f.discounts|money }}</dd>
+    <dt>{{ _("Net production") }}</dt><dd>{{ f.net_production|money }}</dd>
+    <dt>{{ _("Collected for their work") }}</dt><dd>{{ f.collections|money }}</dd>
+    <dt>{{ _("Lab bills") }}</dt><dd>{{ f.lab_fees|money }} ({{ _("cases") }}: {{ f.lab_cases }})</dd>
+    <dt>{{ _("Days worked") }}</dt><dd>{{ f.days }}</dd>
+  </dl>
+  <h2>{{ _("The pay") }}</h2>
+  <table><tbody>
+    <tr><td>{{ '%g'|format(r.percent_bp / 100) }}% {{ _("of") }} {{ _(bases[r.basis])|lower }} ({{ r.base_p|money }})</td><td class="num">{{ r.share_p|money }}</td></tr>
+    {% if r.lab_deduction_p %}<tr><td>{{ _("Less") }} {{ '%g'|format(r.lab_bp / 100) }}% {{ _("of lab bills") }}</td><td class="num">-{{ r.lab_deduction_p|money }}</td></tr>{% endif %}
+    {% if r.daily_p %}<tr><td>{{ _("Daily amount") }} ({{ f.days }})</td><td class="num">{{ r.daily_p|money }}</td></tr>{% endif %}
+    {% for x in extras %}<tr><td>{{ x.label }}</td><td class="num">{{ x.amount|money }}</td></tr>{% endfor %}
+    <tr><td><strong>{{ _("Total") }}</strong></td><td class="num"><strong>{{ r.total_p|money }}</strong></td></tr>
+  </tbody></table>
+  <p class="small muted">{{ _("Collections are each patient's payments matched to their oldest completed work first, counted on the later of the day paid and the day the work was done.") }}</p>
+  {% if r.cancel_reason %}<p>{{ r.cancel_reason }}</p>{% endif %}
+</section>
+{% if r.status == 'draft' %}
+<div class="grid two no-print">
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="extra"><h2>{{ _("Add a line") }}</h2>
+  <label for="label">{{ _("What it is for") }}</label><input id="label" name="label" maxlength="120">
+  <label for="sign">{{ _("Add or take off") }}</label><select id="sign" name="sign"><option value="plus">{{ _("Add (a bonus)") }}</option><option value="minus">{{ _("Take off (an advance or other deduction)") }}</option></select>
+  <label for="amount">{{ _("Amount") }}</label><input id="amount" name="amount" inputmode="decimal" class="narrow">
+  <p><button type="submit">{{ _("Add the line") }}</button></p></form>
+<div class="card"><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="approve"><p><button class="primary" type="submit">{{ _("Approve") }}</button></p></form>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="cancel"><label for="reason">{{ _("Or cancel it, saying why") }}</label><input id="reason" name="reason" maxlength="300"><button type="submit">{{ _("Cancel the pay run") }}</button></form></div>
+</div>{% elif r.status == 'approved' %}
+<form method="post" class="card row no-print"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="paid">
+  <label for="paid_on">{{ _("Paid on") }}</label><input id="paid_on" type="date" name="paid_on" value="{{ today }}"><label for="reference">{{ _("Reference (optional)") }}</label><input id="reference" name="reference" maxlength="120"><button class="primary" type="submit">{{ _("Mark as paid") }}</button></form>{% endif %}
+{% endblock %}
