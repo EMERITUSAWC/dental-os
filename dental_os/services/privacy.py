@@ -36,13 +36,13 @@ def _today(clinic):
 # ============================================================================================ a full copy of one record
 # Every table that has a patient_id column belongs here, unless it is listed in NOT_RECORDS. A test checks this against the schema,
 # so a table added later cannot be forgotten by mistake.
-DIRECT = ["xray_ai_reads", "aftercare_given", "refunds", "reactivation_holds", "complaints", "safety_incidents", "implant_items", "material_recall_patients", "appointments", "messages", "procedures", "payments", "adjustments", "recalls", "medical_history", "patient_alerts",
+DIRECT = ["erx_sends", "xray_ai_reads", "aftercare_given", "refunds", "reactivation_holds", "complaints", "safety_incidents", "implant_items", "material_recall_patients", "appointments", "messages", "procedures", "payments", "adjustments", "recalls", "medical_history", "patient_alerts",
           "tooth_conditions", "perio_charts", "clinical_notes", "consents", "patient_files", "treatment_plans", "memberships",
           "payment_plans", "patient_cover", "claims", "invoices", "outbox", "booking_requests", "intake_submissions", "lab_cases",
           "data_requests", "prescriptions", "referrals_out", "vitals", "letters", "contact_log", "image_mounts", "tasks", "pay_links",
           "calls", "steri_packs", "nhs_courses", "imaging_requests", "ortho_cases", "statement_items", "staff_messages", "saved_cards", "card_charges", "form_responses"]
 # child table -> (column that points at the parent, parent table). Rows are found through the parent.
-CHILD = {"xray_checks": ("file_id", "patient_files"), "xray_ai_findings": ("read_id", "xray_ai_reads"), "kit_uses": ("procedure_id", "procedures"), "complaint_steps": ("complaint_id", "complaints"), "perio_readings": ("chart_id", "perio_charts"), "plan_items": ("plan_id", "treatment_plans"),
+CHILD = {"rx_links": ("prescription_id", "prescriptions"), "xray_checks": ("file_id", "patient_files"), "xray_ai_findings": ("read_id", "xray_ai_reads"), "kit_uses": ("procedure_id", "procedures"), "complaint_steps": ("complaint_id", "complaints"), "perio_readings": ("chart_id", "perio_charts"), "plan_items": ("plan_id", "treatment_plans"),
          "plan_events": ("plan_id", "treatment_plans"), "membership_charges": ("membership_id", "memberships"),
          "membership_uses": ("membership_id", "memberships"), "instalments": ("payment_plan_id", "payment_plans"),
          "claim_items": ("claim_id", "claims"), "invoice_lines": ("invoice_id", "invoices"), "invoice_tax": ("invoice_id", "invoices"),
@@ -50,7 +50,8 @@ CHILD = {"xray_checks": ("file_id", "patient_files"), "xray_ai_findings": ("read
          "image_mount_slots": ("mount_id", "image_mounts"), "cover_benefits": ("cover_id", "patient_cover"),
          "cover_limits": ("cover_id", "patient_cover"), "ortho_visits": ("case_id", "ortho_cases"),
          "ortho_contracts": ("case_id", "ortho_cases"), "ortho_charges": ("contract_id", "ortho_contracts")}
-NOT_RECORDS = {"xray_ai_account": "the clinic's X-ray AI company, its address and its key (encrypted); nothing about any patient",
+NOT_RECORDS = {"erx_network": "the clinic's e-prescribing network, its address and its key (encrypted); nothing about any patient",
+               "xray_ai_account": "the clinic's X-ray AI company, its address and its key (encrypted); nothing about any patient",
                "aftercare_sheets": "the clinic's own printed advice for each kind of treatment; nothing about any patient",
                "patient_merges": "which duplicate record was merged into which, and how many rows moved; no details about the person",
                "patient_not_duplicates": "two record numbers a manager marked as different people; nothing else",

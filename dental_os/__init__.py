@@ -193,7 +193,7 @@ def create_app(test_config=None):
             abort(403, "This is a read-only copy. Changes are made at the clinic.")
         is_api = request.path.startswith("/api/")            # only the API blueprint lives under /api/
         hook = request.blueprint in ("wahook", "voicehook") or request.endpoint == "paypub.hook"   # Meta and the payment company call these: a signature is required
-        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "operator", "signup") or is_api
+        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "signup") or is_api
         idle = app.config["SESSION_IDLE_MINUTES"]
         if g.user and not is_api and request.endpoint != "static":
             now = int(time.time())
@@ -310,7 +310,7 @@ def create_app(test_config=None):
     def health():
         return "ok"
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -362,6 +362,8 @@ def create_app(test_config=None):
     app.register_blueprint(pilotviews.bp)
     app.register_blueprint(xrayaiviews.bp)
     app.register_blueprint(chairviews.bp)
+    app.register_blueprint(rxviews.bp)
+    app.register_blueprint(rxviews.pub)
 
     # ---- command line
     @app.cli.command("create-clinic")

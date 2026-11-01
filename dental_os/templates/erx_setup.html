@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _("E-prescribing") }}{% endblock %}
+{% block body %}
+<h1>{{ _("E-prescribing") }}</h1>
+<div class="grid two">
+<section class="card"><h2>{{ _("Pharmacy check on every prescription") }}</h2>
+  <p class="small">{{ _("Every prescription carries a QR code and a short link. A pharmacist opens it on any phone, sees whether it is genuine and still valid, and records that it was dispensed, so the paper cannot be used twice. It needs no account and works with any pharmacy.") }}</p>
+  <p class="small">{{ _("A prescription stays valid for this many days") }}: <strong>{{ valid }}</strong>; {{ _("with a controlled drug") }}: <strong>{{ controlled }}</strong>. {{ _("These are starting points. Tell Dental OS support if the law where you work says otherwise.") }}</p></section>
+<section class="card"><h2>{{ _("An e-prescribing network") }}</h2>
+  {% if on %}<p class="flash ok" role="status">{{ _("Switched on. A dentist can send a prescription from its page.") }}</p>{% endif %}
+  <p class="small">{{ _("For a clinic with an account on a network. Dental OS sends each prescription in the standard FHIR format. Each network has its own rules and certification, so a network is connected once Dental OS has an agreement with it.") }}</p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="name">{{ _("Network name") }}</label><input id="name" name="name" value="{{ n.name if n and n.name else '' }}" maxlength="80">
+    <label for="endpoint">{{ _("Its https address") }}</label><input id="endpoint" name="endpoint" value="{{ n.endpoint if n and n.endpoint else '' }}" inputmode="url">
+    <label for="api_key">{{ _("The clinic's key") }}</label><input id="api_key" name="api_key" type="password" autocomplete="off" aria-describedby="key-hint">
+    <p id="key-hint" class="muted small">{{ _("A key is saved, and is never shown again. Leave this empty to keep it.") if has_key else _("Stored encrypted and never shown again.") }}</p>
+    <label class="check"><input type="checkbox" name="enabled" value="1"{% if n and n.enabled %} checked{% endif %}> {{ _("Switch it on") }}</label>
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form></section>
+</div>
+{% endblock %}

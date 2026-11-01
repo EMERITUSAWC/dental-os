@@ -1,4 +1,4 @@
-# Dental OS, version 0.61
+# Dental OS, version 0.62
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,22 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.62
+
+- A pharmacy check on every prescription. Each one printed now carries a QR code and a short link. A pharmacist opens it on any
+  phone, with no account, and sees whether it is genuine, still valid, cancelled by the dentist or already dispensed, then records the
+  pharmacy, the pharmacist and (if they wish) their licence number. Once dispensed it cannot be dispensed again, so a forged or
+  photocopied paper is caught. The page shows only the medicines, the prescriber and the patient's initials and year of birth. The
+  link is made from the server's secret key, so it can be printed again, and a stolen copy of the database cannot make links.
+  Prescriptions stay valid for 30 days, 28 with a controlled drug (the UK rule for Schedule 2 to 4); change these where the law differs.
+- An electronic copy of each prescription in FHIR R4 (a Bundle of Patient, Practitioner, Organization and one MedicationRequest per
+  medicine), the format national health systems and e-prescribing networks read.
+- Sending to an e-prescribing network (Settings, E-prescribing): a dentist sends the FHIR copy to the network's https address with
+  the clinic's key, and the network's answer is kept. Networks have their own rules and certification: DoseSpot and Surescripts in
+  the US (including the extra rules for controlled drugs), the NHS Electronic Prescription Service in England (Spine, smartcards and
+  dm+d codes). A short adapter is written for each once there is an agreement. Ghana's national e-pharmacy platform publishes no way
+  for clinics to send prescriptions yet; the pharmacy check works with any pharmacy there today.
 
 ### Added in version 0.61
 

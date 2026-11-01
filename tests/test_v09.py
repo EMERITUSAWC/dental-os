@@ -1424,7 +1424,7 @@ CODE_WORDING = {
                             "Other patients list this person as their family head. Change that first.", "An insurance claim is still open. Close it first.",
                             "The account is not settled. Collect, refund or write off the balance first, because the clinic needs to know who owes or is owed."],
 }
-LABEL_DICTS = [("xrayai", "KINDS"), ("xrayai", "STATES"), ("xrayqc", "ISSUES"), ("pilot", "BY_HAND"), ("pilot", "PROBLEM_STATES"), ("pilot", "URGENCY"), ("pilot", "KINDS"), ("plans", "STATUSES"), ("memberships", "CYCLES"), ("insurance", "CLAIM_STATUS"), ("insurance", "PAYER_KINDS"), ("instalments", "FREQUENCIES"),
+LABEL_DICTS = [("rxlink", "STATES"), ("xrayai", "KINDS"), ("xrayai", "STATES"), ("xrayqc", "ISSUES"), ("pilot", "BY_HAND"), ("pilot", "PROBLEM_STATES"), ("pilot", "URGENCY"), ("pilot", "KINDS"), ("plans", "STATUSES"), ("memberships", "CYCLES"), ("insurance", "CLAIM_STATUS"), ("insurance", "PAYER_KINDS"), ("instalments", "FREQUENCIES"),
                ("labs", "LABELS"), ("stock", "KINDS"), ("medical", "KINDS"), ("medical", "SEVERITIES"), ("medical", "SMOKER"), ("files", "KINDS"),
                ("taxes", "KINDS"), ("campaigns", "KINDS"), ("campaigns", "PURPOSES"), ("outbox", "KINDS"), ("privacy", "REQUEST_KINDS"),
                ("diaryrules", "BLOCK_KINDS"), ("diaryrules", "REPEATS"), ("diaryrules", "COLOURS"), ("diaryrules", "WEEKDAYS"),

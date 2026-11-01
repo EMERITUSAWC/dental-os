@@ -63,6 +63,9 @@ def prescriptions(pid):
             try:
                 rx_id = RX.create(db, g.clinic, g.user, pid, request.form.get("provider_id", type=int), items, request.form.get("notes"),
                                   request.form.get("override_reason"), request.form.get("appointment_id", type=int))
+                from flask import current_app
+                from .services import rxlink
+                rxlink.token_for(db, g.clinic, current_app.config["SECRET_KEY"], rx_id, g.user["id"])     # 0.62: the pharmacy check
                 flash("Prescription written. Print it and sign it in ink.", "ok")
                 return redirect(url_for("care.prescription_print", rx_id=rx_id))
             except RX.RxError as exc:
@@ -83,7 +86,12 @@ def prescription_print(rx_id):
     p = _patient(rx["patient_id"])
     _doc_lang(p)
     audit.log(db, cid, g.user["id"], "rx.view", "patient", p["id"])
-    return render_template("rx_print.html", rx=rx, p=p, items=RX.items(db, rx_id), age=RX.age_on(p["dob"], rx["issued_on"]))
+    from .rxviews import pharmacy_link
+    from .services import rxlink
+    link_url, link_svg = pharmacy_link(rx_id)
+    return render_template("rx_print.html", rx=rx, p=p, items=RX.items(db, rx_id), age=RX.age_on(p["dob"], rx["issued_on"]),
+                           link_url=link_url, link_svg=link_svg, link=rxlink.link_row(db, cid, rx_id), net_on=rxlink.network_on(db, cid),
+                           sends=rxlink.sends(db, cid, rx_id))
 
 
 @bp.post("/prescriptions/<int:rx_id>/cancel")

@@ -15,7 +15,7 @@ from tests.dbmeta import ON_PG
 from dental_os.safeurl import local_path
 
 # Pages anyone may open without logging in. Anything else must send a stranger to the login page or refuse.
-PUBLIC_BLUEPRINTS = {"public", "formpub", "paypub", "signup", "static"}
+PUBLIC_BLUEPRINTS = {"public", "formpub", "paypub", "signup", "static", "rxpub"}
 PUBLIC_ENDPOINTS = {"health", "auth.login", "auth.forgot", "auth.reset", "operator.login", "static", "manifest"}
 
 

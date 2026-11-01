@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Pharmacy check") }}{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>{{ _("Pharmacy check") }}</h1>
+  {% if state == 'valid' %}<p class="flash ok" role="status"><strong>{{ _("Genuine and valid.") }}</strong> {{ _("Use until") }} {{ until|date }}.</p>
+  {% elif state == 'dispensed' %}<p class="flash error" role="alert"><strong>{{ _(states[state]) }}</strong>: {{ link.pharmacy }}, {{ link.dispensed_at[:16] }} UTC. {{ _("Do not dispense it again.") }}</p>
+  {% else %}<p class="flash error" role="alert"><strong>{{ _(states[state]) }}.</strong> {{ _("Do not dispense it. Call the clinic if the patient needs it.") }}</p>{% endif %}
+  <table>
+    <tr><th>{{ _("Clinic") }}</th><td>{{ clinic.name }}{% if clinic.phone %}, {{ clinic.phone }}{% endif %}</td></tr>
+    <tr><th>{{ _("Prescriber") }}</th><td>{{ rx.provider_name }}{% if rx.qualifications %}, {{ rx.qualifications }}{% endif %}{% if rx.reg_number %}<br>{{ rx.reg_body or _("Registration") }} {{ rx.reg_number }}{% endif %}</td></tr>
+    <tr><th>{{ _("Written on") }}</th><td>{{ rx.issued_on|date }}</td></tr>
+    <tr><th>{{ _("Patient") }}</th><td>{{ initials }}{% if born %}, {{ _("born") }} {{ born }}{% endif %}<div class="muted small">{{ _("Check this against the paper and the person in front of you.") }}</div></td></tr>
+  </table>
+  <h2>{{ _("Medicines") }}</h2>
+  <ol>{% for it in items %}<li><strong>{{ it.name }} {{ it.strength or '' }} {{ it.form or '' }}</strong><br>{{ it.dose or '' }}{% if it.days %}, {{ it.days }} {{ _("days") }}{% endif %}{% if it.quantity %}<br>{{ _("Supply") }}: {{ it.quantity }}{% endif %}
+    {% if it.controlled %}<br><span class="pill warn">{{ _("Controlled drug: check the patient's identity") }}</span>{% endif %}</li>{% endfor %}</ol>
+</div>
+{% if state == 'valid' %}
+<section class="card"><h2>{{ _("Record that you dispensed it") }}</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="pharmacy">{{ _("Pharmacy") }}</label><input id="pharmacy" name="pharmacy" required maxlength="120" autocomplete="organization">
+    <label for="pharmacist">{{ _("Pharmacist") }}</label><input id="pharmacist" name="pharmacist" required maxlength="120" autocomplete="name">
+    <label for="licence">{{ _("Licence or registration number (optional)") }}</label><input id="licence" name="licence" maxlength="40">
+    <label class="check"><input type="checkbox" name="checked" value="1"> {{ _("I checked the patient against this prescription.") }}</label>
+    <p><button class="primary" type="submit">{{ _("Mark as dispensed") }}</button></p>
+    <p class="muted small">{{ _("Once marked, anyone who opens this link sees it was dispensed, so the paper cannot be used twice.") }}</p>
+  </form></section>
+{% endif %}
+{% endblock %}

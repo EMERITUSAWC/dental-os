@@ -18,7 +18,17 @@
     <p><strong>{{ rx.provider_name }}</strong>{% if rx.qualifications %}, {{ rx.qualifications }}{% endif %}<br>{{ _d("Dentist") }}{% if rx.reg_number %}, {{ rx.reg_body or _d("Registration") }} {{ rx.reg_number }}{% endif %}</p>
   </div>
   {% if rx.status == 'cancelled' %}<p class="muted">{{ _d("Cancelled:") }} {{ rx.cancel_reason }}</p>{% endif %}
+  {% if link_svg and rx.status == 'issued' %}<div class="rxcheck"><div class="qr">{{ link_svg|safe }}</div>
+    <p class="small">{{ _d("Pharmacy: scan to check this prescription is genuine and to record that it was dispensed.") }}<br><span class="nw">{{ link_url }}</span></p></div>{% endif %}
 </div>
+<section class="card no-print"><h2>{{ _("Pharmacy and network") }}</h2>
+  {% if link and link.dispensed_at %}<p><span class="pill ok">{{ _("Dispensed") }}</span> {{ link.pharmacy }}, {{ link.pharmacist }}{% if link.licence %} ({{ link.licence }}){% endif %}, {{ link.dispensed_at[:16] }} UTC</p>
+  {% elif link %}<p class="muted">{{ _("Not dispensed yet.") }}</p>
+  {% elif rx.status == 'issued' %}<form method="post" action="{{ url_for('rxnet.make_link', rx_id=rx.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit">{{ _("Add the pharmacy check") }}</button></form>{% endif %}
+  <p class="row"><a class="btn" href="{{ url_for('rxnet.fhir', rx_id=rx.id) }}">{{ _("Download the electronic copy (FHIR)") }}</a>
+  {% if net_on and rx.status == 'issued' and user.role in ('manager', 'dentist') %}<form method="post" action="{{ url_for('rxnet.send', rx_id=rx.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="primary">{{ _("Send to the e-prescribing network") }}</button></form>{% endif %}</p>
+  {% for s in sends %}<p class="small">{{ s.created_at[:16] }} UTC, {{ s.network or '' }}: {% if s.status == 'accepted' %}<span class="pill ok">{{ _("Accepted") }}</span>{% if s.network_ref %} {{ s.network_ref }}{% endif %}{% else %}<span class="pill bad">{{ _("Not accepted") }}</span> {{ _(s.detail) if s.detail else '' }}{% endif %}</p>{% endfor %}
+</section>
 <div class="row no-print">
   {% if rx.status == 'issued' %}<button class="primary" data-print>{{ _("Print") }}</button>{% endif %}
   <a class="btn" href="{{ url_for('care.prescriptions', pid=p.id) }}">{{ _("Back to prescriptions") }}</a>

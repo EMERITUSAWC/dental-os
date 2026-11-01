@@ -144,8 +144,12 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | AI second look at X-rays | Dentrix Detect AI (with VideaHealth); Pearl and Overjet hold FDA clearances | Any company the clinic chooses; only the pixels leave; every finding agreed or rejected by a dentist | 0.60 |
 | Dictation in clinical notes | Dentrix Voice Notes | On the device only, never an online service; works with the AI note draft | 0.61 |
 | Chairside tablet mode | Open Dental (ODTouch) | Any tablet browser; alerts first; moves the patient on the shared check-in board | 0.61 |
+| Prescriptions a pharmacy can check | Not in Open Dental or Dentrix | QR on every prescription; genuine, valid or already dispensed; works with any pharmacy, no account | 0.62 |
+| Electronic prescribing | Open Dental through DoseSpot (US, including controlled drugs) | FHIR R4 copy of every prescription; network connection built, an adapter per network once agreed | 0.62 |
 
 ## Waiting on an outside party (the code is built)
+
+- E-prescribing: an adapter and certification for each network (DoseSpot or Surescripts in the US, NHS EPS in England), once there is a partner agreement. The pharmacy check and the FHIR copy need nothing outside.
 
 - X-ray AI: an adapter for the clinic's chosen company (Pearl, Overjet, VideaHealth or another), once the clinic has an account and the company's API terms. The picture check needs nothing outside.
 

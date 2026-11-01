@@ -2477,3 +2477,39 @@ CREATE TABLE IF NOT EXISTS xray_ai_findings (            -- a suggestion until a
   decided_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_xray_ai_findings_read ON xray_ai_findings(clinic_id, read_id);
+
+-- ---- v0.62: prescriptions a pharmacy can check, and sending to an e-prescribing network ----------------------------------
+CREATE TABLE IF NOT EXISTS rx_links (                    -- one per prescription. The link is made from this salt and the server's secret
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  prescription_id INTEGER NOT NULL UNIQUE REFERENCES prescriptions(id),
+  salt TEXT NOT NULL,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  dispensed_at TEXT,
+  pharmacy TEXT,
+  pharmacist TEXT,
+  licence TEXT
+);
+CREATE TABLE IF NOT EXISTS erx_network (                 -- one per clinic. The key is stored encrypted
+  clinic_id INTEGER PRIMARY KEY REFERENCES clinics(id),
+  enabled INTEGER NOT NULL DEFAULT 0,
+  name TEXT,
+  endpoint TEXT,
+  api_key TEXT,
+  updated_by INTEGER REFERENCES users(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS erx_sends (                   -- each try to send a prescription to the network, with its answer
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  prescription_id INTEGER NOT NULL REFERENCES prescriptions(id),
+  network TEXT,
+  status TEXT NOT NULL CHECK (status IN ('accepted','refused')),
+  network_ref TEXT,
+  detail TEXT,
+  sent_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_erx_sends_patient ON erx_sends(clinic_id, patient_id);
