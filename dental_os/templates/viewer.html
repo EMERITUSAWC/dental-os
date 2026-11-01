@@ -22,6 +22,34 @@
   <p class="small muted" id="vstatus" aria-live="polite">{{ _("Drag to move. Use the mouse wheel or the buttons to zoom.") }}</p>
   <p class="small muted">{{ _("To measure, press Measure and tap two points. The first time, give the real length of something you know (for example a 10 mm file) so later measurements are in millimetres. Nothing here changes the stored picture.") }}</p>
 </div>
+{% if f.kind == 'xray' %}<section class="card" id="ai"><h2>{{ _("Checks") }}</h2>
+  {% if qc %}{% if qc.ok %}<p><span class="pill ok">{{ _("Picture check: fine") }}</span></p>{% else %}{% for i in qc.issue_list %}<p class="flash warn" role="status">{{ _(qc_text[i]) }}</p>{% endfor %}{% endif %}
+  <p class="muted small">{{ _("The picture check looks only at sharpness, brightness and contrast, on this computer. It does not read the X-ray.") }}</p>{% endif %}
+  {% if ai_on %}<form method="post" action="{{ url_for('xrayai.send', file_id=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <button type="submit">{{ _("Ask the X-ray AI for a second look") }}</button></form>
+    <p class="muted small">{{ _("Only the picture is sent, without the patient's name or any other details. What comes back are suggestions for the dentist to agree or reject.") }}</p>
+  {% elif user.role == 'manager' %}<p class="muted small"><a href="{{ url_for('xrayai.setup') }}">{{ _("Set up an X-ray AI company") }}</a></p>{% endif %}
+  {% for ar in ai_reads %}
+    <h3 class="small">{{ ar.read.vendor or '' }}{% if ar.read.model %} ({{ ar.read.model }}){% endif %}, {{ ar.read.created_at[:16] }} UTC, {{ _("asked by") }} {{ ar.read.display_name or '' }}</h3>
+    {% if ar.read.status == 'failed' %}<p class="flash error">{{ _(ar.read.detail) if ar.read.detail else '' }}</p>
+    {% elif not ar.findings %}<p class="muted">{{ _("Nothing was flagged.") }}</p>
+    {% else %}
+    <div class="ai-pic"><img src="{{ url_for('record.file_preview', file_id=f.id) if f.mime == 'application/dicom' else url_for('record.file_get', file_id=f.id) }}" alt="{{ _('X-ray with the suggested areas marked') }}">
+      {% for x in ar.findings if x.box_list and x.status != 'rejected' %}<span class="ai-box {{ x.status }}" style="left:{{ x.box_list[0] * 100 }}%;top:{{ x.box_list[1] * 100 }}%;width:{{ x.box_list[2] * 100 }}%;height:{{ x.box_list[3] * 100 }}%" aria-hidden="true">{{ loop.index }}</span>{% endfor %}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>{{ _("Tooth") }}</th><th>{{ _("Suggestion") }}</th><th>{{ _("Sure") }}</th><th>{{ _("Dentist") }}</th></tr></thead><tbody>
+    {% for x in ar.findings %}<tr><td>{{ x.tooth|tooth if x.tooth else '' }}</td><td>{{ _(ai_kinds[x.kind]) }}{% if x.label %}<div class="muted small">{{ x.label }}</div>{% endif %}</td>
+      <td>{{ (x.confidence * 100)|round|int ~ '%' if x.confidence is not none else '' }}</td>
+      <td>{% if x.status != 'suggested' %}<span class="pill {{ 'ok' if x.status == 'agreed' else '' }}">{{ _(ai_states[x.status]) }}</span> <span class="small muted">{{ x.decider or '' }}</span>{% endif %}
+        {% if can_decide %}<form method="post" action="{{ url_for('xrayai.decide', finding_id=x.id) }}" class="row">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+          {% if x.status != 'agreed' %}<button type="submit" name="status" value="agreed" class="small">{{ _("Agree") }}</button>{% endif %}
+          {% if x.status != 'rejected' %}<button type="submit" name="status" value="rejected" class="small">{{ _("Reject") }}</button>{% endif %}
+          {% if x.status != 'suggested' %}<button type="submit" name="status" value="suggested" class="small">{{ _("Undo") }}</button>{% endif %}</form>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="muted small">{{ _("These are suggestions from software, not a diagnosis. The dentist decides, and nothing is added to the chart or a plan by itself.") }}</p>
+    {% endif %}
+  {% endfor %}
+</section>{% endif %}
 <p class="row"><a class="btn" href="{{ url_for('record.files_view', pid=p.id) }}">{{ _("Back to files") }}</a> <a class="btn" href="{{ url_for('record.file_get', file_id=f.id) }}">{{ _("Open the original") }}</a></p>
 <script src="{{ url_for('static', filename='viewer.js') }}" defer></script>
 {% endblock %}

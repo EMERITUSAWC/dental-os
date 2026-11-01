@@ -1,4 +1,4 @@
-# Dental OS, version 0.59
+# Dental OS, version 0.60
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,20 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.60
+
+- A picture check on every X-ray as it comes in, on the clinic's own computer with no internet: blurred, too dark, burnt out, flat or
+  thumbnail-sized pictures are flagged on the record and in the viewer, so they are retaken while the patient is still in the chair.
+  It looks only at the picture, never at the teeth. The limits are set from test pictures and will be checked against real sensors
+  in the pilot.
+- A second look from an X-ray AI company the clinic chooses (Settings, X-ray AI). Dental OS does not read X-rays itself: software that
+  finds disease on X-rays is a regulated medical device in many countries. Only the picture is sent, as a fresh PNG without the DICOM
+  tags or photo details that hold names and dates. What comes back are suggestions by tooth, drawn over the X-ray; a dentist agrees
+  or rejects each one, and nothing goes on the chart or a plan by itself. Off until a manager switches it on, with the clinic's
+  confirmation that it may send X-rays to that company. The key is stored encrypted. 120 reads an hour at most, as a cost guard.
+- Each company has its own way of being asked. Dental OS has one plain format of its own (in `services/xrayai.py`); a short adapter
+  per company is written once the clinic has an account with it.
 
 ### Added in version 0.59
 

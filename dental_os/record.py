@@ -384,9 +384,11 @@ def files_view(pid):
             db.rollback()
             flash(str(exc), "error")
         return _back(pid, "record.files_view")
-    from .services import imaging
-    return render_template("files.html", p=patient, rows=files.list_for_patient(db, cid, pid), kinds=files.KINDS,
-                           inline=files.INLINE, today=_today(), stations=imaging.stations(db, cid), sessions=imaging.for_patient(db, cid, pid))
+    from .services import imaging, xrayqc
+    rows = files.list_for_patient(db, cid, pid)
+    return render_template("files.html", p=patient, rows=rows, kinds=files.KINDS,
+                           inline=files.INLINE, today=_today(), stations=imaging.stations(db, cid), sessions=imaging.for_patient(db, cid, pid),
+                           checks=xrayqc.for_files(db, cid, [r["id"] for r in rows if r["kind"] == "xray"]), qc_text=xrayqc.ISSUES)
 
 
 @bp.get("/files/<int:file_id>")

@@ -2426,3 +2426,54 @@ CREATE TABLE IF NOT EXISTS parallel_checks (             -- the old system's fig
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (clinic_id, day, kind)
 );
+
+-- ---- v0.60: a quality check on every X-ray, and a second look from an X-ray AI company the clinic chooses ---------------
+CREATE TABLE IF NOT EXISTS xray_checks (                 -- sharpness, brightness and contrast of one X-ray. Says nothing about the teeth
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  file_id INTEGER NOT NULL REFERENCES patient_files(id),
+  ok INTEGER NOT NULL,
+  issues TEXT,
+  sharpness REAL, dark REAL, bright REAL, contrast REAL, width INTEGER, height INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (clinic_id, file_id)
+);
+CREATE TABLE IF NOT EXISTS xray_ai_account (             -- one per clinic. The key is stored encrypted
+  clinic_id INTEGER PRIMARY KEY REFERENCES clinics(id),
+  enabled INTEGER NOT NULL DEFAULT 0,
+  vendor TEXT,
+  endpoint TEXT,
+  api_key TEXT,
+  updated_by INTEGER REFERENCES users(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS xray_ai_reads (               -- one X-ray sent once
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  file_id INTEGER NOT NULL REFERENCES patient_files(id),
+  vendor TEXT,
+  model TEXT,
+  status TEXT NOT NULL CHECK (status IN ('done','failed')),
+  detail TEXT,
+  findings INTEGER NOT NULL DEFAULT 0,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_xray_ai_reads_patient ON xray_ai_reads(clinic_id, patient_id);
+CREATE INDEX IF NOT EXISTS idx_xray_ai_reads_file ON xray_ai_reads(clinic_id, file_id);
+CREATE TABLE IF NOT EXISTS xray_ai_findings (            -- a suggestion until a dentist agrees or rejects it
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  read_id INTEGER NOT NULL REFERENCES xray_ai_reads(id),
+  tooth INTEGER,
+  kind TEXT NOT NULL,
+  label TEXT,
+  confidence REAL,
+  box TEXT,                                              -- JSON [x, y, width, height] as fractions of the picture
+  status TEXT NOT NULL DEFAULT 'suggested' CHECK (status IN ('suggested','agreed','rejected')),
+  note TEXT,
+  decided_by INTEGER REFERENCES users(id),
+  decided_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_xray_ai_findings_read ON xray_ai_findings(clinic_id, read_id);

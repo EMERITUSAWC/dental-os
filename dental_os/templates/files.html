@@ -32,6 +32,7 @@
       {% elif f.mime == 'application/dicom' %}<a href="{{ url_for('care.viewer', file_id=f.id) }}"><img src="{{ url_for('record.file_preview', file_id=f.id) }}" alt="{{ f.original_name }}" loading="lazy"></a>
       {% else %}<a class="doc" href="{{ url_for('record.file_get', file_id=f.id) }}">{{ f.mime.split('/')[-1]|upper }}</a>{% endif %}
       <div class="small"><strong>{{ _(kinds[f.kind]) }}</strong>, {{ (f.taken_on or f.created_at[:10])|date }}<br>{{ f.original_name }}{% if f.note %}<br>{{ f.note }}{% endif %}</div>
+      {% set qc = checks.get(f.id) %}{% if qc %}<p class="small">{% if qc.ok %}<span class="pill ok">{{ _("Picture check: fine") }}</span>{% else %}{% for i in qc.issue_list %}<span class="pill warn" title="{{ _(qc_text[i]) }}">{{ _("Picture check") }}: {{ _(qc_text[i]) }}</span> {% endfor %}{% endif %}</p>{% endif %}
       {% if f.mime in inline or f.mime == 'application/dicom' %}<p class="small"><a href="{{ url_for('care.viewer', file_id=f.id) }}">{{ _("Open in the viewer") }}</a></p>{% endif %}
       <form method="post" action="{{ url_for('record.file_archive', file_id=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Hide") }}</button></form>
     </div>

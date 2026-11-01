@@ -310,7 +310,7 @@ def create_app(test_config=None):
     def health():
         return "ok"
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -360,6 +360,7 @@ def create_app(test_config=None):
     app.register_blueprint(platformviews.operator_bp)
     app.register_blueprint(platformviews.billing_bp)
     app.register_blueprint(pilotviews.bp)
+    app.register_blueprint(xrayaiviews.bp)
 
     # ---- command line
     @app.cli.command("create-clinic")

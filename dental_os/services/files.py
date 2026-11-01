@@ -73,6 +73,9 @@ def save_bytes(db, clinic, user_id, pid, data, filename, kind, note, taken_on, r
         path.unlink(missing_ok=True)
         raise
     audit.log(db, cid, user_id, "file.upload", "patient", pid, kind)
+    if kind == "xray":                               # 0.60: sharpness and exposure, so a bad picture is retaken in the chair
+        from . import xrayqc
+        xrayqc.check_file(db, cid, {"id": cur.lastrowid, "kind": kind, "mime": mime}, data)
     return cur.lastrowid
 
 

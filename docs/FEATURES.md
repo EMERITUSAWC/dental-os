@@ -140,8 +140,12 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Go-live checklist and side-by-side run | Done by the vendor's trainers, on paper | Checks itself where it can; the old system's daily figures compared until ten days match | 0.59 |
 | Problem reports and error references | Phone the support line | From any page, without patient details; a broken page gives a reference the support side can find | 0.59 |
 | Install kit for a clinic server | Dentrix and Open Dental: installer for Windows; cloud systems: none | One script for Ubuntu, https on the clinic network, every scheduled job set up | 0.59 |
+| X-ray quality check as pictures come in | Dentrix Image Verify (AI, 2026) | Runs on the clinic's computer with no internet or extra fee; flags blur and exposure | 0.60 |
+| AI second look at X-rays | Dentrix Detect AI (with VideaHealth); Pearl and Overjet hold FDA clearances | Any company the clinic chooses; only the pixels leave; every finding agreed or rejected by a dentist | 0.60 |
 
 ## Waiting on an outside party (the code is built)
+
+- X-ray AI: an adapter for the clinic's chosen company (Pearl, Overjet, VideaHealth or another), once the clinic has an account and the company's API terms. The picture check needs nothing outside.
 
 - Sending FP17s straight to the NHS Business Services Authority: needs NHSBSA accreditation of this software. Until then FP17s are prepared and checked here.
 - A direct link to a named US clearinghouse: needs the clinic's clearinghouse account and its API or SFTP details. Download and upload works with any clearinghouse now.

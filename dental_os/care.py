@@ -398,7 +398,12 @@ def viewer(file_id):
     if f["mime"] == "application/dicom":
         from .record import _files_root
         info = F.dicom_summary(_files_root(), f)
-    return render_template("viewer.html", f=f, p=p, kinds=F.KINDS, info=info, mismatch=_name_mismatch(info, p))
+    from flask import current_app
+    from .services import xrayai as XA, xrayqc as QC
+    return render_template("viewer.html", f=f, p=p, kinds=F.KINDS, info=info, mismatch=_name_mismatch(info, p),
+                           qc=QC.for_files(db, cid, [f["id"]]).get(f["id"]), qc_text=QC.ISSUES,
+                           ai_on=XA.is_on(db, cid, current_app.config["SECRET_KEY"]), ai_reads=XA.for_file(db, cid, f["id"]),
+                           ai_kinds=XA.KINDS, ai_states=XA.STATES, can_decide=g.user["role"] in XA.DECIDERS)
 
 
 def _name_mismatch(info, p):

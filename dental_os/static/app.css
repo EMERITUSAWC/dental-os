@@ -243,3 +243,8 @@ main:focus { outline: none; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 /* 0.59 */
 footer.foot { max-width: 1100px; margin: 0 auto; padding: 8px 16px 24px; font-size: .875rem; }
+/* 0.60: X-ray AI suggestions drawn over the picture */
+.ai-pic { position: relative; display: inline-block; max-width: 100%; margin: 8px 0; }
+.ai-pic img { display: block; max-width: 100%; height: auto; }
+.ai-box { position: absolute; border: 2px solid var(--warn); border-radius: 4px; color: var(--brand-ink); font-size: .75rem; line-height: 1; }
+.ai-box.agreed { border-color: var(--ok); }
