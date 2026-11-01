@@ -10,7 +10,7 @@
   <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="template" value="{{ key }}"><input type="hidden" name="tooth" value="{{ tooth }}">
   <h2>{{ _("Draft with AI") }}</h2>
   <label for="shorthand">{{ _("Type your shorthand, and the boxes below are filled in as a draft") }}</label>
-  <textarea id="shorthand" name="shorthand" rows="3" maxlength="{{ ai_max }}">{{ shorthand }}</textarea>
+  <textarea id="shorthand" name="shorthand" rows="3" maxlength="{{ ai_max }}"{% if clinic.voice_notes %} data-dictate{% endif %}>{{ shorthand }}</textarea>
   <p class="muted small">{{ _("Only this shorthand is sent to the AI service. The patient's name, phone number and email are taken out first, but a name or detail you type that we do not know about is not. Do not type other people's names. Nothing is saved until you press Save draft, and a dentist still signs the note.") }}</p>
   <p><button type="submit">{{ _("Make a draft") }}</button></p>
 </form>
@@ -24,8 +24,12 @@
       {% for v in visits %}<option value="{{ v.id }}">{{ v.start_at[:10]|date }}, {{ v.category }}</option>{% endfor %}</select></div>{% endif %}
   </div>
   {% for h in templates[key][1] %}
-  <label for="f{{ loop.index0 }}">{{ h }}</label><textarea id="f{{ loop.index0 }}" name="f{{ loop.index0 }}" rows="{{ 5 if key == 'free' else 2 }}" maxlength="4000">{{ values.get('f%d' % loop.index0, '') }}</textarea>
+  <label for="f{{ loop.index0 }}">{{ h }}</label><textarea id="f{{ loop.index0 }}" name="f{{ loop.index0 }}" rows="{{ 5 if key == 'free' else 2 }}" maxlength="4000"{% if clinic.voice_notes %} data-dictate{% endif %}>{{ values.get('f%d' % loop.index0, '') }}</textarea>
   {% endfor %}
+  {% if clinic.voice_notes %}<p id="dictate-hint" class="muted small" hidden>{{ _("This browser cannot listen on the device itself, so the Dictate buttons are not shown. The microphone key on the tablet or phone keyboard still works.") }}</p>
+  <span id="dictate-conf" hidden data-t-dictate="{{ _('Dictate') }}" data-t-stop="{{ _('Stop') }}" data-t-listening="{{ _('Listening on this device.') }}"
+    data-t-stopped="{{ _('The microphone stopped.') }}" data-t-nolang="{{ _('Install the speech language for this device in the browser settings, or use the keyboard microphone key.') }}"></span>
+  <script src="{{ url_for('static', filename='dictate.js') }}" defer></script>{% endif %}
   <p><button class="primary" type="submit">{{ _("Save draft") }}</button> <a class="btn" href="{{ url_for('record.notes_list', pid=p.id) }}">{{ _("Cancel") }}</a></p>
 </form>
 {% endblock %}

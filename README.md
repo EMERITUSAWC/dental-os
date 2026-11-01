@@ -1,4 +1,4 @@
-# Dental OS, version 0.60
+# Dental OS, version 0.61
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,19 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.61
+
+- Dictation in clinical notes, off until a manager switches it on (Settings, voice). Each note box and the AI shorthand box get a
+  Dictate button. Speech is turned into words on the device only: notes can hold names and health details, so the online speech
+  service a clinic may allow for gum charting is never used for notes. Where the browser cannot listen on the device, there is no
+  button, and the keyboard's own microphone key still works. Say "full stop", "comma", "new line" or "new paragraph" for punctuation.
+  Dictated shorthand can go straight into Draft with AI.
+- Chairside mode for a tablet at the chair (Chairside in the menu, for dentists and nurses). Pick the chair once; the screen shows
+  that chair's day: who is in the chair, waiting, still to come and finished. For the patient in the chair it shows the medical
+  alerts first, then big buttons for the medical history, tooth chart, gum chart (with voice), treatment, a new note, X-rays and
+  prescriptions, and Seat and Finished, which move the patient on the check-in board as the front desk sees it.
+- Voice gum charting itself was built in an earlier version and is unchanged.
 
 ### Added in version 0.60
 

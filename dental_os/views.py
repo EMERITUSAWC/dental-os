@@ -574,8 +574,10 @@ def settings():
             elif action == "voice_perio":
                 on = 1 if request.form.get("enabled") else 0
                 cloud = 1 if (on and request.form.get("cloud")) else 0
-                db.execute("UPDATE clinics SET voice_perio = ?, voice_cloud = ? WHERE id = ?", (on, cloud, cid))
-                audit.log(db, cid, g.user["id"], "settings.voice_perio", None, None, ("on, online allowed" if cloud else "on") if on else "off")
+                notes_on = 1 if request.form.get("notes") else 0
+                db.execute("UPDATE clinics SET voice_perio = ?, voice_cloud = ?, voice_notes = ? WHERE id = ?", (on, cloud, notes_on, cid))
+                audit.log(db, cid, g.user["id"], "settings.voice_perio", None, None,
+                          (("on, online allowed" if cloud else "on") if on else "off") + ("; notes dictation on" if notes_on else ""))
             elif action == "ai_account":
                 from flask import current_app
                 from .services import ainotes as _ai

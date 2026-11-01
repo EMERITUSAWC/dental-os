@@ -142,6 +142,8 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Install kit for a clinic server | Dentrix and Open Dental: installer for Windows; cloud systems: none | One script for Ubuntu, https on the clinic network, every scheduled job set up | 0.59 |
 | X-ray quality check as pictures come in | Dentrix Image Verify (AI, 2026) | Runs on the clinic's computer with no internet or extra fee; flags blur and exposure | 0.60 |
 | AI second look at X-rays | Dentrix Detect AI (with VideaHealth); Pearl and Overjet hold FDA clearances | Any company the clinic chooses; only the pixels leave; every finding agreed or rejected by a dentist | 0.60 |
+| Dictation in clinical notes | Dentrix Voice Notes | On the device only, never an online service; works with the AI note draft | 0.61 |
+| Chairside tablet mode | Open Dental (ODTouch) | Any tablet browser; alerts first; moves the patient on the shared check-in board | 0.61 |
 
 ## Waiting on an outside party (the code is built)
 

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ chair.name }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ chair.name }}, {{ day|day }}</h1><a class="btn" href="{{ url_for('chair.home', pick=1) }}">{{ _("Change chair") }}</a></div>
+{% set names = {'in_chair': _('In the chair'), 'waiting': _('Waiting'), 'expected': _('Still to come'), 'left': _('Finished')} %}
+{% for k in order %}{% if lanes[k] or k == 'in_chair' %}
+<section class="card"><h2>{{ names[k] }}</h2>
+  <div class="chair-tiles">
+  {% for x in lanes[k] %}{% set r = x.row %}<a class="chair-tile{{ ' primary' if k == 'in_chair' }}" href="{{ url_for('chair.visit', aid=r.id) }}">
+    <strong>{{ r.start_at[11:16] }} {{ r.first_name }} {{ r.last_name }}</strong><span class="small">{{ r.type_name or r.category or '' }}{% if r.provider_name %}, {{ r.provider_name }}{% endif %}{% if x.late %}, {{ x.late }} {{ _("min late") }}{% endif %}{% if x.waited is not none and k == 'waiting' %}, {{ _("waiting") }} {{ x.waited }} {{ _("min") }}{% endif %}</span></a>
+  {% else %}<p class="muted">{{ _("Nobody in the chair.") }}</p>{% endfor %}
+  </div></section>
+{% endif %}{% endfor %}
+{% endblock %}

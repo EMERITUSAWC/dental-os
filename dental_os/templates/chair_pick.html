@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Chairside") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Which chair is this tablet at?") }}</h1>
+<p class="muted">{{ _("The tablet remembers the chair until you log out.") }}</p>
+<div class="chair-tiles">
+{% for c in chairs %}<form method="post" action="{{ url_for('chair.pick') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="chair_id" value="{{ c.id }}">
+  <button type="submit" class="chair-tile{{ ' primary' if current and current.id == c.id }}">{{ c.name }}</button></form>
+{% else %}<p class="muted">{{ _("No chairs are set up yet. A manager adds them under Settings.") }}</p>{% endfor %}
+</div>
+{% endblock %}

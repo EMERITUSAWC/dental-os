@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ a.first_name }} {{ a.last_name }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ a.first_name }} {{ a.last_name }}</h1><a class="btn" href="{{ url_for('chair.home') }}">{{ _("Back to the chair") }}</a></div>
+<p class="muted">{{ a.start_at[11:16] }}, {{ a.type_name or a.category or '' }}{% if a.provider_name %}, {{ a.provider_name }}{% endif %}</p>
+{% for al in alerts %}<p class="flash {{ 'error' if al.severity == 'critical' else 'warn' }}" role="alert"><strong>{{ _("Alert") }}:</strong> {{ al.text }}</p>
+{% else %}<p class="muted small">{{ _("No medical alerts on the record. Ask about changes since the last visit.") }}</p>{% endfor %}
+<div class="chair-tiles">
+  <a class="chair-tile" href="{{ url_for('record.medical_view', pid=a.patient_id) }}">{{ _("Medical history") }}</a>
+  <a class="chair-tile" href="{{ url_for('record.chart_view', pid=a.patient_id) }}">{{ _("Tooth chart") }}</a>
+  <a class="chair-tile" href="{{ url_for('record.perio_new', pid=a.patient_id) }}">{{ _("Gum chart") }}</a>
+  <a class="chair-tile" href="{{ url_for('clinical.treatment', pid=a.patient_id) }}">{{ _("Treatment") }}</a>
+  <a class="chair-tile" href="{{ url_for('record.note_new', pid=a.patient_id) }}">{{ _("New note") }}</a>
+  <a class="chair-tile" href="{{ url_for('record.files_view', pid=a.patient_id) }}">{{ _("X-rays and files") }}</a>
+  <a class="chair-tile" href="{{ url_for('care.prescriptions', pid=a.patient_id) }}">{{ _("Prescriptions") }}</a>
+</div>
+<section class="card"><h2>{{ _("Where the patient is") }}</h2><div class="row">
+  {% for action, label, when in (('seat', _('Seat in the chair'), ('expected', 'waiting')), ('leave', _('Finished, patient leaving'), ('waiting', 'in_chair')), ('undo', _('Undo the last step'), ('waiting', 'in_chair', 'left'))) %}
+  {% if stage in when %}<form method="post" action="{{ url_for('chair.stage', aid=a.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="{{ action }}">
+    <button type="submit" class="chair-tile{{ ' primary' if action != 'undo' }}">{{ label }}</button></form>{% endif %}
+  {% endfor %}</div></section>
+{% endblock %}

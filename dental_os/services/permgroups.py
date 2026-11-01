@@ -14,7 +14,7 @@ from . import audit
 AREAS = {
     "diary": ("Diary and appointments", ["views.diary", "diary.", "views.appointment", "practice.kiosk", "practice.missed", "practice.unscheduled"]),
     "patients": ("Register and edit patients", ["views.patient_new", "views.patient_edit", "views.patient_archive", "record.import", "cforms."]),
-    "clinical": ("Clinical record", ["record.", "care.", "xrayai.", "steri.patient_instruments", "ortho.", "implants.", "aftercare.", "clinical.treatment", "clinical.procedure_action"]),
+    "clinical": ("Clinical record", ["record.", "care.", "xrayai.", "chair.", "steri.patient_instruments", "ortho.", "implants.", "aftercare.", "clinical.treatment", "clinical.procedure_action"]),
     "plans": ("Treatment plans and quotes", ["commercial.patient_plans", "commercial.plan_", "commercial.plans_board"]),
     "payments": ("Take payments and give receipts", ["clinical.account", "clinical.payment_add", "clinical.receipt", "payments.",
                                                      "commercial.instalment_pay", "commercial.membership_charge_pay", "practice.cashup"]),
