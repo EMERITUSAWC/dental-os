@@ -137,6 +137,9 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Speed at 20,000 patients | Not published | Every screen under a second at that size, timed by a tool that ships with the code | 0.57 |
 | Accessibility | Varies; rarely stated | Every screen checked for labels, headings and readable colours by the tests; skip link and keyboard ring | 0.58 |
 | Restore drills on record | Usually left to the IT company | Last good drill and when the next is due, shown to the manager; a copy with far fewer patients fails | 0.58 |
+| Go-live checklist and side-by-side run | Done by the vendor's trainers, on paper | Checks itself where it can; the old system's daily figures compared until ten days match | 0.59 |
+| Problem reports and error references | Phone the support line | From any page, without patient details; a broken page gives a reference the support side can find | 0.59 |
+| Install kit for a clinic server | Dentrix and Open Dental: installer for Windows; cloud systems: none | One script for Ubuntu, https on the clinic network, every scheduled job set up | 0.59 |
 
 ## Waiting on an outside party (the code is built)
 

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Errors and problems") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Errors and problems") }}</h1>
+<section class="card"><h2>{{ _("Pages that broke in the last two weeks") }}</h2>
+  <p class="muted small">{{ _("Only the screen, the kind of error, the line of code and when. The full details are in the server log under the same reference.") }}</p>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Reference") }}</th><th>{{ _("When") }}</th><th>{{ _("Clinic") }}</th><th>{{ _("Screen") }}</th><th>{{ _("Kind") }}</th></tr></thead><tbody>
+  {% for e in errors %}<tr><td>{{ e.ref }}</td><td class="nw small">{{ e.created_at[:16] }} UTC</td><td>{{ e.clinic_name or '' }}</td><td>{{ e.endpoint }}</td>
+    <td class="small">{{ e.kind }}<div class="muted">{{ e.at_line }}</div></td></tr>
+  {% else %}<tr><td colspan="5" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="card"><h2>{{ _("Problem reports clinics have shared") }}</h2>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("When") }}</th><th>{{ _("Clinic") }}</th><th>{{ _("What") }}</th><th>{{ _("State") }}</th></tr></thead><tbody>
+  {% for r in shared %}<tr><td class="nw small">{{ r.created_at[:16] }} UTC</td><td>{{ r.clinic_name }}</td>
+    <td><span class="pill {{ 'bad' if r.urgency == 'blocking' else '' }}">{{ _(urgency[r.urgency]) }}</span> <span class="muted small">{{ r.page or '' }}</span><div>{{ r.what }}</div></td>
+    <td>{{ _(states[r.status]) }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

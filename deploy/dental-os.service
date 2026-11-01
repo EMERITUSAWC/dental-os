@@ -1,0 +1,20 @@
+[Unit]
+Description=Dental OS
+After=network.target
+
+[Service]
+User=dentalos
+Group=dentalos
+WorkingDirectory=/opt/dental-os
+EnvironmentFile=/etc/dental-os.env
+# Only reachable from this computer; Caddy in front takes the network and https.
+ExecStart=/opt/dental-os/venv/bin/gunicorn --bind 127.0.0.1:8000 --workers 3 --timeout 60 wsgi:app
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/dental-os
+
+[Install]
+WantedBy=multi-user.target

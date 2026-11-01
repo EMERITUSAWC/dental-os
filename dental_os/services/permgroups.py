@@ -37,7 +37,8 @@ AREAS = {
 }
 ALWAYS = ("views.dashboard", "views.patients", "views.patient_view", "auth.", "static", "health", "team.", "practice.tasks", "practice.task_action",
           "practice.clock",
-          "gov.complaint_new", "gov.incident_new", "cpd.mine")             # anyone can write down a complaint or an incident
+          "gov.complaint_new", "gov.incident_new", "cpd.mine",            # anyone can write down a complaint or an incident
+          "pilot.problems")                                                  # 0.59: and report a problem
 
 
 class GroupError(Exception):

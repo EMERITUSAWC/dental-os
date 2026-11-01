@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Something went wrong") }}{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>{{ _("Something went wrong") }}</h1>
+  <p>{{ _("This page broke. Nothing you typed was saved by this step, so check before you try again.") }}</p>
+  <p>{{ _("Reference") }}: <strong>{{ ref }}</strong></p>
+  <p class="muted small">{{ _("Give this reference to your manager or to support. It tells them which screen it was and when, without anything you typed.") }}</p>
+  <div class="row">
+    <a class="btn" href="{{ url_for('views.dashboard') if user else url_for('auth.login') }}">{{ _("Back") }}</a>
+    {% if user %}<a class="btn primary" href="{{ url_for('pilot.problems') }}">{{ _("Report a problem") }}</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

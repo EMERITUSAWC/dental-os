@@ -1,0 +1,15 @@
+# Dental OS scheduled jobs, installed to /etc/cron.d/dental-os. Times are the computer's own clock.
+SHELL=/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
+*/5 * * * *   dentalos  /opt/dental-os/deploy/dos net-check            >> /var/log/dental-os/jobs.log 2>&1
+*/15 * * * *  dentalos  /opt/dental-os/deploy/dos build-queue          >> /var/log/dental-os/jobs.log 2>&1
+*/5 * * * *   dentalos  /opt/dental-os/deploy/dos send-whatsapp        >> /var/log/dental-os/jobs.log 2>&1
+*/5 * * * *   dentalos  /opt/dental-os/deploy/dos send-sms             >> /var/log/dental-os/jobs.log 2>&1
+*/5 * * * *   dentalos  /opt/dental-os/deploy/dos send-email           >> /var/log/dental-os/jobs.log 2>&1
+*/2 * * * *   dentalos  /opt/dental-os/deploy/dos deliver-webhooks     >> /var/log/dental-os/jobs.log 2>&1
+15 6 * * *    dentalos  /opt/dental-os/deploy/dos run-renewals         >> /var/log/dental-os/jobs.log 2>&1
+20 6 * * *    dentalos  /opt/dental-os/deploy/dos run-autopay          >> /var/log/dental-os/jobs.log 2>&1
+25 6 * * *    dentalos  /opt/dental-os/deploy/dos post-ortho-fees      >> /var/log/dental-os/jobs.log 2>&1
+40 1 * * *    dentalos  /opt/dental-os/deploy/dos backup --to /var/lib/dental-os/backups --keep 14 >> /var/log/dental-os/jobs.log 2>&1
+10 2 * * *    dentalos  /opt/dental-os/deploy/dos offsite-copy         >> /var/log/dental-os/jobs.log 2>&1
+30 3 1 * *    dentalos  /opt/dental-os/deploy/dos offsite-drill        >> /var/log/dental-os/jobs.log 2>&1

@@ -283,11 +283,34 @@ def create_app(test_config=None):
             return err
         return render_template("error.html", err=err), err.code
 
+    @app.errorhandler(500)
+    def broken_page(err):
+        """0.59: a page that breaks shows a reference number to quote, and the error list keeps which screen it was."""
+        from flask import jsonify, render_template
+        from .services import pilot as P
+        ref = P.new_ref()
+        exc = getattr(err, "original_exception", None) or err
+        app.logger.exception("Error %s on %s %s", ref, request.method, request.endpoint, exc_info=exc)
+        try:
+            if "db" in g:
+                g.db.rollback()
+            conn = dbmod.connect(app.config["DATABASE"])
+            try:
+                P.log_error(conn, ref, g.clinic["id"] if g.get("clinic") else None, g.user["id"] if g.get("user") else None,
+                            request.method, request.endpoint, exc)
+            finally:
+                conn.close()
+        except Exception:                                          # the log must never make things worse
+            app.logger.exception("Could not write error %s to the error list", ref)
+        if request.path.startswith("/api/"):
+            return jsonify({"error": {"code": "server_error", "message": "Something went wrong.", "ref": ref}}), 500
+        return render_template("error_500.html", ref=ref), 500
+
     @app.get("/health")
     def health():
         return "ok"
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -336,6 +359,7 @@ def create_app(test_config=None):
     app.register_blueprint(platformviews.signup_bp)
     app.register_blueprint(platformviews.operator_bp)
     app.register_blueprint(platformviews.billing_bp)
+    app.register_blueprint(pilotviews.bp)
 
     # ---- command line
     @app.cli.command("create-clinic")
@@ -748,6 +772,37 @@ def create_app(test_config=None):
         twofactor.disable(conn, row["id"], None, row["clinic_id"], "2fa.reset.cli")
         conn.commit()
         click.echo(f"Two-step login is off for {username}. They can set it up again after signing in.")
+
+    @app.cli.command("doctor")
+    def doctor():
+        """0.59: check the server's settings and each clinic's go-live list. Changes nothing. Exit code 1 if something must be fixed."""
+        from .services import pilot as P
+        bad = 0
+        cfg = app.config
+        server = [
+            ("SECRET_KEY is set on the server, not left to the file the app makes", bool(os.environ.get("SECRET_KEY")), True),
+            ("Off-site copies have a place (OFFSITE_TARGET) and a passphrase (OFFSITE_PASSPHRASE)", bool(cfg.get("OFFSITE_TARGET") and cfg.get("OFFSITE_PASSPHRASE")), True),
+            ("PUBLIC_URL is set, so links sent to patients point at the right address", bool(cfg.get("PUBLIC_URL")), False),
+            ("COOKIE_SECURE=1 (only when the site is on https)", bool(cfg.get("SESSION_COOKIE_SECURE")), False),
+            ("Not a read-only viewing copy", not cfg.get("READ_ONLY"), False),
+        ]
+        click.echo("Server")
+        for label, ok, must in server:
+            bad += (not ok and must)
+            click.echo(f"  [{'ok' if ok else ('MUST' if must else 'advised')}] {label}")
+        conn = dbmod.connect(cfg["DATABASE"])
+        try:
+            with app.test_request_context():
+                for clinic in conn.execute("SELECT * FROM clinics ORDER BY id").fetchall():
+                    items = P.checklist(conn, clinic, cfg)
+                    click.echo(f"Clinic {clinic['id']}: {clinic['name']} ({'ready' if P.ready(items) else 'not ready'})")
+                    for _k, label, done, must, _f in items:
+                        bad += (not done and must)
+                        click.echo(f"  [{'ok' if done else ('MUST' if must else 'advised')}] {label}")
+        finally:
+            conn.close()
+        if bad:
+            raise SystemExit(1)
 
     @app.cli.command("seed-demo")
     @click.option("--clinic-id", type=int, prompt="Clinic id (see list-clinics)")

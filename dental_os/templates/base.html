@@ -64,5 +64,6 @@
   {% endfor %}
   {% block body %}{% endblock %}
 </main>
+{% if user and not kiosk_on and not support_on %}<footer class="foot no-print"><a href="{{ url_for('pilot.problems', page=request.path) }}">{{ _("Report a problem") }}</a></footer>{% endif %}
 </body>
 </html>

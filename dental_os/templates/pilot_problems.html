@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Problems reported") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Problems reported") }}</h1>
+<section class="card"><h2>{{ _("Report a problem") }}</h2>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="page" value="{{ page }}">
+    {% if page %}<p class="muted small">{{ _("From the page") }}: {{ page }}</p>{% endif %}
+    <label for="what">{{ _("What went wrong, or what would help?") }}</label>
+    <textarea id="what" name="what" rows="4" required aria-describedby="what-hint"></textarea>
+    <p id="what-hint" class="muted small">{{ _("Say what you were doing and what happened. Do not write patient names or health details here: give the page instead.") }}</p>
+    <label for="urgency">{{ _("How much does it get in the way?") }}</label>
+    <select id="urgency" name="urgency">{% for k, v in urgency.items() %}<option value="{{ k }}"{% if k == 'annoying' %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+    <label class="check"><input type="checkbox" name="share" value="1"> {{ _("Let Dental OS support read this report") }}</label>
+    <p><button class="primary" type="submit">{{ _("Send") }}</button></p>
+  </form></section>
+<section class="card"><div class="row spread"><h2>{{ _("Reports") if user.role == 'manager' else _("Your reports") }}</h2>
+  <div class="row"><a class="btn" href="{{ url_for('pilot.problems') }}">{{ _("All") }}</a>{% for k, v in states.items() %}<a class="btn{{ ' primary' if status == k }}" href="{{ url_for('pilot.problems', status=k) }}">{{ _(v) }}</a>{% endfor %}</div></div>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("When") }}</th><th>{{ _("Who") }}</th><th>{{ _("What") }}</th><th>{{ _("State") }}</th></tr></thead><tbody>
+  {% for r in rows %}<tr>
+    <td class="nw small">{{ r.created_at[:16] }} UTC</td><td>{{ r.display_name or '' }}</td>
+    <td><span class="pill {{ 'bad' if r.urgency == 'blocking' else ('warn' if r.urgency == 'annoying' else '') }}">{{ _(urgency[r.urgency]) }}</span>
+      {% if r.page %}<span class="muted small">{{ r.page }}</span>{% endif %}<div>{{ r.what }}</div>{% if r.note %}<div class="muted small">{{ r.note }}</div>{% endif %}</td>
+    <td>{% if user.role == 'manager' %}<form method="post" action="{{ url_for('pilot.problem_status', problem_id=r.id) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <label for="st{{ r.id }}" class="sr-only">{{ _("State") }}</label><select id="st{{ r.id }}" name="status">{% for k, v in states.items() %}<option value="{{ k }}"{% if r.status == k %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+      <label for="nt{{ r.id }}" class="sr-only">{{ _("Note") }}</label><input id="nt{{ r.id }}" name="note" placeholder="{{ _('Note') }}">
+      <button type="submit">{{ _("Save") }}</button></form>{% else %}{{ _(states[r.status]) }}{% endif %}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No reports.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% if user.role == 'manager' %}<section class="card"><h2>{{ _("Pages that broke in the last two weeks") }}</h2>
+  <p class="muted small">{{ _("Only the screen, the kind of error and when. Staff see the reference number on the screen.") }}</p>
+  {% for e in errors %}<p class="small"><strong>{{ e.ref }}</strong> {{ e.created_at[:16] }} UTC: {{ e.endpoint }} ({{ e.kind }})</p>{% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}</section>{% endif %}
+{% endblock %}

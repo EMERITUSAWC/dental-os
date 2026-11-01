@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Side by side with the old system") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Side by side with the old system") }}</h1><a class="btn" href="{{ url_for('pilot.golive') }}">{{ _("Ready to go live") }}</a></div>
+<p class="muted">{{ _("While both systems run, type in the old system's figures for the day. Dental OS shows its own next to them, so a difference is found the same day, while people still remember what happened.") }}</p>
+<div class="grid two">
+<section class="card"><h2>{{ day|day }}</h2>
+  <form method="get" class="row"><label for="day" class="sr-only">{{ _("Day") }}</label><input id="day" type="date" name="day" value="{{ day }}" max="{{ today }}">
+    <button type="submit">{{ _("Show") }}</button></form>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="day" value="{{ day }}">
+    {% for k, (label, is_money) in kinds.items() %}
+    <label for="k-{{ k }}">{{ _(label) }}</label>
+    <input id="k-{{ k }}" name="{{ k }}" inputmode="{{ 'decimal' if is_money else 'numeric' }}" aria-describedby="o-{{ k }}">
+    <p id="o-{{ k }}" class="muted small">{{ _("Dental OS has") }}: {{ ours[k]|money if is_money else ours[k] }}</p>
+    {% endfor %}
+    <label for="note">{{ _("Note") }}</label><input id="note" name="note">
+    <p><button class="primary" type="submit">{{ _("Save") }}</button></p>
+  </form></section>
+<section class="card"><h2>{{ _("Matching days in a row") }}: {{ side.streak }} / {{ need }}</h2>
+  {% if side.enough %}<p class="flash ok" role="status">{{ _("The figures have matched for long enough. The old system can be switched off when the manager is happy.") }}</p>{% endif %}
+  <p class="muted small">{{ _("When a figure differs, find out why before the next day. Often it is a payment taken in one system only, or a booking moved in one and not the other.") }}</p></section>
+</div>
+<section class="card"><div class="tbl-wrap"><table><thead><tr><th>{{ _("Day") }}</th>{% for k, (label, m) in kinds.items() %}<th>{{ _(label) }}</th>{% endfor %}<th>{{ _("Note") }}</th></tr></thead><tbody>
+  {% for d in side.days %}<tr><td class="nw"><a href="{{ url_for('pilot.side', day=d.day) }}">{{ d.day|date }}</a> {% if d.match %}<span class="pill ok">{{ _("Same") }}</span>{% else %}<span class="pill bad">{{ _("Differs") }}</span>{% endif %}</td>
+    {% for c in d.cells %}<td>{% if c.old is none %}<span class="muted">{{ _("not entered") }}</span>{% else %}
+      {% set m = kinds[c.kind][1] %}{{ _("Old") }}: {{ c.old|money if m else c.old }}<br>{{ _("Dental OS") }}: {{ c.ours|money if m else c.ours }}
+      {% if not c.same %}<br><span class="pill bad">{{ _("Differs") }}</span>{% endif %}{% endif %}</td>{% endfor %}
+    <td class="small">{{ d.note or '' }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">{{ _("No days entered yet.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

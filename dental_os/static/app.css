@@ -241,3 +241,5 @@ main:focus { outline: none; }
 .skip { position: absolute; left: 8px; top: -60px; z-index: 50; background: var(--card); color: var(--brand); padding: 8px 14px; border: 2px solid var(--brand); border-radius: 8px; }
 .skip:focus { top: 8px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* 0.59 */
+footer.foot { max-width: 1100px; margin: 0 auto; padding: 8px 16px 24px; font-size: .875rem; }

@@ -1,0 +1,13 @@
+# Caddy in front of Dental OS. Copy to /etc/caddy/Caddyfile and change the name.
+#
+# On the clinic network only: Caddy makes its own certificate ("tls internal"). Each computer and tablet that uses
+# Dental OS must trust Caddy's local root certificate once, or browsers will warn. Give the name an address in the
+# router (or each device's hosts file) pointing at this computer.
+dental.local {
+	tls internal
+	encode gzip
+	reverse_proxy 127.0.0.1:8000
+}
+
+# Reached from the internet with a real domain instead: delete "tls internal" and Caddy gets a public certificate.
+# example: clinic.example.com { reverse_proxy 127.0.0.1:8000 }

@@ -2378,3 +2378,51 @@ CREATE TABLE IF NOT EXISTS restore_drills (
   detail TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ---- v0.59: getting ready to go live, and running next to the old system ------------------------------------------------
+CREATE TABLE IF NOT EXISTS golive_ticks (                -- the checklist items only a person can confirm
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  item TEXT NOT NULL,
+  done_by INTEGER REFERENCES users(id),
+  done_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (clinic_id, item)
+);
+CREATE TABLE IF NOT EXISTS problem_reports (             -- staff write down what went wrong; no patient details, the form says so
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  user_id INTEGER REFERENCES users(id),
+  page TEXT,                                             -- the screen's address without its search words
+  what TEXT NOT NULL,
+  urgency TEXT NOT NULL DEFAULT 'annoying' CHECK (urgency IN ('blocking','annoying','idea')),
+  shared INTEGER NOT NULL DEFAULT 0,                     -- 1: the clinic lets Dental OS support read it
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','fixed','not_a_fault','later')),
+  note TEXT,
+  closed_by INTEGER REFERENCES users(id),
+  closed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_problems_clinic ON problem_reports(clinic_id, status);
+CREATE TABLE IF NOT EXISTS error_log (                   -- a page that broke: which screen, what kind, when. Never form contents
+  id INTEGER PRIMARY KEY,
+  ref TEXT NOT NULL,
+  clinic_id INTEGER,
+  user_id INTEGER,
+  method TEXT,
+  endpoint TEXT,
+  kind TEXT,
+  at_line TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_error_log_at ON error_log(created_at);
+CREATE TABLE IF NOT EXISTS parallel_checks (             -- the old system's figures for a day, typed in to compare
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  day TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('takings','appointments','new_patients')),
+  old_value INTEGER NOT NULL,
+  note TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (clinic_id, day, kind)
+);

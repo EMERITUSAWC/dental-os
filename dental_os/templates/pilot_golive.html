@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Ready to go live") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Ready to go live") }}</h1><div class="row">
+  <a class="btn" href="{{ url_for('pilot.side') }}">{{ _("Side by side with the old system") }}</a>
+  <a class="btn" href="{{ url_for('pilot.problems') }}">{{ _("Problems reported") }}</a></div></div>
+{% if ready %}<p class="flash ok" role="status">{{ _("Everything that must be done is done.") }}</p>
+{% else %}<p class="flash warn" role="status">{{ _("Some things that must be done are not done yet. They are marked below.") }}</p>{% endif %}
+<section class="card"><h2>{{ _("What Dental OS checks by itself") }}</h2>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Item") }}</th><th>{{ _("State") }}</th><th></th></tr></thead><tbody>
+  {% for key, label, done, must, fix in items if fix != 'pilot.golive' %}
+  <tr><td>{{ _(label) }}{% if not must %} <span class="muted small">{{ _("(strongly advised)") }}</span>{% endif %}</td>
+    <td>{% if done %}<span class="pill ok">{{ _("Done") }}</span>{% elif must %}<span class="pill bad">{{ _("Not yet") }}</span>{% else %}<span class="pill warn">{{ _("Not yet") }}</span>{% endif %}</td>
+    <td>{% if fix and not done %}<a href="{{ url_for(fix) }}">{{ _("Go there") }}</a>{% elif key == 'https' and not done %}<span class="muted small">{{ _("Set PUBLIC_URL to the https address and COOKIE_SECURE=1 on the server.") }}</span>{% endif %}</td></tr>
+  {% endfor %}</tbody></table></div></section>
+<section class="card"><h2>{{ _("What only a person can confirm") }}</h2>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Item") }}</th><th>{{ _("Confirmed by") }}</th><th></th></tr></thead><tbody>
+  {% for key, label, done, must, fix in items if fix == 'pilot.golive' %}
+  <tr><td>{{ _(label) }}</td>
+    <td>{% if done %}<span class="pill ok">{{ _("Done") }}</span> <span class="small muted">{{ ticks[key].display_name }}, {{ ticks[key].done_at[:16] }} UTC</span>{% else %}<span class="pill bad">{{ _("Not yet") }}</span>{% endif %}</td>
+    <td><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="item" value="{{ key }}">
+      <input type="hidden" name="on" value="{{ '0' if done else '1' }}"><button type="submit">{{ _("Undo") if done else _("Confirm") }}</button></form></td></tr>
+  {% endfor %}</tbody></table></div></section>
+<section class="card"><h2>{{ _("Switching off the old system") }}</h2>
+  <p>{{ _("Matching days in a row") }}: <strong>{{ side.streak }}</strong> / {{ need }}
+  {% if side.enough %}<span class="pill ok">{{ _("enough to switch off the old system") }}</span>{% endif %}</p>
+  <p class="muted small">{{ _("Keep the old system running and type in its figures each evening. When the figures have matched for long enough, the old system can go.") }}</p></section>
+{% endblock %}

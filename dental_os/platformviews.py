@@ -123,6 +123,18 @@ def clinic(cid):
                            grant=PF.live_grant(db, cid))
 
 
+@operator_bp.get("/operator/health")
+@operator_required
+def health():
+    """0.59: pages that broke at any clinic (screen, kind and time only) and the problem reports clinics chose to share."""
+    from .services import pilot as P
+    db = get_db()
+    shared = db.execute("""SELECT r.id, r.page, r.what, r.urgency, r.status, r.created_at, c.name AS clinic_name FROM problem_reports r
+                           JOIN clinics c ON c.id = r.clinic_id WHERE r.shared = 1 ORDER BY CASE r.status WHEN 'open' THEN 0 ELSE 1 END, r.id DESC
+                           LIMIT 200""").fetchall()
+    return render_template("op_health.html", errors=P.errors(db), shared=shared, urgency=P.URGENCY, states=P.PROBLEM_STATES)
+
+
 @operator_bp.route("/operator/plans", methods=["GET", "POST"])
 @operator_required
 def plans():

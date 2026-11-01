@@ -1,4 +1,4 @@
-# Dental OS, version 0.58
+# Dental OS, version 0.59
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,23 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.59
+
+- Ready to go live (Settings): what Dental OS checks by itself (dentists, chairs, prices, patients moved in, two-step login for
+  every manager, a recent off-site copy, a passed restore drill, holidays, https) and what only a person can confirm (hours,
+  prices checked by a dentist, message wording, staff trained on a test patient, the old system kept running, who to call). A
+  manager ticks those, and their name and the time are kept. `flask doctor` prints the same list from the command line.
+- Side by side with the old system: each evening the manager types in the old system's takings, appointments and new patients for
+  the day, and Dental OS shows its own figures next to them. Ten matching working days in a row is the sign the old system can go.
+- "Report a problem" at the bottom of every page. Staff say what went wrong and how much it gets in the way; the page it came from
+  is kept without any search words. Staff see their own reports, managers see all of them and mark each fixed, not a fault or later.
+  A clinic can choose to let Dental OS support read a report.
+- A page that breaks shows a reference such as `E-7K2Q9X`. The error list keeps only the screen, the kind of error, the line of
+  code and the time, never what was typed or searched; the full details go to the server log under the same reference. Managers
+  see their clinic's list; the operator console has Errors and problems for every clinic.
+- `deploy/`: an install script for a clinic computer on Ubuntu Server 24.04 LTS, the service file, the scheduled jobs, a Caddy
+  file for https on the clinic network, and a short guide (`deploy/README.md`).
 
 ### Added in version 0.58
 
