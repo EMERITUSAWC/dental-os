@@ -173,8 +173,9 @@ class OperatorTwoStepTests(Base):
         from dental_os.services import platform as PF
         PF.add_operator(conn, "owner", "Owner", "a-long-operator-password")
         conn.commit()
-        with self.assertRaisesRegex(PF.PlatformError, "must use two-step login"):
-            PF.operator_login(conn, "owner", "a-long-operator-password", "ip", None, "test", True)
+        from dental_os.services import opteam
+        op = PF.operator_login(conn, "owner", "a-long-operator-password", "ip", None, "test", True)
+        self.assertEqual(opteam.needs_setup(op, True), "2fa")                 # 0.69: let in only as far as setting it up
         secret = twofactor.new_secret()
         op = conn.execute("SELECT id FROM operators WHERE username = 'owner'").fetchone()[0]
         PF.set_operator_2fa(conn, op, "test", secret, 0)

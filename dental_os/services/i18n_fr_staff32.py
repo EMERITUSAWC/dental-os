@@ -12,7 +12,7 @@ MESSAGES32 = {
     'The write-off is more than is left to pay on this claim. Write off only the part the payer will not pay.': 'L’annulation dépasse ce qui reste à payer sur cette demande. N’annulez que la part que le payeur ne paiera pas.',
     'Messages cannot mention money: no amounts, currencies, balances or invoices. Anyone holding the phone can read them. Send the patient their private link instead.': 'Les messages ne peuvent pas parler d’argent\xa0: ni montants, ni devises, ni soldes, ni factures. Toute personne qui tient le téléphone peut les lire. Envoyez plutôt au patient son lien privé.',
     'One of the numbers is far too large. Check what was typed.': 'L’un des nombres est beaucoup trop grand. Vérifiez la saisie.',
-    'Operators must use two-step login. On the server, run: flask operator-2fa --username YOUR-USERNAME, then sign in with the code.': 'Les opérateurs doivent utiliser la connexion en deux étapes. Sur le serveur, lancez\xa0: flask operator-2fa --username YOUR-USERNAME, puis connectez-vous avec le code.',
+    'Operators must use two-step login. Set it up now with an authenticator app on your phone, then you can carry on.': 'Les opérateurs doivent utiliser la connexion en deux étapes. Configurez-la maintenant avec une application d’authentification sur votre téléphone, puis vous pourrez continuer.',
     'That username, password and code do not match.': 'Le nom d’utilisateur, le mot de passe et le code ne correspondent pas.',
     "The database refuses to change a signed note or a payment's amount, date or receipt.": 'La base refuse de modifier une note signée, ou le montant, la date ou le reçu d’un paiement.',
 }

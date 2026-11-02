@@ -154,6 +154,7 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Tamper-evident activity log | Open Dental: audit trail that shows in red any entry failing its check that it is unchanged; Dentrix: audit trail | The database refuses changes and deletions; nightly sealed chain, checkable later against a value the auditor keeps | 0.67 |
 | Access reviews | Not built in | Quarterly, every login decided and kept; remove switches it off | 0.67 |
 | Records the database itself protects | No published database-level lock found for either; both keep audit trails | Signed notes and payments cannot be altered even by direct database access; payments only voided | 0.68 |
+| Roles for the vendor's own staff | Not something clinics see in either | Owner, customer service, finance, sales and engineering, each limited to its part; first sign-in sets password and two-step login | 0.69 |
 | Protection from double charges | No published feature found for either | Buttons wait while sending; a repeated desk payment or reused mobile money reference is refused | 0.68 |
 
 ## Waiting on an outside party (the code is built)

@@ -1,4 +1,4 @@
-# Dental OS, version 0.68
+# Dental OS, version 0.69
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,21 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.69: your company's own team and roles
+
+- The people who run the service now each have a role, and each role reaches only its part of the operator area:
+  Owner (everything, and the team), Customer service (opens a clinic only after its manager grants support access, and only to
+  look; the error list), Finance (bills, payments, pausing a clinic that has not paid; never opens a clinic), Sales (trials and
+  plans; no bills, never opens a clinic) and Engineering (the error list and problem reports only). Engineers' real access is to
+  GitHub and the server, which you control there.
+- Operator area, Team (owners only): add a person with a role and get a one-time password to hand over in person; change roles;
+  switch logins off; reset a password or two-step login; and "Confirm the team is right" every 90 days, kept in the log. Nobody can
+  change their own login, and there is always one owner left.
+- A new person's first sign-in goes straight to My security: they choose their own password, then set up two-step login by
+  scanning a QR code, before they see anything else. No server command is needed for each new hire any more (`flask
+  operator-2fa` still works). Every action is in the operator log.
+- Existing operator logins become owners, so nothing changes for you.
 
 ### Added in version 0.68: a review of every version from 0.1
 

@@ -165,6 +165,8 @@ COLUMN_UPGRADES = [
     ("clinics", "paid_until", "TEXT"),                                   # paid up to this date; the next bill starts here
     ("operators", "totp_secret", "TEXT"),                                # 0.68: encrypted. The operator's two-step login
     ("operators", "totp_last_step", "INTEGER NOT NULL DEFAULT 0"),
+    ("operators", "role", "TEXT NOT NULL DEFAULT 'owner'"),            # 0.69: owner, support, finance, sales, engineering
+    ("operators", "must_change", "INTEGER NOT NULL DEFAULT 0"),          # 0.69: a one-time password from the owner: choose your own
 ]
 
 

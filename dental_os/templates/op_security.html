@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("My security") }}{% endblock %}
+{% block body %}
+{% if not step %}{% include "_op_nav.html" %}{% endif %}
+<h1>{{ _("My security") }}</h1>
+<p class="muted">{{ g.operator.display_name }} · {{ _(role) }}</p>
+
+{% if step == 'password' %}<p class="flash warn" role="status">{{ _("You signed in with a one-time password. Choose your own to carry on.") }}</p>{% endif %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="password"><h2>{{ _("Password") }}</h2>
+  <label for="current">{{ _("Current password") }}</label><input id="current" type="password" name="current" required autocomplete="current-password">
+  <label for="new">{{ _("New password (10 characters or more)") }}</label><input id="new" type="password" name="new" required minlength="10" autocomplete="new-password">
+  <p><button class="primary" type="submit">{{ _("Change password") }}</button></p></form>
+
+{% if step != 'password' %}
+<section class="card"><h2>{{ _("Two-step login") }}</h2>
+{% if g.operator.totp_secret %}<p><span class="pill ok">{{ _("On") }}</span> {{ _("To move it to a new phone, ask an owner to reset it, then set it up again here.") }}</p>
+{% else %}
+  <p>{{ _("Scan this with an authenticator app (Google Authenticator, Microsoft Authenticator or similar), then type the 6-digit code it shows.") }}</p>
+  {% if svg %}<div style="background:#fff;display:inline-block;padding:4px;border-radius:8px">{{ svg|safe }}</div>{% endif %}
+  <p class="small">{{ _("Or type this into the app:") }} <code>{{ secret }}</code></p>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="2fa">
+    <label for="code">{{ _("Code from the authenticator app") }}</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required>
+    <p><button class="primary" type="submit">{{ _("Switch on two-step login") }}</button></p></form>
+{% endif %}</section>
+{% endif %}
+{% if step %}<form method="post" action="{{ url_for('operator.logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Log out") }}</button></form>{% endif %}
+{% endblock %}

@@ -164,7 +164,7 @@ def add_operator(conn, username, display_name, password):
                         (username, (display_name or username).strip()[:80], generate_password_hash(password))).lastrowid
 
 
-OPERATOR_NEEDS_2FA = "Operators must use two-step login. On the server, run: flask operator-2fa --username YOUR-USERNAME, then sign in with the code."
+OPERATOR_NEEDS_2FA = "Operators must use two-step login. Set it up now with an authenticator app on your phone, then you can carry on."
 OPERATOR_BAD_CODE = "That username, password and code do not match."
 
 
@@ -196,8 +196,7 @@ def operator_login(conn, username, password, ip_key, code=None, secret_key=None,
             throttle.record(conn, bucket)
             raise PlatformError(OPERATOR_BAD_CODE)
         conn.execute("UPDATE operators SET totp_last_step = ? WHERE id = ?", (step, row["id"]))
-    elif require_2fa:
-        raise PlatformError(OPERATOR_NEEDS_2FA)
+    # 0.69: an operator without two-step login is let in only as far as the page that sets it up (see opteam.needs_setup).
     conn.execute("INSERT INTO operator_log(operator_id, action) VALUES (?, 'login')", (row["id"],))
     return row
 

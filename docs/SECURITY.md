@@ -5,7 +5,7 @@ patient data, which control does what, and how to prove each claim yourself rath
 Nothing here says that a clinic, a host or the product meets ISO/IEC 27001, HIPAA, the GDPR or Ghana's Data Protection Act. Those
 depend on the clinic and the host as much as on the software, and only an auditor or a lawyer can say so.
 
-Version 0.68. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
+Version 0.69. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
 
 ## 1. How it is built
 
@@ -38,6 +38,7 @@ its database; each outside service.
 | A form sent twice takes money twice | Buttons wait while a form is sent; the desk refuses the same payment within a minute and a reused mobile money or card reference | `test_v68` DeskPaymentTests |
 | A discount paid out as cash | A refund cannot be more than the patient paid in | `test_v68` CreditFromNothingTests |
 | A stolen operator password | Operators need a code from an authenticator app as well | `test_v68` OperatorTwoStepTests |
+| The service's own staff see more than their job needs | Each operator has a role (owner, customer service, finance, sales, engineering) that reaches only its part; the owner runs the team, with a 90-day review in the log | `test_v69` TeamTests |
 | Someone covers their tracks in the activity log | The database refuses to change or delete log rows; daily seals show a change made around the database | `test_v67` LockTests and SealTests |
 | A login nobody needs any more | Quarterly access review; remove switches the login off at once | `test_v67` ReviewTests |
 | A disk, laptop or backup is lost | Off-site copies are locked with a passphrase before they leave; monthly restore drill. Disk encryption is the host's job | `test_v50`, `test_v58` |
