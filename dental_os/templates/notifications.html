@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Notifications") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Notifications") }}</h1>
+<p class="muted">{{ _("Everything waiting for you, in one place, most urgent first. What shows depends on your role.") }}</p>
+<section class="card">{% for r in rows %}<p class="row spread" style="border-bottom:1px solid var(--line);padding:6px 0;margin:0">
+  <span>{% if r.level == 'urgent' %}<span class="pill bad">{{ _("Urgent") }}</span>{% elif r.level == 'info' %}<span class="pill">{{ _("For information") }}</span>{% endif %} {{ _(r.label) }}: <strong>{{ r.n }}</strong></span>
+  <a href="{{ url_for(r.endpoint) }}">{{ _("Open") }}</a></p>
+{% else %}<p class="muted">{{ _("Nothing is waiting for you.") }}</p>{% endfor %}</section>
+{% endblock %}

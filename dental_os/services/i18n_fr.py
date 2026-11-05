@@ -451,13 +451,15 @@ from .i18n_fr_staff34 import STAFF34 as _STAFF34, MESSAGES34 as _MESSAGES34  # n
 from .i18n_fr_staff35 import STAFF35 as _STAFF35, MESSAGES35 as _MESSAGES35  # noqa: E402
 from .i18n_fr_staff36 import STAFF36 as _STAFF36, MESSAGES36 as _MESSAGES36  # noqa: E402
 from .i18n_fr_staff37 import STAFF37 as _STAFF37, MESSAGES37 as _MESSAGES37  # noqa: E402
-for _part in (_STAFF30, _MESSAGES30, _STAFF31, _MESSAGES31, _STAFF32, _MESSAGES32, _STAFF33, _MESSAGES33, _STAFF34, _MESSAGES34, _STAFF35, _MESSAGES35, _STAFF36, _MESSAGES36, _STAFF37, _MESSAGES37):
+from .i18n_fr_staff38 import STAFF38 as _STAFF38, MESSAGES38 as _MESSAGES38  # noqa: E402
+from .i18n_fr_staff39 import STAFF39 as _STAFF39, MESSAGES39 as _MESSAGES39  # noqa: E402
+for _part in (_STAFF30, _MESSAGES30, _STAFF31, _MESSAGES31, _STAFF32, _MESSAGES32, _STAFF33, _MESSAGES33, _STAFF34, _MESSAGES34, _STAFF35, _MESSAGES35, _STAFF36, _MESSAGES36, _STAFF37, _MESSAGES37, _STAFF38, _MESSAGES38, _STAFF39, _MESSAGES39):
     _clash = sorted(k for k in _part if k in _FR and _FR[k] != _part[k])
     if _clash:
         raise RuntimeError("French wording given twice with different text: %s" % _clash)
     _FR.update(_part)
 # Plain messages and errors raised in the code (not in templates). tests.test_v10 checks each is still in the code.
-MESSAGE_KEYS = set(_STAFF7) | set(_MESSAGES8) | set(_MESSAGES9) | set(_MESSAGES10) | set(_MESSAGES11) | set(_MESSAGES12) | set(_MESSAGES13) | set(_MESSAGES14) | set(_MESSAGES15) | set(_MESSAGES16) | set(_MESSAGES17) | set(_MESSAGES18) | set(_MESSAGES19) | set(_MESSAGES20) | set(_MESSAGES21) | set(_MESSAGES22) | set(_MESSAGES23) | set(_MESSAGES24) | set(_MESSAGES25) | set(_MESSAGES26) | set(_MESSAGES27) | set(_MESSAGES28) | set(_MESSAGES29) | set(_MESSAGES30) | set(_MESSAGES31) | set(_MESSAGES32) | set(_MESSAGES33) | set(_MESSAGES34) | set(_MESSAGES35) | set(_MESSAGES36) | set(_MESSAGES37)
+MESSAGE_KEYS = set(_STAFF7) | set(_MESSAGES8) | set(_MESSAGES9) | set(_MESSAGES10) | set(_MESSAGES11) | set(_MESSAGES12) | set(_MESSAGES13) | set(_MESSAGES14) | set(_MESSAGES15) | set(_MESSAGES16) | set(_MESSAGES17) | set(_MESSAGES18) | set(_MESSAGES19) | set(_MESSAGES20) | set(_MESSAGES21) | set(_MESSAGES22) | set(_MESSAGES23) | set(_MESSAGES24) | set(_MESSAGES25) | set(_MESSAGES26) | set(_MESSAGES27) | set(_MESSAGES28) | set(_MESSAGES29) | set(_MESSAGES30) | set(_MESSAGES31) | set(_MESSAGES32) | set(_MESSAGES33) | set(_MESSAGES34) | set(_MESSAGES35) | set(_MESSAGES36) | set(_MESSAGES37) | set(_MESSAGES38) | set(_MESSAGES39)
 
 FR = {k: _typography(v) for k, v in _FR.items()}
 STARTERS_FR = {k: _typography(v) for k, v in STARTERS_FR.items()}

@@ -61,7 +61,8 @@
       {% for a in to_chase %}
       <tr>
         <td class="nw">{{ a.start_at|time }}</td>
-        <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}<br>{{ conf(a) }}</td>
+        <td><a href="{{ url_for('views.appointment_view', aid=a.id) }}">{{ a.first_name }} {{ a.last_name }}</a>{{ alert_mark(a.patient_id) }}<br>{{ conf(a) }}
+          {% set rk = risk.get(a.id) %}{% if rk and rk >= 40 %} <span class="pill {{ 'bad' if rk >= 60 else 'warn' }}">{{ _("May not come") }}</span>{% endif %}</td>
         <td>
           {% if a.reminders_ok %}
           <form method="post" action="{{ url_for('views.appointment_whatsapp', aid=a.id) }}" target="_blank">

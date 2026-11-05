@@ -28,4 +28,11 @@
   <p class="muted small">{{ _("Patients can choose, on the pay page, to keep their card with the payment company, and separately to have their monthly ortho or membership fees charged to it. Only the company's token is kept here, never the card. Check your payment company's terms and local law before switching this on.") }}</p>
   <label class="check"><input type="checkbox" name="allow_save" value="1" {{ 'checked' if a.allow_save }}> <span>{{ _("Let patients keep a card on file") }}</span></label>
   <p><button type="submit">{{ _("Save") }}</button></p></form>{% endif %}
+<section class="card"><h2>{{ _("Credit card fee at the desk") }}</h2>
+  {% if card_fee_allowed %}
+  <p class="muted small">{{ _("Optional. When it is on, the desk can add this fee to a credit card payment; it is recorded as its own line, never as treatment money. Never charge it on debit cards. Tell the patient before they pay. Card company rules cap it (Visa: 3 per cent), some places ban it, so check with your bank first.") }}</p>
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="card_fee">
+    <div><label for="card_fee">{{ _("Fee, per cent (0 to switch it off)") }}</label><input id="card_fee" name="card_fee" inputmode="decimal" maxlength="5" style="width:7em" value="{{ '%.2f'|format(clinic.card_fee_bp / 100) if clinic.card_fee_bp else '' }}"></div>
+    <button type="submit">{{ _("Save") }}</button></form>
+  {% else %}<p>{{ _("Card fees on patients' cards are not allowed in this clinic's country.") }}</p>{% endif %}</section>
 {% endblock %}

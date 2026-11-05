@@ -129,9 +129,14 @@ def payment_add(pid):
     db = get_db()
     _patient_or_404(pid)
     try:
-        pay_id = billing.record_payment(db, g.clinic, g.user["id"], pid, money.parse_money(request.form.get("amount", ""), g.clinic["currency"]),
+        amount = money.parse_money(request.form.get("amount", ""), g.clinic["currency"])
+        pay_id = billing.record_payment(db, g.clinic, g.user["id"], pid, amount,
                                         request.form.get("method", ""), request.form.get("reference"),
                                         request.form.get("note"), desk=True)
+        if request.form.get("method") == "card" and request.form.get("credit_card_fee") == "1":     # 0.74: only for a credit card
+            from .services import cardfee
+            pay = db.execute("SELECT receipt_no, reference FROM payments WHERE id = ?", (pay_id,)).fetchone()
+            cardfee.add_fee(db, g.clinic, g.user["id"], pid, amount, pay["receipt_no"], pay["reference"])
         flash("Payment recorded.", "ok")
         return redirect(url_for("clinical.receipt", pay_id=pay_id))
     except (billing.BillingError, ValueError) as exc:
@@ -164,8 +169,9 @@ def receipt(pay_id):
     if not pay:
         abort(404)
     _document_for(pay["patient_id"])
+    from .services import cardfee
     return render_template("receipt.html", pay=pay, t=billing.totals(db, cid, pay["patient_id"]),
-                           methods=billing.METHODS)
+                           methods=billing.METHODS, card_fee=cardfee.fee_with(db, cid, pay["receipt_no"]))
 
 
 @bp.post("/payments/<int:pay_id>/void")

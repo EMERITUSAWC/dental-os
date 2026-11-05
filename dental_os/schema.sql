@@ -2802,3 +2802,12 @@ CREATE TABLE IF NOT EXISTS practice_goals (              -- a month's goals for 
   set_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_goals_month ON practice_goals(clinic_id, month);
+
+-- ---- v0.74: guided tours a person has finished -------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_tours (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  tour TEXT NOT NULL,
+  done_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (user_id, tour)
+);

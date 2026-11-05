@@ -27,6 +27,16 @@ def setup():
         try:
             if request.form.get("action") == "check":
                 flash(OP.check(db, g.clinic, _secret()), "ok")
+            elif request.form.get("action") == "card_fee":            # 0.74: optional fee on credit cards at the desk
+                from .services import cardfee
+                try:
+                    cardfee.set_fee(db, g.clinic, g.user["id"], cardfee.parse_pct(request.form.get("card_fee")))
+                except cardfee.CardFeeError as exc:
+                    db.rollback()
+                    flash(str(exc), "error")
+                    return redirect(url_for("payments.setup"))
+                db.commit()
+                flash("Saved.", "ok")
             elif request.form.get("action") == "allow_save":
                 OP.set_allow_save(db, g.clinic, g.user["id"], request.form.get("allow_save") == "1")
                 flash("Saved.", "ok")
@@ -42,7 +52,8 @@ def setup():
     a = OP.account(db, g.clinic["id"])
     hook = (_base().rstrip("/") + url_for("paypub.hook", key=a["hook_key"])) if a else None
     return render_template("pay_setup.html", a=a, providers=OP.PROVIDERS, hook=hook, test=OP.test_mode(a),
-                           paystack_ok=g.clinic["currency"] in OP.PAYSTACK_CURRENCIES)
+                           paystack_ok=g.clinic["currency"] in OP.PAYSTACK_CURRENCIES,
+                           card_fee_allowed=_cardfee_ok())
 
 
 @bp.route("/patients/<int:pid>/pay-links", methods=["GET", "POST"])
@@ -271,3 +282,8 @@ def hook(key):
     except ValueError:
         abort(400)
     return result, 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+def _cardfee_ok():
+    from .services import cardfee
+    return cardfee.allowed(g.clinic)

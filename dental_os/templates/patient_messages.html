@@ -6,10 +6,17 @@
 {{ tabs(p, 'messages') }}
 <p class="small muted">{{ _("Appointment messages:") }} {{ _('agreed') if p.reminders_ok else _('not agreed') }}. {{ _("Offers:") }} {{ _('agreed') if p.offers_ok else _('not agreed') }}.</p>
 
+{% if ai %}<section class="card aihelp"><h2>{{ _("Suggested by the AI helper") }} <span class="pill {{ 'bad' if ai.intent in ('clinical', 'complaint') else '' }}">{{ _(intents[ai.intent]) }}</span></h2>
+  <p class="small muted">{{ _("From their latest reply:") }} “{{ ai.message.body }}”</p>
+  {% if ai.intent == 'clinical' %}<p class="flash warn" role="status">{{ _("This sounds like a clinical worry. Pass it to a dentist today; no reply is drafted.") }}</p>{% endif %}
+  {% if ai.slots %}<p>{{ _("Free times that fit what they asked for:") }}</p><ul>{% for s in ai.slots %}<li>{{ s.day|day }}, {{ s.time }}{% if s.provider %} ({{ s.provider }}){% endif %} <a href="{{ url_for('views.diary', date=s.day.isoformat()) }}">{{ _("Open the diary") }}</a></li>{% endfor %}</ul>{% elif ai.intent == 'reschedule' %}<p class="muted">{{ _("No free time fits what they asked for in the next three weeks.") }}</p>{% endif %}
+  {% if ai.draft %}<p class="small muted">{{ _("A draft reply is in the message box below. Read it, change it if needed, then send it yourself.") }}</p>{% endif %}
+  <p class="small muted">{{ _("The helper works on this server and sends nothing anywhere. It only suggests: nothing is sent, booked or changed until you do it.") }}</p></section>{% endif %}
 <div class="grid two">
 <section class="card"><h2>{{ _("Send a message") }}</h2>
   <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="send">
-    <label for="text">{{ _("Message") }}</label><textarea id="text" name="text" rows="3" maxlength="1000" required></textarea>
+    {% if ai and ai.draft %}<input type="hidden" name="ai_draft" value="{{ ai.draft }}">{% endif %}
+    <label for="text">{{ _("Message") }}</label><textarea id="text" name="text" rows="3" maxlength="1000" required>{{ ai.draft if ai and ai.draft else '' }}</textarea>
     <p class="small muted">{{ _("Opens WhatsApp with the words ready. Allowed if they agreed to messages, or wrote to us in the last 7 days. Keep treatment details and money out of WhatsApp.") }}</p>
     <p><button class="primary" type="submit" formtarget="_blank">{{ _("Open WhatsApp") }}</button></p></form>
 </section>

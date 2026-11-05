@@ -147,6 +147,7 @@ def create_app(test_config=None):
             total = _ob.attention(dbmod.get_db(), g.clinic, g.user)["total"]
             group = _orgs.for_user(dbmod.get_db(), g.user)
         clocked, task_due, phone_on, nhs_on, team_unread = None, 0, False, False, 0
+        tour, drafts_n = None, 0
         assistant_on = False
         from .services import permgroups as _pg
         mine = _pg.areas_of(dbmod.get_db(), g.user) if g.get("user") else set(_pg.AREAS)
@@ -166,6 +167,14 @@ def create_app(test_config=None):
             from .services import tasks as _tasks, timeclock as _tc
             clocked = _tc.open_entry(dbmod.get_db(), g.clinic["id"], g.user["id"])
             task_due = _tasks.counts(dbmod.get_db(), g.clinic, g.user["id"])["due"]
+            from .services import permissions as _perm, tours as _tours        # 0.74: drafts to sign count in the Inbox badge; first-time tours
+            if _perm.can_sign(g.user):
+                drafts_n = dbmod.get_db().execute("SELECT COUNT(*) FROM clinical_notes WHERE clinic_id = ? AND status = 'draft' AND author_id = ?",
+                                                   (g.clinic["id"], g.user["id"])).fetchone()[0]
+            if not session.get("kiosk") and not g.get("support"):
+                key = _tours.pending(dbmod.get_db(), g.user, request.endpoint)
+                if key:
+                    tour = {"key": key, "steps": [{"sel": sel, "text": i18n.t(g.get("lang") or "en", text)} for sel, text in _tours.TOURS[key][1]]}
         from .services import offsite as _off
         offline = backup_stale = read_only = None
         if g.get("user"):
@@ -189,7 +198,7 @@ def create_app(test_config=None):
         return {"csrf_token": session["csrf"], "user": g.get("user"), "clinic": g.get("clinic"), "attn_total": total, "group": group,
                 "plan_banner": plan_banner, "support_on": g.get("support"),
                 "offline_since": offline, "backup_stale": backup_stale, "read_only": read_only,
-                "clocked_in": clocked, "task_due": task_due, "phone_on": phone_on, "nhs_on": nhs_on, "assistant_on": assistant_on, "team_unread": team_unread, "can": can, "kiosk_on": bool(session.get("kiosk")),
+                "tour": tour, "drafts_n": drafts_n, "clocked_in": clocked, "task_due": task_due, "phone_on": phone_on, "nhs_on": nhs_on, "assistant_on": assistant_on, "team_unread": team_unread, "can": can, "kiosk_on": bool(session.get("kiosk")),
                 "lang": g.get("lang") or "en", "languages": i18n.LANGS, "staff_languages": i18n.STAFF_LANGS}
 
     # ---- request lifecycle

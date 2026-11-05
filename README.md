@@ -1,4 +1,4 @@
-# Dental OS, version 0.73
+# Dental OS, version 0.75
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,42 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.75: the AI helper, step one (all on the clinic's own server)
+
+The helper suggests and a person decides: it never sends a message, books a visit, changes money or writes the record. It runs
+on the clinic's own server with pattern rules, not an outside service, so it works offline, costs nothing per use and sends no
+health data abroad. Each suggestion a person uses is in the activity log as "ai.used".
+
+- Patient replies: each unread WhatsApp or SMS reply is sorted (confirming, cancelling, wants another time, asking about cost,
+  unhappy, a clinical worry, a question). For "another time" it reads what the patient asked for ("Thursday afternoon", "next
+  week", "3pm") and finds free times that fit, with their usual dentist first. A draft reply in the patient's own language waits
+  in the message box, with no money or treatment details. A clinical worry (pain, swelling, bleeding) is never answered by a
+  draft: the screen says to pass it to a dentist. The Replies list shows how each was sorted.
+- Who may not come: a risk out of 100 for each visit from the patient's own history (visits missed, not confirmed, first visit,
+  booked long ago), with the reasons. Tomorrow's list on Today is sorted by it; the huddle lists today's risky visits.
+- Before this patient: on the visit page and at the chair, the alerts, the last visit and note, work planned but not done, and the
+  recall date. Money only for managers.
+- What to act on today (managers, in the huddle): plain sentences from the clinic's own figures (pace, who may not come,
+  unconfirmed visits, treatment to book, money owed, old drafts), and money patterns worth a look: one person with most of the
+  voids or discounts, or cash-ups short again and again. A pattern is a reason to look, not proof.
+- Support at HQ: the published help articles that best match a ticket, and "Use as the answer" fills a draft reply.
+
+### Added in version 0.74: comparing X-rays over time, notifications, card fee, guided tours
+
+- Compare over time (Files, Compare over time; clinical staff): every picture of one tooth, oldest first, or two to six chosen
+  X-rays and photos, side by side with a number, the date and how many days after the first each was taken. One brightness,
+  contrast and invert setting applies to all of them so they are compared fairly. Write the teeth a picture shows under Files,
+  in the clinic's own tooth numbering. Each comparison is in the patient's access log.
+- Notifications (Inbox, All notifications): everything waiting for this person in one place, most urgent first: replies,
+  booking requests, health forms, tasks, team messages, notes to sign, lab work, stock, sterilisation, equipment, data requests
+  and incidents, plans to follow up, membership fees and instalments. What shows follows the role and permission group. Drafts
+  waiting to be signed now count in the Inbox number.
+- Credit card fee at the desk (Settings, Online payments; off by default): up to 3%, credit cards only, ticked for each payment,
+  recorded as its own payment so it never counts as treatment money, and shown on the receipt. Refused in the UK and the European
+  Economic Area, where surcharges on consumer cards are banned. Elsewhere, check with the clinic's bank first.
+- Guided tours: the first time someone opens Today, the Diary, a patient or the tooth chart, a few short steps point at the main
+  parts of the screen. Finishing or skipping marks it done; Help has a button to see the tours again.
 
 ### Added in version 0.73: the morning huddle, goals, notes to sign, membership savings on quotes
 

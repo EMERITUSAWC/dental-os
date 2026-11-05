@@ -7,7 +7,8 @@
 <p class="muted">{{ _("WhatsApp replies cannot be read automatically yet. When a patient writes back, open their Messages tab and paste what they wrote. It will wait here until someone has read it. A plain YES can confirm their next visit.") }}</p>
 <section class="card"><div class="tbl-wrap"><table>
   <tr><th>{{ _("Patient") }}</th><th>{{ _("Last reply") }}</th><th>{{ _("When") }}</th></tr>
-  {% for r in rows %}<tr><td><a href="{{ url_for('comms.patient_messages', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% if r.n > 1 %} <span class="pill">{{ r.n }} {{ _("new") }}</span>{% endif %}</td>
+  {% for r in rows %}<tr><td><a href="{{ url_for('comms.patient_messages', pid=r.patient_id) }}">{{ r.first_name }} {{ r.last_name }}</a>{% if r.n > 1 %} <span class="pill">{{ r.n }} {{ _("new") }}</span>{% endif %}
+      {% set it = sorted_as.get(r.patient_id) %}{% if it and it != 'other' %} <span class="pill {{ 'bad' if it in ('clinical', 'complaint') else ('warn' if it in ('cancel', 'reschedule') else '') }}">{{ _(intents[it]) }}</span>{% endif %}</td>
     <td>{{ r.last_body }}</td><td class="nw muted">{{ r.last_at[:16] }}</td></tr>
   {% else %}<tr><td colspan="3" class="muted">{{ _("No unread replies.") }}</td></tr>{% endfor %}
 </table></div></section>

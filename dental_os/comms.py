@@ -131,7 +131,10 @@ def queue_skip(oid):
 @bp.get("/messages/replies")
 def replies():
     db = get_db()
-    return render_template("replies.html", rows=inbox.unread(db, g.clinic["id"]), attn=outbox.attention(db, g.clinic, g.user), active="replies")
+    from .services import aidesk
+    rows = inbox.unread(db, g.clinic["id"])
+    return render_template("replies.html", rows=rows, attn=outbox.attention(db, g.clinic, g.user), active="replies",
+                           sorted_as={r["patient_id"]: aidesk.classify(r["last_body"])[0] for r in rows}, intents=aidesk.INTENTS)
 
 
 @bp.route("/patients/<int:pid>/messages", methods=["GET", "POST"])
@@ -150,6 +153,12 @@ def patient_messages(pid):
         elif action == "send":
             try:
                 url = inbox.reply(db, g.clinic, g.user["id"], pid, request.form.get("text"))
+                if request.form.get("ai_draft") and request.form.get("ai_draft") == request.form.get("text"):
+                    from .services import aidesk
+                    aidesk.used(db, g.clinic, g.user["id"], "reply draft, sent as written", pid)
+                elif request.form.get("ai_draft"):
+                    from .services import aidesk
+                    aidesk.used(db, g.clinic, g.user["id"], "reply draft, edited", pid)
                 db.commit()
                 return redirect(url)
             except inbox.InboxError as exc:
@@ -185,10 +194,12 @@ def patient_messages(pid):
             abort(400)
         if new_link is None:
             return redirect(url_for("comms.patient_messages", pid=pid))
+    from .services import aidesk
+    ai = aidesk.read_replies(db, g.clinic, patient) if request.method == "GET" else None   # 0.75: read before marking as read
     inbox.mark_read(db, cid, pid) if request.method == "GET" else None
     cur = links.current(db, g.clinic, pid)
     return render_template("patient_messages.html", p=patient, thread=inbox.thread(db, cid, pid), link=cur, new_link=new_link,
-                           token=(new_link.rsplit("/", 1)[1] if new_link else None), yes=inbox.looks_like_yes)
+                           token=(new_link.rsplit("/", 1)[1] if new_link else None), yes=inbox.looks_like_yes, ai=ai, intents=aidesk.INTENTS)
 
 
 # ----------------------------------------------------------------------------- online booking requests

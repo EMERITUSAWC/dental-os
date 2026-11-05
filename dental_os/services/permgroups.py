@@ -14,7 +14,8 @@ from . import audit
 AREAS = {
     "diary": ("Diary and appointments", ["views.diary", "diary.", "views.appointment", "practice.kiosk", "practice.missed", "practice.unscheduled"]),
     "patients": ("Register and edit patients", ["views.patient_new", "views.patient_edit", "views.patient_archive", "record.import", "cforms."]),
-    "clinical": ("Clinical record", ["record.", "care.", "xrayai.", "chair.", "rxnet.", "steri.patient_instruments", "ortho.", "implants.", "aftercare.", "clinical.treatment", "clinical.procedure_action", "huddle.unsigned"]),
+    "clinical": ("Clinical record", ["record.", "care.", "xrayai.", "chair.", "rxnet.", "steri.patient_instruments", "ortho.", "implants.", "aftercare.", "clinical.treatment", "clinical.procedure_action", "huddle.unsigned",
+                                       "huddle.compare", "huddle.file_details"]),
     "plans": ("Treatment plans and quotes", ["commercial.patient_plans", "commercial.plan_", "commercial.plans_board"]),
     "payments": ("Take payments and give receipts", ["clinical.account", "clinical.payment_add", "clinical.receipt", "payments.",
                                                      "commercial.instalment_pay", "commercial.membership_charge_pay", "practice.cashup"]),
@@ -38,7 +39,8 @@ AREAS = {
 ALWAYS = ("views.dashboard", "views.patients", "views.patient_view", "auth.", "static", "health", "team.", "practice.tasks", "practice.task_action",
           "practice.clock",
           "gov.complaint_new", "gov.incident_new", "cpd.mine",            # anyone can write down a complaint or an incident
-          "pilot.problems")                                                  # 0.59: and report a problem
+          "pilot.problems",                                                  # 0.59: and report a problem
+          "huddle.notifications", "huddle.tour_done", "huddle.tours_again", "help.")   # 0.74
 
 
 class GroupError(Exception):

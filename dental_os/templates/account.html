@@ -26,6 +26,7 @@
       <select id="method" name="method">{% for k, v in methods.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
       <label for="reference">{{ _("Transaction or reference number (needed except for cash)") }}</label><input id="reference" name="reference" maxlength="60">
       <label for="note">{{ _("Note") }}</label><input id="note" name="note" maxlength="120">
+      {% if clinic.card_fee_bp %}<label class="check"><input type="checkbox" name="credit_card_fee" value="1"> {{ _("Add the credit card fee of %(pct)s%% (credit cards only, never debit cards; tell the patient first)", pct='%.2f'|format(clinic.card_fee_bp / 100)) }}</label>{% endif %}
       <p><button class="primary" type="submit">{{ _("Save and show receipt") }}</button></p>
     </form>
   </section>

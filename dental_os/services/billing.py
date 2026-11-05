@@ -102,7 +102,7 @@ def record_payment(db, clinic, user_id, patient_id, amount_p, method, reference=
     reference = (reference or "").strip() or None
     if method in NEEDS_REFERENCE and not reference:
         raise BillingError("Enter the transaction or reference number for this kind of payment.")
-    if purpose not in ("treatment", "membership"):
+    if purpose not in ("treatment", "membership", "card_fee"):          # 0.74: a credit card fee is its own line, never treatment money
         raise BillingError("Unknown kind of payment.")
     _begin(db)
     if not db.execute("SELECT 1 FROM patients WHERE id=? AND clinic_id=?", (patient_id, cid)).fetchone():

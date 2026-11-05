@@ -125,3 +125,72 @@ def dicom_summary(root, row):
         return dicom.summary(dicom.parse(path_for(root, row).read_bytes()))
     except (dicom.DicomError, OSError):
         return None
+
+
+# ---------------------------------------------------------------------------- 0.74: comparing pictures over time
+VIEWABLE = INLINE | {"application/dicom"}
+COMPARE_MAX = 6
+
+
+def parse_teeth(raw):
+    """'36, 37 46' -> '36,37,46'. Typed in the clinic's own tooth numbering, kept as FDI, each once. Empty gives None."""
+    from . import teeth as T
+    out = []
+    for part in (raw or "").replace(";", ",").replace(" ", ",").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            n = str(T.parse(part))
+        except T.ToothError as exc:
+            raise FileError("Write the teeth the clinic's usual way, separated by commas.") from exc
+        if n not in out:
+            out.append(n)
+    return ",".join(out) or None
+
+
+def set_details(db, clinic, user, file_id, teeth, taken_on):
+    row = get(db, clinic["id"], file_id)
+    if not row:
+        raise FileError("That file was not found.")
+    when = (taken_on or "").strip() or None
+    if when:
+        import datetime as _dt
+        try:
+            _dt.date.fromisoformat(when)
+        except ValueError as exc:
+            raise FileError("Check the date the picture was taken.") from exc
+    db.execute("UPDATE patient_files SET teeth = ?, taken_on = ? WHERE id = ? AND clinic_id = ?", (parse_teeth(teeth), when, file_id, clinic["id"]))
+    audit.log(db, clinic["id"], user["id"], "file.details", "patient", row["patient_id"])
+    return row["patient_id"]
+
+
+def pictures(db, cid, pid):
+    """The X-rays and photos that can be shown in the browser, newest first."""
+    return [r for r in list_for_patient(db, cid, pid) if r["kind"] in ("xray", "photo") and r["mime"] in VIEWABLE]
+
+
+def for_tooth(db, cid, pid, tooth):
+    """Pictures showing one tooth (FDI), oldest first, at most COMPARE_MAX (the most recent ones)."""
+    rows = [r for r in pictures(db, cid, pid) if r["teeth"] and str(tooth) in r["teeth"].split(",")]
+    return list(reversed(rows[:COMPARE_MAX]))
+
+
+def pick(db, cid, pid, ids):
+    """The chosen pictures, checked to belong to this patient, oldest first. Two to six."""
+    wanted = []
+    for i in ids:
+        if str(i).isdigit() and int(i) not in wanted:
+            wanted.append(int(i))
+    have = {r["id"]: r for r in pictures(db, cid, pid)}
+    rows = [have[i] for i in wanted if i in have][:COMPARE_MAX]
+    return sorted(rows, key=lambda r: (r["taken_on"] or r["created_at"][:10], r["id"]))
+
+
+def gaps(rows):
+    """Days between each picture and the first one, for the labels."""
+    import datetime as _dt
+    if not rows:
+        return []
+    first = _dt.date.fromisoformat((rows[0]["taken_on"] or rows[0]["created_at"][:10]))
+    return [(_dt.date.fromisoformat((r["taken_on"] or r["created_at"][:10])) - first).days for r in rows]

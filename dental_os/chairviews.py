@@ -51,7 +51,9 @@ def visit(aid):
     a = S.get_appointment(db, g.clinic["id"], aid)
     if not a or a["status"] not in ("scheduled", "complete"):
         abort(404)
-    return render_template("chair_visit.html", a=a, stage=S.stage(a), alerts=medical.active_alerts(db, g.clinic["id"], a["patient_id"]))
+    from .services import aidesk
+    return render_template("chair_visit.html", a=a, stage=S.stage(a), alerts=medical.active_alerts(db, g.clinic["id"], a["patient_id"]),
+                           brief=aidesk.brief(db, g.clinic, a["patient_id"]))
 
 
 @bp.post("/chair/visit/<int:aid>/stage")

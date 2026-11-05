@@ -5,7 +5,7 @@ patient data, which control does what, and how to prove each claim yourself rath
 Nothing here says that a clinic, a host or the product meets ISO/IEC 27001, HIPAA, the GDPR or Ghana's Data Protection Act. Those
 depend on the clinic and the host as much as on the software, and only an auditor or a lawyer can say so.
 
-Version 0.73. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
+Version 0.75. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
 
 ## 1. How it is built
 

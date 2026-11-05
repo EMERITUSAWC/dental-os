@@ -157,6 +157,13 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Morning huddle with goals and pace | Dentrix (Daily Huddle report) | Yesterday, month to date against goal and against pace for today's working days, each patient's to-dos, money for managers only | 0.73 |
 | Notes waiting to be signed | Dentrix (Signature Manager) | Own drafts per dentist, all for managers, count on Today, drafts over two days marked | 0.73 |
 | Savings plan offer on quotes for uninsured patients | Dentrix (QR code to savings plans on treatment cases, 2026) | The clinic's own membership plans, real savings on this quote, QR to the clinic's WhatsApp | 0.73 |
+| Compare X-rays over time | Dentrix Imaging (compare 2, 4 or 6 images, 2026) | By tooth or chosen, oldest first, days apart, one shared brightness and contrast, logged | 0.74 |
+| Notifications in one place | Dentrix (Practice Notifications, 2026) | Every waiting item for this person, most urgent first, by role and permission group | 0.74 |
+| Credit card fee | Dentrix Pay (surcharging, 2026) | Up to 3%, credit cards only, own line, refused where banned (UK, EEA) | 0.74 |
+| Guided tours of screens | Dentrix (tours of redesigned screens) | First time on Today, Diary, patient and chart; can be seen again | 0.74 |
+| AI help with patient replies | Weave and others: AI-written replies (cloud); Dentrix Ascend: AI agents | Sorted, free times that fit, a draft in the patient's language, never for clinical worries, on the clinic's own server | 0.75 |
+| No-show risk | Some engagement tools score no-shows (cloud) | From the patient's own history, with reasons; sorts who to call first | 0.75 |
+| Pre-visit brief and the manager's morning summary | Dentrix Ascend (AI agents) | Built from the record on the clinic's server; money patterns flagged as a reason to look | 0.75 |
 | Company back office: departments with their own workspaces | Not something clinics see in either; vendors use separate CRM, help desk and billing tools | Dental OS HQ: leadership dashboard, support inbox with answer-by times and a help library, finance and VAT, sales pipeline, onboarding checklists, engineering health of clinic servers, feature requests ranked by clinics, compliance registers | 0.71, 0.72 |
 | Roles for the vendor's own staff | Not something clinics see in either | Owner, customer service, finance, sales and engineering, each limited to its part; first sign-in sets password and two-step login | 0.69 |
 | Protection from double charges | No published feature found for either | Buttons wait while sending; a repeated desk payment or reused mobile money reference is refused | 0.68 |

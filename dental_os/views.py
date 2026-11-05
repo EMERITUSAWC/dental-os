@@ -62,6 +62,9 @@ def dashboard():
     outbox.refresh(db, g.clinic)
     todays = day_rows(today)
     to_chase = day_rows(tomorrow, "AND a.status = 'scheduled' AND a.confirmation IN ('none','sent')")
+    from .services import aidesk                                       # 0.75: who may not come, so the desk calls them first
+    risk = {a["id"]: aidesk.no_show_risk(db, g.clinic, a, today)[0] for a in to_chase}
+    to_chase = sorted(to_chase, key=lambda a: -risk[a["id"]])
     waiting = db.execute(
         """SELECT a.*, p.first_name, p.last_name FROM appointments a JOIN patients p ON p.id = a.patient_id
            WHERE a.clinic_id = ? AND a.status IN ('asap','unscheduled')
@@ -79,7 +82,7 @@ def dashboard():
                            follow_ups=_follow_ups(db),
                            steri=_steri.overview(db, g.clinic) if g.user["role"] != "front_desk" else None,
                            equip=_team.due_summary(db, g.clinic) if g.user["role"] == "manager" else None,
-                           unsigned=_unsigned(db))
+                           unsigned=_unsigned(db), risk=risk)
 
 
 def _unsigned(db):
@@ -302,7 +305,15 @@ def appointment_view(aid):
                            stage=S.stage(appt), is_today=bool(appt["start_at"]) and appt["start_at"][:10] == _today().isoformat(),
                            can_message=bool(appt["reminders_ok"]) and appt["status"] == "scheduled",
                            api_on=_wa_on(),
-                           next_statuses=S.TRANSITIONS[appt["status"]])
+                           next_statuses=S.TRANSITIONS[appt["status"]], brief=_brief(appt))
+
+
+def _brief(appt):
+    """0.75: the short brief before a patient, for clinical staff; money only for managers and the desk."""
+    from .services import aidesk, permissions
+    if not permissions.can_clinical(g.user) or not appt["patient_id"]:
+        return None
+    return aidesk.brief(get_db(), g.clinic, appt["patient_id"], with_money=g.user["role"] == "manager")
 
 
 @bp.route("/appointments/<int:aid>/reschedule", methods=["GET", "POST"])

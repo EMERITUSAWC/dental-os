@@ -4,6 +4,15 @@
 <div class="row spread"><h1>{{ _("Morning huddle,") }} {{ h.today|day }}</h1><div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button>{% if money %}<a class="btn" href="{{ url_for('huddle.goals') }}">{{ _("Goals") }}</a>{% endif %}</div></div>
 <p class="muted">{{ _("Ten minutes before the first patient: how yesterday went, where the month stands, and what to do for each patient today.") }}</p>
 
+{% if money and (ai.lines or ai.patterns) %}<section class="card aihelp"><h2>{{ _("What to act on today") }}</h2>
+  <ul>{% for k, v in ai.lines %}<li>{% if k in ('ahead', 'behind', 'owed') %}{{ _(sw[k], amount=v|money) }}{% else %}{{ _(sw[k], n=v) }}{% endif %}</li>{% endfor %}</ul>
+  {% if ai.patterns %}<h3>{{ _("Money patterns worth a look") }}</h3><ul>{% for x in ai.patterns %}<li>{{ _(pw[x.kind], who=x.who or '', n=x.n, total=x.total) }}</li>{% endfor %}</ul>
+  <p class="small muted">{{ _("A pattern is a reason to look, not proof of anything wrong. Check the activity log before you talk to anyone.") }}</p>{% endif %}
+  <p class="small muted">{{ _("Written by the AI helper on this server from the clinic's own figures.") }}</p></section>{% endif %}
+{% if ai.risky %}<section class="card"><h2>{{ _("May not come today: call first") }}</h2>
+  {% for x in ai.risky %}<p><a href="{{ url_for('views.appointment_view', aid=x.a.id) }}">{{ x.a.start_at|time }} {{ x.a.first_name }} {{ x.a.last_name }}</a>
+    <span class="pill {{ 'bad' if x.score >= 60 else 'warn' }}">{{ _("Risk %(n)s of 100", n=x.score) }}</span>
+    <span class="small muted">{% for k, a, b in x.why %}{{ _(rw[k], a=a, b=b) }}{% if not loop.last %} · {% endif %}{% endfor %}</span></p>{% endfor %}</section>{% endif %}
 {% if money %}
 <div class="grid two">
 <section class="card"><h2>{{ _("Last working day:") }} {{ h.yesterday.day|day }}</h2><dl class="facts">

@@ -24,8 +24,9 @@
     {% if user.role in ('dentist', 'assistant') and can('clinical') %}<a href="{{ url_for('chair.home') }}" class="{{ 'on' if ep.startswith('chair.') }}">{{ _("Chairside") }}</a>{% endif %}
     {% if can('diary') %}<a href="{{ url_for('views.diary') }}" class="{{ 'on' if ep == 'views.diary' or ep.startswith('diary.') and ep != 'diary.family_book' }}">{{ _("Diary") }}</a>{% endif %}
     <a href="{{ url_for('views.patients') }}" class="{{ 'on' if (ep.startswith('views.patient') or ep in ('clinical.treatment','clinical.account') or ep.startswith('commercial.patient') or ep.startswith('commercial.plan_') or ep in ('finance.patient_insurance','finance.cover_benefits','payments.patient_links','payments.link_show','finance.patient_invoices','finance.statement','comms.patient_messages','ops.patient_lab','privacy.patient_privacy','privacy.record_copy') or ep == 'diary.family_book' or ep == 'steri.patient_instruments' or ep == 'nhs.patient' or ep == 'ortho.patient' or ep == 'cforms.patient_forms' or ep == 'implants.patient' or ep == 'aftercare.patient' or (ep.startswith('care.') and ep not in ('care.drugs', 'care.letter_templates', 'care.referrers', 'care.referrals_open', 'care.imaging_setup'))) }}">{{ _("Patients") }}</a>
-    {% set talk_badge = (task_due or 0) + (team_unread or 0) + (attn_total or 0) %}
+    {% set talk_badge = (task_due or 0) + (team_unread or 0) + (attn_total or 0) + (drafts_n or 0) %}
     {% set g_talk %}
+      <a href="{{ url_for('huddle.notifications') }}" class="{{ 'on' if ep == 'huddle.notifications' }}">{{ _("All notifications") }}</a>
       {% if can('messages') %}<a href="{{ url_for('comms.queue') }}" class="{{ 'on' if (ep.startswith('comms.') and ep != 'comms.patient_messages') or ep == 'voice.calls' }}">{{ _("Messages") }}{% if attn_total %} <span class="badge">{{ attn_total }}</span>{% endif %}</a>{% endif %}
       <a href="{{ url_for('team.inbox') }}" class="{{ 'on' if ep == 'team.inbox' }}">{{ _("Team") }}{% if team_unread %} <span class="badge">{{ team_unread }}</span>{% endif %}</a>
       <a href="{{ url_for('practice.tasks') }}" class="{{ 'on' if ep.startswith('practice.task') }}">{{ _("Tasks") }}{% if task_due %} <span class="badge">{{ task_due }}</span>{% endif %}</a>
@@ -79,6 +80,9 @@
   {% endfor %}
   {% block body %}{% endblock %}
 </main>
+{% if tour %}<div id="tour" hidden data-key="{{ tour.key }}" data-url="{{ url_for('huddle.tour_done', key=tour.key) }}" data-csrf="{{ csrf_token }}"
+  data-next="{{ _('Next') }}" data-done="{{ _('Done') }}" data-skip="{{ _('Skip the tour') }}" data-of="{{ _('of') }}">
+  {% for s in tour.steps %}<p data-sel="{{ s.sel }}">{{ s.text }}</p>{% endfor %}</div>{% endif %}
 {% if user and not kiosk_on and not support_on %}<footer class="foot no-print"><a href="{{ url_for('help.clinic_help') }}">{{ _("Help") }}</a> · <a href="{{ url_for('pilot.problems', page=request.path) }}">{{ _("Report a problem") }}</a></footer>{% endif %}
 </body>
 </html>

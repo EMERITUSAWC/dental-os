@@ -104,6 +104,9 @@ def ticket_view(tid):
             what = f.get("what")
             if what in ("reply", "internal"):
                 H.add_note(db, g.operator["id"], tid, what, f.get("body"))
+                if f.get("ai_draft"):                                   # 0.75: a suggested answer was used
+                    db.execute("INSERT INTO operator_log(operator_id, clinic_id, action, detail) VALUES (?,?, 'ai.used', ?)",
+                               (g.operator["id"], t["clinic_id"], "support draft" + ("" if f.get("ai_draft") == f.get("body") else ", edited")))
             elif what == "change":
                 H.set_ticket(db, g.operator["id"], tid, status=f.get("status") or None,
                              assigned_to=_int("assigned_to") if f.get("assigned_to") else (0 if "assigned_to" in f else None),
@@ -113,8 +116,15 @@ def ticket_view(tid):
             return _done("hq.ticket_view", tid=tid)
         except H.HQError as exc:
             return _failed(exc, "hq.ticket_view", tid=tid)
+    from .services import aidesk
+    matches = aidesk.match_articles(db, t["subject"], t["body"])
+    draft = None
+    use = _int("use")
+    if use:
+        chosen = next((a for a in matches if a["id"] == use), None) or db.execute("SELECT * FROM hq_articles WHERE id = ? AND published = 1", (use,)).fetchone()
+        draft = aidesk.support_draft(chosen, t["contact"]) if chosen else None
     return render_template("hq_ticket.html", t=t, notes=H.ticket_notes(db, tid), clocks=H.clocks(t), people=H.people_in(db, "support"),
-                           priorities=H.PRIORITIES, channels=H.CHANNELS, states=H.TICKET_STATES)
+                           priorities=H.PRIORITIES, channels=H.CHANNELS, states=H.TICKET_STATES, matches=matches, draft=draft)
 
 
 # ----------------------------------------------------------------------------------------------------------------- help library

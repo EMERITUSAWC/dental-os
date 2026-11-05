@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_status.html" import conf %}
+{% from "_brief.html" import brief as brief_card %}
 {% block title %}{{ _("Appointment") }}{% endblock %}
 {% block body %}
 <div class="row spread">
@@ -8,6 +9,7 @@
   {% if a.status in ('scheduled','asap','unscheduled','planned') %}
   <a class="btn" href="{{ url_for('views.appointment_reschedule', aid=a.id) }}">{{ _('Move') if a.status == 'scheduled' else _('Give it a time') }}</a>{% endif %}
 </div>
+{% if brief %}{{ brief_card(brief, a.patient_id) }}{% endif %}
 
 {% set al = alerts_for(a.patient_id) %}
 {% if al %}<div class="alertbar" role="note" aria-label="{{ _('Alerts for this patient') }}">{% for x in al %}<span class="alert {{ x.severity }}"><strong>{{ {'allergy': _('Allergy'), 'medical': _('Medical'), 'medication': _('Medicine'), 'behaviour': _('Behaviour'), 'other': _('Note')}.get(x.kind, x.kind|capitalize) }}:</strong> {{ x.text }}</span>{% endfor %}</div>{% endif %}

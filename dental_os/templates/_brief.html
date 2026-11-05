@@ -1,0 +1,12 @@
+{# 0.75: what to know before the patient sits down. Built on this server from the record; nothing is sent anywhere. #}
+{% macro brief(b, pid) %}
+<section class="card brief"><h2>{{ _("Before this patient") }}</h2>
+  <ul class="facts-list">
+    {% for t in b.alerts %}<li><span class="pill bad">{{ _("Alert") }}</span> {{ t }}</li>{% endfor %}
+    <li>{% if b.last_visit %}{{ _("Last seen") }} {{ b.last_visit|date }}{% if b.last_with %} {{ _("by") }} {{ b.last_with }}{% endif %}{% if b.last_note %}: {{ b.last_note }}{% endif %}{% else %}{{ _("First visit.") }}{% endif %}</li>
+    {% if b.planned %}<li>{{ _("Planned, not done:") }} {% for r in b.planned %}{{ r.name }}{% if r.tooth %} {{ r.tooth|tooth }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</li>{% endif %}
+    {% if b.recall_due %}<li>{{ _("Recall due") }} {{ b.recall_due|date }}</li>{% endif %}
+    {% if b.balance_p %}<li><span class="pill warn">{{ _("Owes %(amount)s", amount=b.balance_p|money) }}</span></li>{% endif %}
+  </ul>
+  <p class="small"><a href="{{ url_for('record.notes_list', pid=pid) }}">{{ _("Notes") }}</a> · <a href="{{ url_for('record.chart_view', pid=pid) }}">{{ _("Tooth chart") }}</a></p></section>
+{% endmacro %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_patient_nav.html" import tabs with context %}
+{% block title %}{{ _("Compare over time,") }} {{ p.first_name }} {{ p.last_name }}{% endblock %}
+{% block body %}
+<h1><a href="{{ url_for('views.patient_view', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a>{{ _(": compare over time") }}</h1>
+{{ tabs(p, 'files') }}
+<form method="get" class="card row"><div><label for="tooth">{{ _("Every picture of one tooth") }}</label><input id="tooth" name="tooth" maxlength="6" style="width:6em" value="{{ tooth_raw }}"></div>
+  <button type="submit">{{ _("Show") }}</button><p class="muted small" style="margin:0">{{ _("Pictures are found by the teeth written on them under Files.") }}</p></form>
+{% if rows %}
+<section class="card" data-compare>
+  <div class="row vtools">
+    <label class="check" style="margin:0">{{ _("Brightness") }} <input type="range" min="40" max="220" value="100" data-cmp="brightness" style="width:110px"></label>
+    <label class="check" style="margin:0">{{ _("Contrast") }} <input type="range" min="40" max="300" value="100" data-cmp="contrast" style="width:110px"></label>
+    <label class="check" style="margin:0"><input type="checkbox" data-cmp="invert"> {{ _("Invert") }}</label>
+    <span class="muted small">{{ _("The same settings apply to every picture, so they are compared fairly. The stored pictures do not change.") }}</span></div>
+  <div class="compare n{{ rows|length }}">
+  {% for f in rows %}<figure><span class="no" aria-hidden="true">{{ loop.index }}</span>
+    <img src="{{ url_for('record.file_preview', file_id=f.id) if f.mime == 'application/dicom' else url_for('record.file_get', file_id=f.id) }}" alt="{{ _(kinds[f.kind]) }} {{ loop.index }}, {{ (f.taken_on or f.created_at[:10])|date }}">
+    <figcaption><strong>{{ loop.index }}.</strong> {{ (f.taken_on or f.created_at[:10])|date }}{% if not loop.first %} · {{ _("%(n)s days after picture 1", n=gaps[loop.index0]) }}{% endif %}
+      {% if f.teeth %}<br><span class="muted">{{ _("Teeth") }} {{ f.teeth.split(',')|map('tooth')|join(', ') }}</span>{% endif %}
+      <br><a href="{{ url_for('care.viewer', file_id=f.id) }}">{{ _("Open in the viewer") }}</a></figcaption></figure>{% endfor %}
+  </div></section>
+{% endif %}
+<form method="get" class="card"><h2>{{ _("Or choose two to six") }}</h2>
+  {% if all %}<div class="filegrid">{% for f in all %}<label class="check file"><input type="checkbox" name="ids" value="{{ f.id }}"{% if f.id in chosen %} checked{% endif %}>
+    {{ _(kinds[f.kind]) }}, {{ (f.taken_on or f.created_at[:10])|date }}{% if f.teeth %} · {{ f.teeth.split(',')|map('tooth')|join(', ') }}{% endif %}</label>{% endfor %}</div>
+  <p><button class="primary" type="submit">{{ _("Compare") }}</button> <span class="muted small">{{ _("At most %(n)s. They are shown oldest first.", n=most) }}</span></p>
+  {% else %}<p class="muted">{{ _("No X-rays or photos on this record yet.") }}</p>{% endif %}</form>
+{% endblock %}

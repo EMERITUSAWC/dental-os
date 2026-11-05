@@ -24,7 +24,7 @@
     <p><button class="primary" type="submit">{{ _("Upload") }}</button></p>
   </form>
 </section>
-<section class="card"><div class="row spread"><h2>{{ _("On this record") }}</h2><a href="{{ url_for('care.images', pid=p.id) }}">{{ _("X-ray layouts") }}</a></div>
+<section class="card"><div class="row spread"><h2>{{ _("On this record") }}</h2><div class="row"><a class="btn" href="{{ url_for('huddle.compare', pid=p.id) }}">{{ _("Compare over time") }}</a><a href="{{ url_for('care.images', pid=p.id) }}">{{ _("X-ray layouts") }}</a></div></div>
   <div class="filegrid">
   {% for f in rows %}
     <div class="file">
@@ -34,6 +34,9 @@
       <div class="small"><strong>{{ _(kinds[f.kind]) }}</strong>, {{ (f.taken_on or f.created_at[:10])|date }}<br>{{ f.original_name }}{% if f.note %}<br>{{ f.note }}{% endif %}</div>
       {% set qc = checks.get(f.id) %}{% if qc %}<p class="small">{% if qc.ok %}<span class="pill ok">{{ _("Picture check: fine") }}</span>{% else %}{% for i in qc.issue_list %}<span class="pill warn" title="{{ _(qc_text[i]) }}">{{ _("Picture check") }}: {{ _(qc_text[i]) }}</span> {% endfor %}{% endif %}</p>{% endif %}
       {% if f.mime in inline or f.mime == 'application/dicom' %}<p class="small"><a href="{{ url_for('care.viewer', file_id=f.id) }}">{{ _("Open in the viewer") }}</a></p>{% endif %}
+      {% if f.kind in ('xray', 'photo') %}<form method="post" action="{{ url_for('huddle.file_details', file_id=f.id) }}" class="small"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <label for="teeth{{ f.id }}" class="small">{{ _("Teeth shown") }}</label>
+        <div class="row"><input id="teeth{{ f.id }}" name="teeth" maxlength="60" style="width:8em" value="{{ f.teeth.split(',')|map('tooth')|join(', ') if f.teeth else '' }}"><input type="hidden" name="taken_on" value="{{ f.taken_on or '' }}"><button type="submit" class="small">{{ _("Save") }}</button></div></form>{% endif %}
       <form method="post" action="{{ url_for('record.file_archive', file_id=f.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="small">{{ _("Hide") }}</button></form>
     </div>
   {% else %}<p class="muted">{{ _("No files yet.") }}</p>{% endfor %}

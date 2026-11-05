@@ -1,7 +1,7 @@
 """Version 0.73: the morning huddle, goals and notes waiting to be signed."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from .auth import manager_required, signer_required
+from .auth import clinical_required, manager_required, signer_required
 from .db import get_db
 from .services import huddle as HU, money as M
 
@@ -13,8 +13,12 @@ def view():
     """Everyone can open the huddle; the money parts are for managers."""
     db = get_db()
     data = HU.huddle(db, g.clinic, g.user)
+    from .services import aidesk
+    manager = g.user["role"] == "manager"
+    ai = aidesk.summary(db, g.clinic, g.user) if manager else {"risky": aidesk.risky_visits(db, g.clinic, data["today"]), "lines": [], "patterns": []}
     db.commit()
-    return render_template("huddle.html", h=data, money=g.user["role"] == "manager", fields=FIELD_LABELS)
+    return render_template("huddle.html", h=data, money=manager, fields=FIELD_LABELS, ai=ai, sw=aidesk.SUMMARY_WORDS, pw=aidesk.PATTERN_WORDS,
+                           rw=aidesk.RISK_WORDS)
 
 
 FIELD_LABELS = HU.FIELD_LABELS
@@ -83,3 +87,78 @@ def goals():
 def unsigned():
     return render_template("unsigned.html", rows=HU.unsigned(get_db(), g.clinic, g.user), days=HU.UNSIGNED_DAYS,
                            everyone=g.user["role"] == "manager")
+
+
+# ------------------------------------------------------------------------------------- 0.74: notifications, tours, X-rays
+from flask import jsonify  # noqa: E402
+
+from .services import files as F, notify, tours  # noqa: E402
+
+
+@bp.get("/notifications")
+def notifications():
+    rows = notify.items(get_db(), g.clinic, g.user)
+    get_db().commit()
+    return render_template("notifications.html", rows=rows, total=notify.total(rows))
+
+
+@bp.post("/tours/<key>/done")
+def tour_done(key):
+    db = get_db()
+    try:
+        tours.done(db, g.user, key)
+    except LookupError:
+        abort(404)
+    db.commit()
+    return jsonify({"ok": True})
+
+
+@bp.post("/tours/again")
+def tours_again():
+    db = get_db()
+    tours.reset(db, g.user)
+    db.commit()
+    flash("The tours will show again on each main screen.", "ok")
+    return redirect(url_for("views.dashboard"))
+
+
+@bp.get("/patients/<int:pid>/compare")
+@clinical_required
+def compare(pid):
+    """X-rays and photos side by side, oldest first: chosen ones, or every picture of one tooth."""
+    from .services import teeth as TT
+    db, cid = get_db(), g.clinic["id"]
+    from .views import _patient_or_404
+    p = _patient_or_404(pid)
+    tooth_raw = (request.args.get("tooth") or "").strip()
+    tooth = None
+    if tooth_raw:
+        try:
+            tooth = TT.parse(tooth_raw)
+        except TT.ToothError:
+            flash("Write the teeth the clinic's usual way, separated by commas.", "error")
+    rows = F.for_tooth(db, cid, pid, tooth) if tooth else F.pick(db, cid, pid, request.args.getlist("ids"))
+    from .services import audit
+    if rows:
+        audit.log(db, cid, g.user["id"], "file.compare", "patient", pid)
+        db.commit()
+    return render_template("compare.html", p=p, rows=rows, gaps=F.gaps(rows), all=F.pictures(db, cid, pid), tooth=tooth, tooth_raw=tooth_raw,
+                           chosen={r["id"] for r in rows}, kinds=F.KINDS, most=F.COMPARE_MAX)
+
+
+@bp.post("/files/<int:file_id>/details")
+@clinical_required
+def file_details(file_id):
+    db = get_db()
+    try:
+        pid = F.set_details(db, g.clinic, g.user, file_id, request.form.get("teeth"), request.form.get("taken_on"))
+        db.commit()
+        flash("Saved.", "ok")
+    except F.FileError as exc:
+        db.rollback()
+        flash(str(exc), "error")
+        row = F.get(db, g.clinic["id"], file_id)
+        if not row:
+            abort(404)
+        pid = row["patient_id"]
+    return redirect(url_for("record.files_view", pid=pid))

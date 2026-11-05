@@ -171,6 +171,8 @@ COLUMN_UPGRADES = [
     ("operators", "ends_on", "TEXT"),                                    # 0.71: and stops after this day (a contract or a leaver)
     ("operators", "email", "TEXT"),                                      # 0.71: work email, for the team list
     ("clinics", "offer_membership", "INTEGER NOT NULL DEFAULT 1"),       # 0.73: show membership savings on quotes for patients without cover
+    ("patient_files", "teeth", "TEXT"),                                  # 0.74: FDI teeth an X-ray or photo shows, "36,37", for comparing over time
+    ("clinics", "card_fee_bp", "INTEGER NOT NULL DEFAULT 0"),            # 0.74: credit card fee in hundredths of a per cent (300 = 3%); 0 is off
 ]
 
 

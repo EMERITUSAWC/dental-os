@@ -11,6 +11,7 @@
     <dt>{{ _d("Amount") }}</dt><dd><strong>{{ pay.amount_p|money }}</strong></dd>
     <dt>{{ _d("Paid by") }}</dt><dd>{{ _d(methods[pay.method]) }}{% if pay.reference %}, {{ _d("ref") }} {{ pay.reference }}{% endif %}</dd>
     {% if pay.note %}<dt>{{ _d("Note") }}</dt><dd>{{ pay.note }}</dd>{% endif %}
+    {% if card_fee %}<dt>{{ _d("Card fee") }}</dt><dd>{{ card_fee.amount_p|money }} ({{ _d("receipt") }} {{ card_fee.receipt_no }})</dd>{% endif %}
     <dt>{{ _d('Credit on account') if t.balance < 0 else _d('Balance now') }}</dt><dd>{{ (-t.balance if t.balance < 0 else t.balance)|money }}</dd>
     <dt>{{ _d("Received by") }}</dt><dd>{{ pay.received_by_name }}</dd>
   </dl>
