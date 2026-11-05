@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Morning huddle") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Morning huddle,") }} {{ h.today|day }}</h1><div class="row no-print"><button class="primary" data-print>{{ _("Print") }}</button>{% if money %}<a class="btn" href="{{ url_for('huddle.goals') }}">{{ _("Goals") }}</a>{% endif %}</div></div>
+<p class="muted">{{ _("Ten minutes before the first patient: how yesterday went, where the month stands, and what to do for each patient today.") }}</p>
+
+{% if money %}
+<div class="grid two">
+<section class="card"><h2>{{ _("Last working day:") }} {{ h.yesterday.day|day }}</h2><dl class="facts">
+  <dt>{{ _("Production") }}</dt><dd>{{ h.yesterday.production_p|money }}</dd>
+  <dt>{{ _("Collections") }}</dt><dd>{{ h.yesterday.collections_p|money }}</dd>
+  <dt>{{ _("Visits done") }}</dt><dd>{{ h.yesterday.done }}{% if h.yesterday.missed %} · <span class="pill warn">{{ _("%(n)s missed", n=h.yesterday.missed) }}</span>{% endif %}{% if h.yesterday.cancelled %} · {{ _("%(n)s cancelled", n=h.yesterday.cancelled) }}{% endif %}</dd>
+  <dt>{{ _("New patients") }}</dt><dd>{{ h.yesterday.new_patients }}</dd>
+  <dt>{{ _("Plans accepted") }}</dt><dd>{{ h.yesterday.accepted }}{% if h.yesterday.accepted_p %} ({{ h.yesterday.accepted_p|money }}){% endif %}</dd></dl></section>
+<section class="card"><h2>{{ _("The month so far") }}</h2>
+  {% set pr = h.progress %}
+  <p class="muted small">{{ _("%(a)s of %(b)s working days gone.", a=pr.days_done, b=pr.days_all) }} {{ _("“On pace” is the goal shared over the working days, so far.") }}</p>
+  {% if pr.has_goals %}
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Measure") }}</th><th>{{ _("So far") }}</th><th>{{ _("On pace") }}</th><th>{{ _("Month goal") }}</th></tr></thead><tbody>
+  {% for r in pr.clinic if r.goal is not none %}<tr><td>{{ _(fields[r.field]) }}</td>
+    <td>{% if r.field.endswith('_p') %}{{ r.actual|money }}{% elif r.field == 'acceptance_pct' %}{{ r.actual if r.actual is not none else '' }}%{% else %}{{ r.actual }}{% endif %}
+      {% if r.ahead is not none %}<span class="pill {{ 'ok' if r.ahead else 'bad' }}">{{ _("ahead") if r.ahead else _("behind") }}</span>{% endif %}</td>
+    <td>{% if r.field.endswith('_p') %}{{ r.pace|money }}{% elif r.field == 'acceptance_pct' %}{{ r.pace }}%{% else %}{{ r.pace }}{% endif %}</td>
+    <td>{% if r.field.endswith('_p') %}{{ r.goal|money }}{% elif r.field == 'acceptance_pct' %}{{ r.goal }}%{% else %}{{ r.goal }}{% endif %}</td></tr>{% endfor %}
+  {% for d in pr.dentists %}<tr><td>{{ d.name }}: {{ _("production") }}</td><td>{{ d.actual|money }} {% if d.ahead is not none %}<span class="pill {{ 'ok' if d.ahead else 'bad' }}">{{ _("ahead") if d.ahead else _("behind") }}</span>{% endif %}</td><td>{{ d.pace|money if d.pace is not none else '' }}</td><td>{{ d.goal|money if d.goal is not none else '' }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<p>{{ _("No goals for this month yet.") }} <a href="{{ url_for('huddle.goals') }}">{{ _("Set goals") }}</a></p>{% endif %}</section>
+</div>
+{% endif %}
+
+<section class="card"><h2>{{ _("Today") }}</h2>
+  <p>{{ _("%(n)s visits booked.", n=h.patients|length) }}
+    {% if h.chairs.available_min %}{{ _("Free chair time: %(h)s h %(m)s min.", h=h.free_min // 60, m=h.free_min % 60) }}{% endif %}
+    {% if h.planned_today %}<span class="pill warn">{{ _("%(n)s patients have treatment planned but not booked: offer the next visit", n=h.planned_today) }}</span>{% endif %}
+    {% if money and h.owed_today_p %}<span class="pill warn">{{ _("Owed by today's patients: %(amount)s", amount=h.owed_today_p|money) }}</span>{% endif %}</p>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Time") }}</th><th>{{ _("Patient") }}</th><th>{{ _("Dentist") }}</th><th>{{ _("To do") }}</th></tr></thead><tbody>
+  {% for x in h.patients %}{% set a = x.a %}<tr><td class="nw">{{ a.start_at|time }}</td><td><a href="{{ url_for('views.patient_view', pid=a.patient_id) }}">{{ a.first_name }} {{ a.last_name }}</a>
+    {% if a.confirmation != 'confirmed' and a.status == 'scheduled' %}<div class="small muted">{{ _("not confirmed") }}</div>{% endif %}</td><td>{{ a.provider_name or '' }}</td>
+    <td>{% if x.alerts %}<span class="pill bad">{{ _("Medical alert") }}</span> {% endif %}
+      {% if x.planned %}<span class="pill warn">{{ _("%(n)s planned, not booked", n=x.planned) }}</span> {% endif %}
+      {% if x.recall_due %}<span class="pill">{{ _("Recall due") }}</span> {% endif %}
+      {% if x.lab_late %}<span class="pill bad">{{ _("Lab work not back") }}</span> {% endif %}
+      {% if money and x.balance_p %}<span class="pill warn">{{ _("Owes %(amount)s", amount=x.balance_p|money) }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ _("No visits booked today.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+
+<div class="grid two">
+<section class="card"><h2>{{ _("Tomorrow") }}</h2><p>{% if h.unconfirmed_tomorrow %}<span class="pill warn">{{ _("%(n)s visits not confirmed", n=h.unconfirmed_tomorrow) }}</span> <a href="{{ url_for('views.dashboard') }}">{{ _("Chase them from Today") }}</a>{% else %}{{ _("Every visit tomorrow is confirmed.") }}{% endif %}</p></section>
+{% if h.unsigned.all %}<section class="card"><h2>{{ _("Notes waiting to be signed") }}</h2><p>{{ _("%(n)s draft notes", n=h.unsigned.all) }}{% if h.unsigned.old %} <span class="pill bad">{{ _("%(n)s older than two days", n=h.unsigned.old) }}</span>{% endif %} <a href="{{ url_for('huddle.unsigned') }}">{{ _("Sign them") }}</a></p></section>{% endif %}
+</div>
+{% endblock %}

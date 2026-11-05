@@ -170,6 +170,7 @@ COLUMN_UPGRADES = [
     ("operators", "starts_on", "TEXT"),                                  # 0.71: the login works from this day
     ("operators", "ends_on", "TEXT"),                                    # 0.71: and stops after this day (a contract or a leaver)
     ("operators", "email", "TEXT"),                                      # 0.71: work email, for the team list
+    ("clinics", "offer_membership", "INTEGER NOT NULL DEFAULT 1"),       # 0.73: show membership savings on quotes for patients without cover
 ]
 
 

@@ -78,7 +78,14 @@ def dashboard():
                            privacy=_privacy.counts(db, g.clinic) if g.user["role"] == "manager" else None,
                            follow_ups=_follow_ups(db),
                            steri=_steri.overview(db, g.clinic) if g.user["role"] != "front_desk" else None,
-                           equip=_team.due_summary(db, g.clinic) if g.user["role"] == "manager" else None)
+                           equip=_team.due_summary(db, g.clinic) if g.user["role"] == "manager" else None,
+                           unsigned=_unsigned(db))
+
+
+def _unsigned(db):
+    """0.73: drafts waiting for a signature: a signer's own, or everyone's for a manager."""
+    from .services import huddle, permissions
+    return huddle.unsigned_counts(db, g.clinic, g.user) if permissions.can_sign(g.user) else None
 
 
 def _patient_tasks(db, pid):

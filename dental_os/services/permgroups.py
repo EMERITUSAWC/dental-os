@@ -14,7 +14,7 @@ from . import audit
 AREAS = {
     "diary": ("Diary and appointments", ["views.diary", "diary.", "views.appointment", "practice.kiosk", "practice.missed", "practice.unscheduled"]),
     "patients": ("Register and edit patients", ["views.patient_new", "views.patient_edit", "views.patient_archive", "record.import", "cforms."]),
-    "clinical": ("Clinical record", ["record.", "care.", "xrayai.", "chair.", "rxnet.", "steri.patient_instruments", "ortho.", "implants.", "aftercare.", "clinical.treatment", "clinical.procedure_action"]),
+    "clinical": ("Clinical record", ["record.", "care.", "xrayai.", "chair.", "rxnet.", "steri.patient_instruments", "ortho.", "implants.", "aftercare.", "clinical.treatment", "clinical.procedure_action", "huddle.unsigned"]),
     "plans": ("Treatment plans and quotes", ["commercial.patient_plans", "commercial.plan_", "commercial.plans_board"]),
     "payments": ("Take payments and give receipts", ["clinical.account", "clinical.payment_add", "clinical.receipt", "payments.",
                                                      "commercial.instalment_pay", "commercial.membership_charge_pay", "practice.cashup"]),
@@ -26,7 +26,7 @@ AREAS = {
                                                         "commercial.patient_instalments"]),
     "messages": ("Patient messages, campaigns and booking requests", ["comms.", "voice.", "clinical.recall", "react."]),
     "reports": ("Reports and key numbers", ["clinical.report_view", "clinical.takings", "ops.kpi", "ops.group_view", "reports.", "practice.day_sheet",
-                                            "practice.production", "finance.ageing_report"]),
+                                            "practice.production", "finance.ageing_report", "huddle.goals"]),
     "lab": ("Lab cases", ["ops.lab", "ops.patient_lab"]),
     "stock": ("Stock", ["ops.stock", "kits."]),
     "sterilisation": ("Sterilisation", ["steri."]),

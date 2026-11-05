@@ -3,6 +3,9 @@
 {% block body %}
 <div class="row spread"><h1>{{ _("Membership plans") }}</h1><a class="btn" href="{{ url_for('commercial.memberships_home') }}">{{ _("Members") }}</a></div>
 <p class="muted">{{ _("A plan has a fee, how often it is paid, included services (a number each year), and a discount on everything else. Changing a plan changes it for new members only. Members keep the fee, cycle and discount they joined on. The included services follow the plan.") }}</p>
+<form method="post" class="card row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="action" value="offer">
+  <label class="check" style="margin:0"><input type="checkbox" name="offer" value="1"{% if clinic.offer_membership %} checked{% endif %}> {{ _("Show what each plan would save on quotes for patients with no insurance and no membership") }}</label>
+  <button type="submit" class="small">{{ _("Save") }}</button></form>
 {% for e in plans %}{% set pl = e.plan %}
 <section class="card"><h2>{{ pl.name }} <span class="muted small">{{ e.members }} {{ _("members") }}</span></h2>
   <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="plan_id" value="{{ pl.id }}">

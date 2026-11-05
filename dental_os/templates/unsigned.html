@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Notes waiting to be signed") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Notes waiting to be signed") }}</h1>
+<p class="muted">{{ _("A draft is not part of the record until it is signed. Sign notes the same day; anything older than %(n)s days is marked.", n=days) }}{% if everyone %} {{ _("As a manager you see everyone's drafts.") }}{% endif %}</p>
+<section class="card"><div class="tbl-wrap"><table><thead><tr><th>{{ _("Patient") }}</th><th>{{ _("Note") }}</th><th>{{ _("Written by") }}</th><th>{{ _("Waiting") }}</th></tr></thead><tbody>
+{% for x in rows %}{% set n = x.n %}<tr><td><a href="{{ url_for('record.notes_list', pid=n.patient_id) }}">{{ n.first_name }} {{ n.last_name }}</a></td><td>{{ n.title }}</td><td>{{ n.author or '' }}</td>
+  <td>{% if x.old %}<span class="pill bad">{{ _("%(n)s days", n=x.days) }}</span>{% elif x.days %}{{ _("%(n)s days", n=x.days) }}{% else %}{{ _("today") }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">{{ _("Every note is signed.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

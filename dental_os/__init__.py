@@ -374,7 +374,7 @@ def create_app(test_config=None):
             abort(404)
         return app.response_class(text, mimetype="text/plain")
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews, complianceviews, hqviews
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews, complianceviews, hqviews, huddleviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -434,6 +434,7 @@ def create_app(test_config=None):
     app.register_blueprint(hqviews.bp)
     app.register_blueprint(hqviews.clinic_bp)
     app.register_blueprint(hqviews.check_bp)
+    app.register_blueprint(huddleviews.bp)
 
     @app.before_request
     def _hq_only_on_its_own_address():

@@ -6,7 +6,7 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 from .safeurl import local_path
 from .auth import manager_required
 from .db import get_db
-from .services import billing, instalments as INS, memberships as MEM, money, plans as PL, treatment as TR
+from .services import audit, billing, huddle as HU, instalments as INS, memberships as MEM, money, plans as PL, treatment as TR
 from .services.timeutil import now_local, parse_date
 from .views import _document_for, _patient_or_404, _today
 
@@ -80,7 +80,8 @@ def plan_show(plan_id):
     return render_template("plan_show.html", p=patient, plan=plan, rows=rows, phases=PL.phases(rows), total=PL.total(rows),
                            deposit=PL.deposits(db, cid, plan_id), events=PL.events(db, cid, plan_id), codes=codes, users=users,
                            statuses=PL.STATUSES, progress=PL.progress(rows), methods=_methods(), teeth=TR.PERMANENT + TR.PRIMARY,
-                           surfaces=TR.SURFACE_ORDER, instalment_plans=INS.for_patient(db, cid, patient["id"]))
+                           surfaces=TR.SURFACE_ORDER, instalment_plans=INS.for_patient(db, cid, patient["id"]),
+                           offers=HU.membership_offers(db, g.clinic, patient["id"], rows))
 
 
 @bp.get("/plans/<int:plan_id>/quote")
@@ -88,8 +89,16 @@ def plan_quote(plan_id):
     db, cid = get_db(), g.clinic["id"]
     plan = _plan_or_404(plan_id)
     rows = PL.items(db, cid, plan_id)
+    from .services import qr
+    offers = HU.membership_offers(db, g.clinic, plan["patient_id"], rows)
+    for o in offers[:2]:
+        link = HU.join_link(g.clinic, o["plan"]["name"])
+        try:
+            o["qr"] = qr.svg(link, 120, "QR code to ask about the plan on WhatsApp") if link else None
+        except qr.QRError:
+            o["qr"] = None
     return render_template("plan_quote.html", p=_document_for(plan["patient_id"]), plan=plan, phases=PL.phases(rows),
-                           total=PL.total(rows), deposit=PL.deposits(db, cid, plan_id), today=_today())
+                           total=PL.total(rows), deposit=PL.deposits(db, cid, plan_id), today=_today(), offers=offers[:2])
 
 
 def _plan_action(plan_id, fn, ok):
@@ -204,7 +213,13 @@ def membership_plans():
     db, cid = get_db(), g.clinic["id"]
     if request.method == "POST":
         try:
-            if request.form.get("action") == "benefit":
+            if request.form.get("action") == "offer":            # 0.73: show savings on quotes for patients without cover
+                on = request.form.get("offer") == "1"
+                db.execute("UPDATE clinics SET offer_membership = ? WHERE id = ?", (1 if on else 0, cid))
+                audit.log(db, cid, g.user["id"], "settings.offer_membership", None, None, "on" if on else "off")
+                db.commit()
+                flash("Saved.", "ok")
+            elif request.form.get("action") == "benefit":
                 MEM.set_benefit(db, g.clinic, g.user["id"], request.form.get("plan_id", type=int),
                                 request.form.get("code_id", type=int), _int("qty", 0))
                 flash("Saved.", "ok")

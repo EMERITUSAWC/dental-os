@@ -1441,7 +1441,7 @@ LABEL_DICTS = [("rxlink", "STATES"), ("xrayai", "KINDS"), ("xrayai", "STATES"), 
                ("compliance", "FLAGS"), ("compliance", "SERVICES"), ("opteam", "ROLES"), ("opteam", "ROLE_ABOUT"),
                ("opteam", "DEPTS"), ("opteam", "DEPT_ABOUT"), ("hq", "PRIORITIES"), ("hq", "CHANNELS"), ("hq", "TICKET_STATES"), ("hq", "STAGES"),
                ("hq", "PROJECT_STATES"), ("hq", "STEP_LABELS"),
-               ("hqtech", "REQUEST_STATES"), ("hqtech", "SEVERITIES"), ("hqtech", "DATA_KINDS"), ("hqtech", "DATA_STATES"), ("hqtech", "INSTALL_FLAGS"), ("hqtech", "ACCESS_ISSUES")]
+               ("hqtech", "REQUEST_STATES"), ("hqtech", "SEVERITIES"), ("hqtech", "DATA_KINDS"), ("hqtech", "DATA_STATES"), ("hqtech", "INSTALL_FLAGS"), ("hqtech", "ACCESS_ISSUES"), ("huddle", "FIELD_LABELS")]
 
 
 def _service_labels():

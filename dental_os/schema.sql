@@ -2787,3 +2787,18 @@ CREATE TABLE IF NOT EXISTS hq_registrations (            -- registrations, licen
   updated_by INTEGER REFERENCES operators(id),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ---- v0.73: goals for the morning huddle ------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS practice_goals (              -- a month's goals for the clinic (provider_id NULL) or one dentist
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  month TEXT NOT NULL,                                   -- YYYY-MM
+  provider_id INTEGER REFERENCES providers(id),
+  production_p INTEGER CHECK (production_p IS NULL OR production_p >= 0),
+  collections_p INTEGER CHECK (collections_p IS NULL OR collections_p >= 0),
+  new_patients INTEGER CHECK (new_patients IS NULL OR new_patients >= 0),
+  acceptance_pct INTEGER CHECK (acceptance_pct IS NULL OR acceptance_pct BETWEEN 0 AND 100),
+  set_by INTEGER REFERENCES users(id),
+  set_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_goals_month ON practice_goals(clinic_id, month);

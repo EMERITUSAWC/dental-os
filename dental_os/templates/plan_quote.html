@@ -17,6 +17,13 @@
   {% endfor %}
   <p style="margin-top:16px; font-size:1.2rem"><strong>{{ _d("Total:") }} {{ total|money }}</strong></p>
   {% if deposit %}<p>{{ _d("Deposit paid:") }} {{ deposit|money }}</p>{% endif %}
+  {% if offers %}<div class="saveplan" style="margin-top:16px;border:1px solid var(--line);border-radius:8px;padding:10px">
+    <h2 style="margin:0 0 6px">{{ _d("Save with a membership plan") }}</h2>
+    {% for o in offers %}<div class="row spread" style="gap:12px;align-items:center"><div>
+      <p style="margin:0"><strong>{{ o.plan.name }}</strong>: {{ _d("this treatment would cost %(amount)s less.", amount=o.saved_p|money) }} {{ _d("The plan costs %(fee)s a year.", fee=o.per_year_p|money) }}</p>
+      {% if o.plan.description %}<p class="small muted" style="margin:2px 0 0">{{ o.plan.description }}</p>{% endif %}</div>
+      {% if o.qr %}{% set qr_svg = o.qr %}<div style="background:#fff;padding:2px;border-radius:4px">{{ qr_svg|safe }}</div>{% endif %}</div>{% endfor %}
+    <p class="small muted" style="margin:6px 0 0">{{ _d("Ask us, or scan the code to message us on WhatsApp.") }}</p></div>{% endif %}
   <p class="muted small">{{ _d("This is an estimate, not a fixed price. The cost may change if the dentist finds that more treatment is needed once work begins. You will be told before any change. You can say no to any part of this plan.") }}</p>
 </section>
 {% endblock %}

@@ -42,6 +42,10 @@
   </div>
   <p class="muted small">{{ _("Fees are estimates. They may change if the dentist finds more is needed once treatment starts. Each line becomes real planned work only when the plan is accepted.") }}</p>
 </section>
+{% if offers %}<section class="card"><h2>{{ _("No insurance or membership: offer a plan") }}</h2>
+  {% for o in offers %}<p><strong>{{ o.plan.name }}</strong>: {{ _("saves %(saved)s on this plan; costs %(fee)s a year.", saved=o.saved_p|money, fee=o.per_year_p|money) }}
+    {% if o.net_p > 0 %}<span class="pill ok">{{ _("Patient is %(amount)s better off in the first year", amount=o.net_p|money) }}</span>{% endif %}</p>{% endfor %}
+  <p class="muted small">{{ _("The printed quote shows the best two, with a code to message the clinic on WhatsApp.") }} <a href="{{ url_for('commercial.patient_membership', pid=p.id) }}">{{ _("Enrol") }}</a></p></section>{% endif %}
 
 {% if plan.status != 'accepted' %}
 <section class="card"><h2>{{ _("Add a line") }}</h2>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Goals") }}{% endblock %}
+{% block body %}
+<div class="row spread"><h1>{{ _("Goals for") }} {{ month_label }}</h1>
+  <div class="row"><a class="btn" href="{{ url_for('huddle.goals', month=nav.prev) }}">{{ _("Previous month") }}</a><a class="btn" href="{{ url_for('huddle.goals', month=nav.next) }}">{{ _("Next month") }}</a><a class="btn" href="{{ url_for('huddle.view') }}">{{ _("Morning huddle") }}</a></div></div>
+<p class="muted">{{ _("%(n)s working days this month, counting the clinic's working days and leaving out closed days. The huddle shares each goal over them to show whether you are on pace.", n=days) }}</p>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="month" value="{{ month }}">
+  <h2>{{ _("The clinic") }}</h2>
+  {% set c = g_.get(None) %}
+  <div class="grid two">{% for f, label in fields.items() %}<div><label for="clinic_{{ f }}">{{ _(label) }}{% if f == 'acceptance_pct' %} (%){% endif %}</label>
+    <input id="clinic_{{ f }}" name="clinic_{{ f }}" inputmode="{{ 'decimal' if f.endswith('_p') else 'numeric' }}" maxlength="14" value="{% if c and c[f] is not none %}{{ c[f]|plain if f.endswith('_p') else c[f] }}{% endif %}"></div>{% endfor %}</div>
+  {% if providers %}<h2 style="margin-top:12px">{{ _("Each dentist's production") }}</h2>
+  <div class="grid two">{% for p in providers %}{% set d = g_.get(p.id) %}<div><label for="dentist_{{ p.id }}">{{ p.name }}</label>
+    <input id="dentist_{{ p.id }}" name="dentist_{{ p.id }}" inputmode="decimal" maxlength="14" value="{% if d and d.production_p is not none %}{{ d.production_p|plain }}{% endif %}"></div>{% endfor %}</div>{% endif %}
+  <p class="muted small">{{ _("Leave a box empty for no goal.") }}</p>
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button><button type="submit" name="what" value="copy">{{ _("Copy last month's goals") }}</button></p></form>
+{% endblock %}

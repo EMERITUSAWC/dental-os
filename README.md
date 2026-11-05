@@ -1,4 +1,4 @@
-# Dental OS, version 0.72
+# Dental OS, version 0.73
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,22 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.73: the morning huddle, goals, notes to sign, membership savings on quotes
+
+- Goals (Reports, Goals; managers): each month's production, collections, new patients and treatment accepted for the clinic,
+  and production for each dentist. Copy last month's goals with one button. Each goal is shared over the clinic's working days,
+  leaving out closed days, so progress is judged against where the clinic should be by today.
+- Morning huddle (Today, Morning huddle; everyone): the last working day's figures, the month so far against goal and on pace
+  (ahead or behind, for the clinic and each dentist), and each of today's patients with what to do: medical alert, treatment
+  planned but not booked, recall due, lab work not back, and money owed. Free chair time and tomorrow's unconfirmed visits.
+  Money is shown to managers only. Printable.
+- Notes waiting to be signed: a list for each dentist of their own draft notes (managers see everyone's), a count on the Today
+  screen and in the huddle, and drafts older than two days marked. A draft is not part of the legal record until it is signed.
+- Membership savings on quotes: for a patient with no active insurance and no membership, the plan page and the printed quote show
+  the clinic's membership plans with what each would save on this treatment (included services counted up to the number a year,
+  the plan's discount on the rest) and the plan's cost a year, best first. The printed quote carries a QR code that opens WhatsApp
+  to the clinic with "I would like to join" already written. A switch on Membership plans turns it off.
 
 ### Added in version 0.72: HQ engineering and compliance
 
