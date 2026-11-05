@@ -61,6 +61,7 @@ WORDS = {
     "Choose a time that suits you. This is a request. The clinic will confirm it by phone or WhatsApp.": "Escolha uma hora que lhe convenha. É um pedido. A clínica vai confirmá-lo por telefone ou WhatsApp.",
     "Claims": "Reembolsos",
     "Clinic": "Clínica",
+    "Help": "Ajuda",
     "Admin": "Administração",
     "Inbox": "Caixa de entrada",
     "Money": "Dinheiro",

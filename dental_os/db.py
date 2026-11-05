@@ -167,6 +167,9 @@ COLUMN_UPGRADES = [
     ("operators", "totp_last_step", "INTEGER NOT NULL DEFAULT 0"),
     ("operators", "role", "TEXT NOT NULL DEFAULT 'owner'"),            # 0.69: owner, support, finance, sales, engineering
     ("operators", "must_change", "INTEGER NOT NULL DEFAULT 0"),          # 0.69: a one-time password from the owner: choose your own
+    ("operators", "starts_on", "TEXT"),                                  # 0.71: the login works from this day
+    ("operators", "ends_on", "TEXT"),                                    # 0.71: and stops after this day (a contract or a leaver)
+    ("operators", "email", "TEXT"),                                      # 0.71: work email, for the team list
 ]
 
 

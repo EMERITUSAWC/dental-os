@@ -2584,3 +2584,111 @@ CREATE TABLE IF NOT EXISTS access_review_items (
   note TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_access_review_items ON access_review_items(review_id);
+
+-- ---- v0.71: Dental OS HQ, the company's own departments and their work -------------------------------------------------------
+-- These tables are about clinics as customers (names, contacts, bills), never about patients. Nothing here has a patient_id.
+CREATE TABLE IF NOT EXISTS hq_members (                  -- which departments a person works in, and whether they lead it
+  id INTEGER PRIMARY KEY,
+  operator_id INTEGER NOT NULL REFERENCES operators(id),
+  dept TEXT NOT NULL,                                    -- support, finance, sales, onboarding, engineering, compliance
+  is_head INTEGER NOT NULL DEFAULT 0,
+  added_by INTEGER REFERENCES operators(id),
+  added_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (operator_id, dept)
+);
+CREATE TABLE IF NOT EXISTS hq_tickets (                  -- customer support: one question or fault from a clinic
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER REFERENCES clinics(id),
+  contact TEXT,                                          -- who at the clinic asked, and how to reach them
+  channel TEXT NOT NULL DEFAULT 'phone' CHECK (channel IN ('problem_report','whatsapp','phone','email','visit','other')),
+  subject TEXT NOT NULL,
+  body TEXT,
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('urgent','high','normal','low')),
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','open','waiting','solved','closed')),
+  assigned_to INTEGER REFERENCES operators(id),
+  problem_report_id INTEGER UNIQUE REFERENCES problem_reports(id),
+  reply_due TEXT NOT NULL,                               -- UTC: first answer to the clinic by then
+  solve_due TEXT NOT NULL,                               -- UTC
+  replied_at TEXT,
+  solved_at TEXT,
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_hq_tickets_status ON hq_tickets(status, priority);
+CREATE TABLE IF NOT EXISTS hq_ticket_notes (
+  id INTEGER PRIMARY KEY,
+  ticket_id INTEGER NOT NULL REFERENCES hq_tickets(id),
+  operator_id INTEGER REFERENCES operators(id),
+  kind TEXT NOT NULL DEFAULT 'internal' CHECK (kind IN ('reply','internal')),
+  body TEXT NOT NULL,
+  at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_articles (                 -- the help library: for clinics (shown inside the app) or for the team only
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  audience TEXT NOT NULL DEFAULT 'clinic' CHECK (audience IN ('clinic','team')),
+  published INTEGER NOT NULL DEFAULT 0,
+  updated_by INTEGER REFERENCES operators(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_leads (                    -- sales: a clinic we are talking to
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  contact TEXT,
+  phone TEXT,
+  email TEXT,
+  city TEXT,
+  country TEXT,
+  source TEXT,
+  stage TEXT NOT NULL DEFAULT 'new' CHECK (stage IN ('new','contacted','demo_booked','demo_done','trial','won','lost')),
+  value_p INTEGER NOT NULL DEFAULT 0,                    -- expected monthly subscription, minor units
+  currency TEXT NOT NULL DEFAULT 'GHS',
+  owner_id INTEGER REFERENCES operators(id),
+  next_step TEXT,
+  next_on TEXT,
+  lost_reason TEXT,
+  clinic_id INTEGER REFERENCES clinics(id),              -- once they have a clinic on the service
+  won_at TEXT,
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_hq_leads_stage ON hq_leads(stage, owner_id);
+CREATE TABLE IF NOT EXISTS hq_lead_notes (
+  id INTEGER PRIMARY KEY,
+  lead_id INTEGER NOT NULL REFERENCES hq_leads(id),
+  operator_id INTEGER REFERENCES operators(id),
+  body TEXT NOT NULL,
+  at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_projects (                 -- onboarding: getting one clinic live
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  clinic_id INTEGER REFERENCES clinics(id),
+  lead_id INTEGER REFERENCES hq_leads(id),
+  owner_id INTEGER REFERENCES operators(id),
+  old_system TEXT,
+  go_live_on TEXT,
+  status TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned','in_progress','live','paused','cancelled')),
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_project_steps (
+  id INTEGER PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES hq_projects(id),
+  step TEXT NOT NULL,
+  done_by INTEGER REFERENCES operators(id),
+  done_at TEXT NOT NULL DEFAULT (datetime('now')),
+  note TEXT,
+  UNIQUE (project_id, step)
+);
+CREATE TABLE IF NOT EXISTS hq_trainings (
+  id INTEGER PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES hq_projects(id),
+  on_date TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  people INTEGER,
+  done INTEGER NOT NULL DEFAULT 0,
+  trainer_id INTEGER REFERENCES operators(id)
+);

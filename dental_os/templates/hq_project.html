@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<div class="row spread"><h1>{{ p.name }}</h1><span class="pill {{ 'ok' if p.status == 'live' else '' }}">{{ _(states[p.status]) }}</span></div>
+<div class="grid two">
+<section class="card"><h2>{{ _("Checklist") }}</h2>
+  {% for k, label in steps %}{% set d = done.get(k) %}
+  <form method="post" class="row spread" style="border-bottom:1px solid var(--line);padding:6px 0"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="tick"><input type="hidden" name="step" value="{{ k }}">
+    <span>{% if d %}<span class="pill ok">{{ _("Done") }}</span> {% endif %}{{ _(label) }}{% if d %}<span class="small muted"> · {{ d.display_name or '' }}, {{ d.done_at[:10]|date }}{% if d.note %}, {{ d.note }}{% endif %}</span>{% endif %}</span>
+    {% if d %}<button type="submit" name="done" value="0" class="small">{{ _("Undo") }}</button>{% else %}<span class="row"><label for="note-{{ k }}" class="sr-only">{{ _("Note") }}</label><input id="note-{{ k }}" name="note" maxlength="200" placeholder="{{ _('Note') }}" style="width:9em"><button type="submit" name="done" value="1" class="small">{{ _("Done") }}</button></span>{% endif %}</form>
+  {% endfor %}
+  {% if app_ticks is not none %}<p class="small muted">{{ _("The clinic's own go-live checklist in the app has %(n)s items ticked.", n=app_ticks) }}</p>{% endif %}</section>
+<div>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="save"><h2>{{ _("Details") }}</h2>
+  {% include "_hq_project_fields.html" %}
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+<section class="card"><h2>{{ _("Training") }}</h2>
+  {% for t in trainings %}<div class="row spread"><span>{{ t.on_date|date }}: {{ t.topic }}{% if t.people %} · {{ _("%(n)s people", n=t.people) }}{% endif %} <span class="small muted">{{ t.display_name or '' }}</span></span>
+    {% if t.done %}<span class="pill ok">{{ _("Done") }}</span>{% else %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="trained"><input type="hidden" name="training_id" value="{{ t.id }}"><button type="submit" class="small">{{ _("Mark done") }}</button></form>{% endif %}</div>
+  {% else %}<p class="muted">{{ _("No sessions booked.") }}</p>{% endfor %}
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="training">
+    <div class="row"><div><label for="on_date">{{ _("Day") }}</label><input id="on_date" name="on_date" type="date" required></div>
+    <div><label for="topic">{{ _("What it covers") }}</label><input id="topic" name="topic" maxlength="120" required></div>
+    <div><label for="people">{{ _("People") }}</label><input id="people" name="people" inputmode="numeric" maxlength="3" style="width:5em"></div></div>
+    <p><button type="submit">{{ _("Book") }}</button></p></form></section>
+</div></div>
+{% endblock %}

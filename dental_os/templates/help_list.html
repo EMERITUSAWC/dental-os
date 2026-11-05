@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Help") }}{% endblock %}
+{% block body %}
+<h1>{{ _("Help") }}</h1>
+<section class="card">{% for a in rows %}<p><a href="{{ url_for('help.clinic_help_article', aid=a.id) }}">{{ a.title }}</a></p>
+{% else %}<p class="muted">{{ _("No help articles yet.") }}</p>{% endfor %}
+<p class="small"><a href="{{ url_for('pilot.problems', page=request.path) }}">{{ _("Report a problem") }}</a></p></section>
+{% endblock %}

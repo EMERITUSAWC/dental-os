@@ -1,0 +1,17 @@
+<div class="grid two"><div>
+  <label for="name">{{ _("Clinic name") }}</label><input id="name" name="name" maxlength="120" required value="{{ l.name or '' }}">
+  <label for="contact">{{ _("Who we talk to") }}</label><input id="contact" name="contact" maxlength="120" value="{{ l.contact or '' }}">
+  <label for="phone">{{ _("Their phone") }}</label><input id="phone" name="phone" maxlength="40" value="{{ l.phone or '' }}" autocomplete="off">
+  <label for="email">{{ _("Their email") }}</label><input id="email" name="email" type="email" maxlength="120" value="{{ l.email or '' }}">
+  <label for="city">{{ _("Town or city") }}</label><input id="city" name="city" maxlength="80" value="{{ l.city or '' }}">
+  <label for="country">{{ _("Country code") }}</label><input id="country" name="country" maxlength="2" value="{{ l.country or 'GH' }}">
+</div><div>
+  <label for="source">{{ _("How we found them") }}</label><input id="source" name="source" maxlength="80" value="{{ l.source or '' }}">
+  <label for="stage">{{ _("Stage") }}</label><select id="stage" name="stage">{% for k, v in stages.items() %}<option value="{{ k }}"{% if k == (l.stage or 'new') %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+  <div class="row"><div><label for="value">{{ _("Would pay a month") }}</label><input id="value" name="value" inputmode="decimal" maxlength="14" value="{{ l.value_p|plain_in(l.currency) if l.value_p else '' }}"></div>
+    <div><label for="currency">{{ _("Currency") }}</label><select id="currency" name="currency">{% for c in currencies %}<option value="{{ c }}"{% if c == (l.currency or 'GHS') %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></div></div>
+  <label for="owner_id">{{ _("Who looks after them") }}</label><select id="owner_id" name="owner_id"><option value="">{{ _("Nobody yet") }}</option>{% for p in people %}<option value="{{ p.id }}"{% if p.id == l.owner_id %} selected{% endif %}>{{ p.display_name }}</option>{% endfor %}</select>
+  <label for="next_step">{{ _("Next step") }}</label><input id="next_step" name="next_step" maxlength="200" value="{{ l.next_step or '' }}">
+  <label for="next_on">{{ _("By") }}</label><input id="next_on" name="next_on" type="date" value="{{ l.next_on or '' }}">
+  <label for="lost_reason">{{ _("Why lost (if lost)") }}</label><input id="lost_reason" name="lost_reason" maxlength="300" value="{{ l.lost_reason or '' }}">
+</div></div>

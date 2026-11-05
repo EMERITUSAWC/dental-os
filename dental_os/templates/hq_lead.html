@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ l.name }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<div class="row spread"><h1>{{ l.name }}</h1><span class="pill {{ 'ok' if l.stage == 'won' else ('bad' if l.stage == 'lost' else '') }}">{{ _(stages[l.stage]) }}</span></div>
+{% if l.stage == 'won' %}<section class="card">{% if handed %}<p>{{ _("Handed to onboarding.") }}{% if g.op_can['hq.onboarding'] %} <a href="{{ url_for('hq.project_view', pid=handed.id) }}">{{ _("Open") }}</a>{% endif %}</p>
+  {% else %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="handover"><span>{{ _("Won. Hand the clinic to onboarding to get it live.") }}</span><button class="primary" type="submit">{{ _("Hand to onboarding") }}</button></form>{% endif %}</section>{% endif %}
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="save">
+  {% include "_hq_lead_fields.html" %}
+  <label for="clinic_id">{{ _("Their clinic on the service (after they sign up)") }}</label><select id="clinic_id" name="clinic_id"><option value="">{{ _("Not yet") }}</option>{% for c in clinics %}<option value="{{ c.id }}"{% if c.id == l.clinic_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+<section class="card"><h2>{{ _("Notes") }}</h2>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="note">
+    <label for="body">{{ _("What happened (a call, a demo, a visit)") }}</label><textarea id="body" name="body" rows="2" maxlength="2000" required></textarea>
+    <p><button type="submit">{{ _("Add note") }}</button></p></form>
+  {% for n in notes %}<p><span class="small muted">{{ n.at[:16] }} · {{ n.display_name or '' }}</span><br>{{ n.body }}</p>{% else %}<p class="muted">{{ _("No notes yet.") }}</p>{% endfor %}</section>
+{% endblock %}

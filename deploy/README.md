@@ -72,6 +72,10 @@ monthly price. The steps are the same as above, with these differences:
    `/opt/dental-os/venv/bin/pip install -r requirements-postgres.txt`, set `DATABASE_URL=postgresql://user:password@host:5432/dental_os?sslmode=require`,
    and move an existing SQLite database across with `dos copy-to-postgres`.
 6. Turn on Lightsail's automatic daily snapshots as well. They are a second safety net, not a replacement for the locked copies.
+7. Dental OS HQ, the company's own side (0.71): give it its own name, for example `hq.yourdomain.com`, pointed at the same
+   static IP. Add the `hq.example.com` block from `deploy/Caddyfile.cloud.example` with your name, and set `HQ_HOST=hq.yourdomain.com`.
+   Then sign in at `https://hq.yourdomain.com/operator/login`. Make the first owner with `dos create-operator` and add everyone
+   else from HQ, Team.
 
 Real patient data on a server outside the clinic's own country needs a legal basis first (in Ghana, the Data Protection Act,
 2012). Start with made-up patients (`dos seed-demo`) until that is settled.

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Leadership") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("The company today") }}</h1>
+<div class="grid two">
+<section class="card"><h2>{{ _("Clinics") }}</h2>
+  <dl class="facts"><dt>{{ _("On the service") }}</dt><dd>{{ x.clinics }}</dd>
+  {% for k, label in states.items() %}<dt>{{ _(label) }}</dt><dd>{{ x.by_state.get(k, 0) }}</dd>{% endfor %}
+  <dt>{{ _("Closed in the last 90 days") }}</dt><dd>{{ x.left_90 }}</dd></dl>
+  {% if x.trials_ending %}<h3>{{ _("Trials ending in the next 14 days") }}</h3>{% for s in x.trials_ending %}<p><a href="{{ url_for('operator.clinic', cid=s.c.id) }}">{{ s.c.name }}</a> <span class="small muted">{{ s.c.trial_ends_on|date }}</span></p>{% endfor %}{% endif %}</section>
+<section class="card"><h2>{{ _("Money") }}</h2>
+  <dl class="facts"><dt>{{ _("Subscription income a month") }}</dt><dd>{% for cur, v in x.income.items() %}{{ v|money_in(cur) }}{% if not loop.last %}, {% endif %}{% else %}{{ _("None yet") }}{% endfor %}</dd>
+  <dt>{{ _("Owed to us") }}</dt><dd>{% for cur, v in x.owed.items() %}{{ v|money_in(cur) }}{% if not loop.last %}, {% endif %}{% else %}{{ _("Nothing") }}{% endfor %}</dd>
+  <dt>{{ _("Bills overdue") }}</dt><dd>{{ x.overdue }}</dd></dl>
+  <p class="muted small">{{ _("Income a month counts paying clinics on a plan, at the plan's price in their currency.") }}</p></section>
+<section class="card"><h2>{{ _("Support") }}</h2>
+  <dl class="facts"><dt>{{ _("Open") }}</dt><dd>{{ x.support.open }}</dd><dt>{{ _("Late") }}</dt><dd>{% if x.support.late %}<span class="pill bad">{{ x.support.late }}</span>{% else %}0{% endif %}</dd>
+  <dt>{{ _("Urgent") }}</dt><dd>{{ x.support.urgent }}</dd><dt>{{ _("Not yet assigned") }}</dt><dd>{{ x.support.unassigned }}</dd>
+  <dt>{{ _("Solved this month") }}</dt><dd>{{ x.support.solved_month }}{% if x.support.solved_month %} ({{ _("%(n)s answered on time", n=x.support.answered_on_time) }}){% endif %}</dd></dl></section>
+<section class="card"><h2>{{ _("Sales and onboarding") }}</h2>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Stage") }}</th><th>{{ _("Clinics") }}</th><th>{{ _("Expected a month") }}</th></tr></thead><tbody>
+  {% for s in x.pipeline %}<tr><td>{{ _(s.label) }}</td><td>{{ s.n }}</td><td>{% for cur, v in s.value.items() %}{{ v|money_in(cur) }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table></div>
+  <p>{{ _("Won this month:") }} {{ x.won_month }}. {{ _("Clinics being set up:") }} {{ x.projects_open }}.</p>
+  {% for p in x.golives %}<p class="small">{{ _("Go-live") }} {{ p.go_live_on|date }}: {{ p.clinic_name or p.name }}</p>{% endfor %}</section>
+<section class="card"><h2>{{ _("Team") }}</h2>
+  <dl class="facts"><dt>{{ _("People with a login") }}</dt><dd>{{ x.team }}</dd><dt>{{ _("Without two-step login") }}</dt><dd>{% if x.team_no_2fa %}<span class="pill bad">{{ x.team_no_2fa }}</span>{% else %}0{% endif %}</dd></dl>
+  <p><a href="{{ url_for('operator.team') }}">{{ _("Team") }}</a></p></section>
+</div>
+{% endblock %}

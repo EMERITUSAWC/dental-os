@@ -186,6 +186,9 @@ def operator_login(conn, username, password, ip_key, code=None, secret_key=None,
     if not ok:
         throttle.record(conn, bucket)
         raise PlatformError("That username and password do not match.")
+    from . import opteam
+    if not opteam.in_dates(row):                                   # 0.71: before the start day or after the end day
+        raise PlatformError("This login is not in use yet, or has ended. Ask an owner.")
     if row["totp_secret"]:
         try:
             secret = twofactor._fernet(secret_key).decrypt(row["totp_secret"].encode()).decode()

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ _("VAT report") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("VAT report") }}</h1>
+<form method="get" class="card"><p class="muted small">{{ _("Bills paid between two days. Use the VAT rate your accountant or the tax office gives you; it is not set here because it changes. Check the figures with your accountant before filing.") }}</p>
+  <div class="row"><div><label for="start">{{ _("From") }}</label><input id="start" type="date" name="start" value="{{ start }}" required></div>
+  <div><label for="end">{{ _("To") }}</label><input id="end" type="date" name="end" value="{{ end }}" required></div>
+  <div><label for="rate">{{ _("VAT rate, %") }}</label><input id="rate" name="rate" inputmode="decimal" value="{{ rate }}" required maxlength="6"></div>
+  <div><label for="included">{{ _("Our prices") }}</label><select id="included" name="included"><option value="1">{{ _("already include VAT") }}</option><option value="0"{% if included == '0' %} selected{% endif %}>{{ _("are before VAT") }}</option></select></div></div>
+  <p class="row"><button class="primary" type="submit">{{ _("Show") }}</button>{% if report %}<button type="submit" name="csv" value="1">{{ _("Download for a spreadsheet") }}</button>{% endif %}</p></form>
+{% if report %}
+<section class="card"><h2>{{ _("Totals") }}</h2><div class="tbl-wrap"><table><thead><tr><th>{{ _("Currency") }}</th><th>{{ _("Bills") }}</th><th>{{ _("Before VAT") }}</th><th>{{ _("VAT") }}</th><th>{{ _("With VAT") }}</th></tr></thead><tbody>
+{% for cur, t in report.totals.items() %}<tr><td>{{ cur }}</td><td>{{ t.n }}</td><td>{{ t.net|money_in(cur) }}</td><td>{{ t.vat|money_in(cur) }}</td><td>{{ t.gross|money_in(cur) }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">{{ _("No bills were paid in these days.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="card"><h2>{{ _("Each bill") }}</h2><div class="tbl-wrap"><table><thead><tr><th>{{ _("Paid on") }}</th><th>{{ _("Number") }}</th><th>{{ _("Clinic") }}</th><th>{{ _("Before VAT") }}</th><th>{{ _("VAT") }}</th><th>{{ _("With VAT") }}</th></tr></thead><tbody>
+{% for x in report.lines %}<tr><td>{{ x.i.paid_on|date }}</td><td>{{ x.i.number }}</td><td>{{ x.i.clinic_name }}</td><td>{{ x.net|money_in(x.i.currency) }}</td><td>{{ x.vat|money_in(x.i.currency) }}</td><td>{{ x.gross|money_in(x.i.currency) }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}
+{% endblock %}

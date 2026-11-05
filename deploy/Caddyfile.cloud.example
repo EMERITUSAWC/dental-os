@@ -11,3 +11,13 @@ app.example.com {
 		max_size 40MB
 	}
 }
+
+# 0.71: Dental OS HQ on its own address. Point a second DNS name at the same server, add this block, and set
+# HQ_HOST=hq.example.com in /etc/dental-os.env. HQ then answers only there, and that address shows nothing else.
+hq.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8000
+	header {
+		-Server
+	}
+}

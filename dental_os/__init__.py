@@ -81,6 +81,7 @@ def create_app(test_config=None):
         SECURITY_POLICY_URL=os.environ.get("SECURITY_POLICY_URL") or None,
         # 0.68: operators (who run the service for every clinic) must use two-step login. Set up with `flask operator-2fa`.
         OPERATOR_REQUIRE_2FA=os.environ.get("OPERATOR_REQUIRE_2FA", "1") == "1",
+        HQ_HOST=(os.environ.get("HQ_HOST") or "").strip().lower() or None,   # 0.71: e.g. hq.example.com; HQ then only answers there
     )
     if test_config:
         app.config.update(test_config)
@@ -121,6 +122,7 @@ def create_app(test_config=None):
     app.jinja_env.filters["phone"] = lambda v: local_display(v, g.clinic["country"] if g.get("clinic") else None)
     app.jinja_env.filters["money"] = lambda v: moneymod.fmt(v, g.clinic["currency"])
     app.jinja_env.filters["money_in"] = lambda v, cur: moneymod.fmt(v, cur)
+    app.jinja_env.filters["plain_in"] = lambda v, cur: moneymod.plain(v, cur)
     app.jinja_env.filters["plain"] = lambda v: moneymod.plain(v, g.clinic["currency"])
     from .services import teeth as _teeth
     app.jinja_env.filters["tooth"] = lambda v: _teeth.show(v)          # stored FDI, shown in the clinic's own numbering
@@ -227,7 +229,7 @@ def create_app(test_config=None):
             abort(403, "This is a read-only copy. Changes are made at the clinic.")
         is_api = request.path.startswith("/api/")            # only the API blueprint lives under /api/
         hook = request.blueprint in ("wahook", "voicehook") or request.endpoint == "paypub.hook"   # Meta and the payment company call these: a signature is required
-        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health", "security_txt") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "signup") or is_api
+        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health", "security_txt") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "hq", "signup") or is_api
         idle = app.config["SESSION_IDLE_MINUTES"]
         if g.user and not is_api and request.endpoint != "static":
             now = int(time.time())
@@ -370,7 +372,7 @@ def create_app(test_config=None):
             abort(404)
         return app.response_class(text, mimetype="text/plain")
 
-    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews, complianceviews
+    from . import auth, views, clinical, record, commercial, finance, comms, public, api, ops, privacy, wahook, diaryviews, care, practice, payonline, voiceviews, sterilviews, ediviews, nhsviews, orthoviews, statementviews, reportviews, teamviews, mailviews, smsviews, formviews, implantviews, payviews, govviews, cpdviews, feeviews, mergeviews, reactviews, moneyviews, aftercareviews, kitviews, autocodeviews, closedviews, migrateviews, backupviews, ghclaimviews, platformviews, pilotviews, xrayaiviews, chairviews, rxviews, fhirapi, assistantviews, complianceviews, hqviews
     app.register_blueprint(auth.bp)
     app.register_blueprint(views.bp)
     app.register_blueprint(clinical.bp)
@@ -427,6 +429,22 @@ def create_app(test_config=None):
     app.register_blueprint(fhirapi.bp)
     app.register_blueprint(assistantviews.bp)
     app.register_blueprint(complianceviews.bp)
+    app.register_blueprint(hqviews.bp)
+    app.register_blueprint(hqviews.clinic_bp)
+
+    @app.before_request
+    def _hq_only_on_its_own_address():
+        """0.71: with HQ_HOST set, the company's HQ answers only on that address, and that address shows nothing else."""
+        host = app.config.get("HQ_HOST")
+        if not host:
+            return None
+        here = (request.host or "").split(":")[0].lower()
+        hq_path = request.path == "/hq" or request.path.startswith(("/hq/", "/operator"))
+        if here == host and not (hq_path or request.path.startswith("/static/") or request.endpoint in ("health", "security_txt")):
+            return redirect("/hq")
+        if here != host and hq_path:
+            abort(404)
+        return None
 
     # ---- command line
     @app.cli.command("create-clinic")

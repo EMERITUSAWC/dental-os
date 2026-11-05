@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Dental OS HQ") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Dental OS HQ") }}</h1>
+<p class="muted">{{ g.operator.display_name }} · {% if owner %}{{ _("Owner: Leadership and every department") }}{% else %}{% for d, head in mine.items() %}{{ _(depts[d]) }}{% if head %} ({{ _("head") }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</p>
+
+<div class="grid two">
+{% if work.tickets_mine is defined %}
+<section class="card"><h2>{{ _("Support: assigned to you") }}</h2>
+  {% for x in work.tickets_mine %}<p><a href="{{ url_for('hq.ticket_view', tid=x.t.id) }}">#{{ x.t.id }} {{ x.t.subject }}</a> <span class="small muted">{{ x.t.clinic_name or '' }}</span>
+    {% if x.reply_late or x.solve_late %}<span class="pill bad">{{ _("Late") }}</span>{% endif %}</p>
+  {% else %}<p class="muted">{{ _("Nothing assigned to you.") }}</p>{% endfor %}
+  <p class="small">{{ _("Not yet assigned:") }} <a href="{{ url_for('hq.support', which='unassigned') }}">{{ work.tickets_unassigned|length }}</a>.
+    {% if work.reports_waiting %}{{ _("Problem reports to bring in:") }} {{ work.reports_waiting }}.{% endif %}</p></section>
+{% endif %}
+{% if work.leads_due is defined %}
+<section class="card"><h2>{{ _("Sales: next steps due") }}</h2>
+  {% for l in work.leads_due %}<p><a href="{{ url_for('hq.lead_view', lid=l.id) }}">{{ l.name }}</a> <span class="pill">{{ _(stages[l.stage]) }}</span>
+    <span class="small muted">{{ l.next_step or _("No next step written") }}{% if l.next_on %} · {{ l.next_on|date }}{% endif %}</span></p>
+  {% else %}<p class="muted">{{ _("Nothing due.") }}</p>{% endfor %}</section>
+{% endif %}
+{% if work.projects is defined %}
+<section class="card"><h2>{{ _("Onboarding: clinics getting ready") }}</h2>
+  {% for x in work.projects %}<p><a href="{{ url_for('hq.project_view', pid=x.p.id) }}">{{ x.p.name }}</a> <span class="small muted">{{ x.done }}/{{ x.of }}{% if x.p.go_live_on %} · {{ _("go-live") }} {{ x.p.go_live_on|date }}{% endif %}</span></p>
+  {% else %}<p class="muted">{{ _("No clinic is being set up.") }}</p>{% endfor %}</section>
+{% endif %}
+{% if work.overdue is defined %}
+<section class="card"><h2>{{ _("Finance: bills overdue") }}</h2>
+  {% for x in work.overdue[:10] %}<p>{{ x.i.clinic_name }}: {{ x.i.amount_p|money_in(x.i.currency) }} <span class="small muted">{{ _("%(n)s days late", n=x.days) }}</span></p>
+  {% else %}<p class="muted">{{ _("No bill is overdue.") }}</p>{% endfor %}
+  {% if work.overdue|length > 10 %}<p><a href="{{ url_for('hq.finance') }}">{{ _("All of them") }}</a></p>{% endif %}</section>
+{% endif %}
+</div>
+
+<section class="card"><h2>{{ _("The departments") }}</h2>
+  <dl class="facts">{% for k, label in depts.items() %}<dt>{{ _(label) }}{% if k in mine or owner %} <span class="pill ok">{{ _("Yours") }}</span>{% endif %}</dt><dd>{{ _(about[k]) }}</dd>{% endfor %}</dl>
+  <p class="muted small">{{ _("Nobody in HQ sees a patient. A clinic's manager can let support look for a few hours; every page they open goes in the clinic's own activity log.") }}</p></section>
+{% endblock %}

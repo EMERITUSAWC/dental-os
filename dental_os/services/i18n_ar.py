@@ -61,6 +61,7 @@ WORDS = {
     "Choose a time that suits you. This is a request. The clinic will confirm it by phone or WhatsApp.": "اختر وقتاً يناسبك. هذا طلب. ستؤكده العيادة عبر الهاتف أو واتساب.",
     "Claims": "المطالبات",
     "Clinic": "العيادة",
+    "Help": "مساعدة",
     "Admin": "الإدارة",
     "Inbox": "صندوق الوارد",
     "Money": "المال",

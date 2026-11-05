@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ row.title }}{% endblock %}
+{% block body %}
+<p class="small"><a href="{{ url_for('help.clinic_help') }}">{{ _("Help") }}</a></p>
+<h1>{{ row.title }}</h1>
+<section class="card">{% for p in paras %}<p style="white-space:pre-wrap">{{ p }}</p>{% endfor %}</section>
+{% endblock %}

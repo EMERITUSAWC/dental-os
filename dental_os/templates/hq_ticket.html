@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Ticket") }} #{{ t.id }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>#{{ t.id }} {{ t.subject }}</h1>
+<div class="grid two">
+<section class="card"><dl class="facts">
+  <dt>{{ _("Clinic") }}</dt><dd>{% if t.clinic_id %}<a href="{{ url_for('operator.clinic', cid=t.clinic_id) }}">{{ t.clinic_name }}</a>{% else %}{{ _("Not a clinic on the service yet") }}{% endif %}</dd>
+  <dt>{{ _("Who asked") }}</dt><dd>{{ t.contact or '' }}</dd><dt>{{ _("How they got in touch") }}</dt><dd>{{ _(channels[t.channel]) }}</dd>
+  <dt>{{ _("Opened") }}</dt><dd>{{ t.created_at[:16] }} UTC</dd>
+  <dt>{{ _("Answer by") }}</dt><dd>{{ t.reply_due[:16] }} UTC {% if t.replied_at %}<span class="pill ok">{{ _("Answered") }}</span>{% elif clocks.reply_late %}<span class="pill bad">{{ _("Late") }}</span>{% endif %}</dd>
+  <dt>{{ _("Solve by") }}</dt><dd>{{ t.solve_due[:16] }} UTC {% if t.solved_at %}<span class="pill ok">{{ _("Solved") }}</span>{% elif clocks.solve_late %}<span class="pill bad">{{ _("Late") }}</span>{% endif %}</dd></dl>
+  {% if t.body %}<p style="white-space:pre-wrap">{{ t.body }}</p>{% endif %}</section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="change"><h2>{{ _("State") }}</h2>
+  <label for="status">{{ _("State") }}</label><select id="status" name="status">{% for k, v in states.items() %}<option value="{{ k }}"{% if k == t.status %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+  <label for="priority">{{ _("Priority") }}</label><select id="priority" name="priority">{% for k, v in priorities.items() %}<option value="{{ k }}"{% if k == t.priority %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+  <label for="assigned_to">{{ _("Who deals with it") }}</label><select id="assigned_to" name="assigned_to"><option value="">{{ _("Not yet") }}</option>{% for p in people %}<option value="{{ p.id }}"{% if p.id == t.assigned_to %} selected{% endif %}>{{ p.display_name }}</option>{% endfor %}</select>
+  <p><button type="submit" class="primary">{{ _("Save") }}</button></p></form>
+</div>
+<section class="card"><h2>{{ _("History") }}</h2>
+  {% for n in notes %}<div class="card" style="margin:0 0 8px"><p class="small muted">{{ n.display_name or '' }} · {{ n.at[:16] }} UTC · {% if n.kind == 'reply' %}<span class="pill ok">{{ _("Told the clinic") }}</span>{% else %}{{ _("Team note") }}{% endif %}</p><p style="white-space:pre-wrap;margin:0">{{ n.body }}</p></div>
+  {% else %}<p class="muted">{{ _("Nothing yet.") }}</p>{% endfor %}
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <label for="body">{{ _("Write") }}</label><textarea id="body" name="body" rows="3" maxlength="4000" required></textarea>
+    <p class="muted small">{{ _("Record what you told the clinic (by phone, WhatsApp or email) as an answer, or leave a note for the team.") }}</p>
+    <p class="row"><button type="submit" name="what" value="reply" class="primary">{{ _("Record answer to the clinic") }}</button><button type="submit" name="what" value="internal">{{ _("Add team note") }}</button></p></form></section>
+{% endblock %}

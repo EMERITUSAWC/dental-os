@@ -43,7 +43,8 @@ def _operator():
     op_id = session.get("op_id")
     if not op_id:
         return None
-    return get_db().execute("SELECT * FROM operators WHERE id = ? AND active = 1", (op_id,)).fetchone()
+    row = get_db().execute("SELECT * FROM operators WHERE id = ? AND active = 1", (op_id,)).fetchone()
+    return row if row and OT.in_dates(row) else None                 # 0.71: a login past its end day stops at once
 
 
 def operator_required(view):
@@ -52,6 +53,12 @@ def operator_required(view):
         g.operator = _operator()
         if not g.operator:
             return redirect(url_for("operator.login"))
+        # 0.71: the departments this person works in, what they may do, and which departments they lead
+        db = get_db()
+        g.op_depts = OT.memberships(db, g.operator["id"])
+        g.op_can = {a: OT.can(g.operator, a, g.op_depts) for a in OT.CAN}
+        g.op_heads = OT.heads_of(db, g.operator)
+        g.op_dept_labels = OT.DEPTS
         # 0.69: a new person chooses their own password and sets up two-step login before anything else
         if OT.needs_setup(g.operator, current_app.config["OPERATOR_REQUIRE_2FA"]) and request.endpoint != "operator.security":
             return redirect(url_for("operator.security"))
@@ -64,7 +71,7 @@ def operator_can(action):
     def deco(view):
         @functools.wraps(view)
         def wrapped(*a, **kw):
-            if not OT.can(g.operator, action):
+            if not g.op_can.get(action):
                 abort(403)
             return view(*a, **kw)
         return wrapped
@@ -83,7 +90,7 @@ def login():
             session["op_id"] = op["id"]
             if OT.needs_setup(op, current_app.config["OPERATOR_REQUIRE_2FA"]):
                 return redirect(url_for("operator.security"))
-            return redirect(url_for("operator.home"))
+            return redirect(url_for("hq.home"))
         except PF.PlatformError as exc:
             db.commit()                                       # keep the record of the failed try
             flash(str(exc), "error")
@@ -118,7 +125,7 @@ def clinic(cid):
             what = f.get("what")
             needed = {"state": "clinic.trial" if f.get("state") == "trial" else "clinic.state", "plan": "clinic.plan",
                       "paid": "clinic.bills", "support": "clinic.support"}.get(what)
-            if not needed or not (OT.can(g.operator, needed) or (what == "state" and OT.can(g.operator, "clinic.state"))):
+            if not needed or not (g.op_can[needed] or (what == "state" and g.op_can["clinic.state"])):
                 abort(403)
             if what == "state":
                 PF.set_state(db, g.operator["id"], cid, f.get("state"), f.get("reason"), f.get("trial_days", type=int))
@@ -143,7 +150,7 @@ def clinic(cid):
     over = next(x for x in PF.clinics_overview(db) if x["c"]["id"] == cid)
     log = db.execute("SELECT l.*, o.display_name FROM operator_log l LEFT JOIN operators o ON o.id = l.operator_id WHERE l.clinic_id = ? ORDER BY l.id DESC LIMIT 30",
                      (cid,)).fetchall()
-    can = {a: OT.can(g.operator, a) for a in OT.CAN}
+    can = g.op_can
     return render_template("op_clinic.html", x=over, states=PF.STATES, plans=PB.plans(db, True),
                            bills=PB.bills(db, cid) if can["clinic.bills"] else [], log=log, grant=PF.live_grant(db, cid), can=can)
 
@@ -167,7 +174,7 @@ def health():
 def plans():
     db = get_db()
     if request.method == "POST":
-        if not OT.can(g.operator, "plans.edit"):
+        if not g.op_can["plans.edit"]:
             abort(403)
         f = request.form
         try:
@@ -184,7 +191,7 @@ def plans():
             db.rollback()
             flash(str(exc), "error")
         return redirect(url_for("operator.plans"))
-    return render_template("op_plans.html", rows=PB.plans(db), currencies=sorted(regions.CURRENCIES), can_edit=OT.can(g.operator, "plans.edit"))
+    return render_template("op_plans.html", rows=PB.plans(db), currencies=sorted(regions.CURRENCIES), can_edit=g.op_can["plans.edit"])
 
 
 # ------------------------------------------------------------------------------------------------ 0.69: the company's team
@@ -199,10 +206,14 @@ def team():
         what = f.get("what")
         try:
             if what == "add":
-                _oid, temp = OT.add(db, g.operator, f.get("username"), f.get("display_name"), f.get("role"))
+                _oid, temp = OT.add(db, g.operator, f.get("username"), f.get("display_name"), f.get("role"), f.getlist("depts"))
                 shown = {"name": (f.get("display_name") or f.get("username") or "").strip(), "temp": temp}
             elif what == "role":
                 OT.set_role(db, g.operator, f.get("id", type=int), f.get("role"))
+            elif what == "depts":
+                OT.set_departments(db, g.operator, f.get("id", type=int), f.getlist("depts"), f.getlist("heads"), f.get("owner") == "1")
+            elif what == "dates":
+                OT.set_dates(db, g.operator, f.get("id", type=int), f.get("starts_on"), f.get("ends_on"), f.get("email"))
             elif what in ("on", "off"):
                 OT.switch(db, g.operator, f.get("id", type=int), what == "on")
             elif what == "reset_password":
@@ -225,7 +236,8 @@ def team():
             return redirect(url_for("operator.team"))
         except LookupError:
             abort(404)
-    return render_template("op_team.html", rows=OT.team(db), roles=OT.ROLES, about=OT.ROLE_ABOUT, shown=shown, last_review=OT.last_review(db),
+    return render_template("op_team.html", rows=OT.team(db), roles=OT.ROLES, about=OT.ROLE_ABOUT, depts=OT.DEPTS, dept_about=OT.DEPT_ABOUT,
+                           shown=shown, last_review=OT.last_review(db),
                            require=current_app.config["OPERATOR_REQUIRE_2FA"])
 
 
@@ -254,7 +266,7 @@ def security():
                 flash("Two-step login is on.", "ok")
             fresh = _operator()
             if not OT.needs_setup(fresh, current_app.config["OPERATOR_REQUIRE_2FA"]):
-                return redirect(url_for("operator.home") if OT.can(fresh, "clinics") else url_for("operator.security"))
+                return redirect(url_for("hq.home"))
         except OT.TeamError as exc:
             db.rollback()
             flash(str(exc), "error")
@@ -271,7 +283,7 @@ def security():
     if step == "2fa":
         flash(PF.OPERATOR_NEEDS_2FA, "warn")
     return render_template("op_security.html", step=step, link=link, svg=svg, secret=session.get("op_new_secret") if link else None,
-                           role=OT.ROLES.get(op["role"], op["role"]))
+                           role="Owner" if OT.is_owner(op) else None, depts=[OT.DEPTS[d] for d in g.op_depts])
 
 
 @operator_bp.post("/operator/support/end")

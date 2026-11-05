@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Help library") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<div class="row spread"><h1>{{ _("Help library") }}</h1><a class="btn primary" href="{{ url_for('hq.help_edit') }}">{{ _("New article") }}</a></div>
+<p class="muted">{{ _("Articles for clinics show inside the app under Help once they are published. Team articles stay in HQ.") }}</p>
+<section class="card"><div class="tbl-wrap"><table><thead><tr><th>{{ _("Title") }}</th><th>{{ _("For") }}</th><th>{{ _("Published") }}</th><th>{{ _("Last changed") }}</th></tr></thead><tbody>
+{% for a in rows %}<tr><td><a href="{{ url_for('hq.help_edit', aid=a.id) }}">{{ a.title }}</a></td><td>{{ _("Clinics") if a.audience == 'clinic' else _("Team only") }}</td>
+  <td>{% if a.published %}<span class="pill ok">{{ _("Yes") }}</span>{% else %}{{ _("Draft") }}{% endif %}</td><td class="small">{{ a.updated_at[:16] }} · {{ a.display_name or '' }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">{{ _("No articles yet.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

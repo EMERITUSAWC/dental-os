@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _(label) }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("My team:") }} {{ _(label) }}</h1>
+<p class="muted">{{ _(about) }}</p>
+<section class="card"><div class="tbl-wrap"><table><thead><tr><th>{{ _("Name") }}</th><th>{{ _("Head") }}</th><th>{{ _("Two-step login") }}</th><th>{{ _("Last sign-in") }}</th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{{ r.o.display_name }}{% if not r.o.active or not r.in_dates %} <span class="small muted">{{ _("switched off") }}</span>{% endif %}</td>
+  <td>{{ _("Yes") if r.depts.get(dept) else '' }}</td><td>{% if r.two_step %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill bad">{{ _("Off") }}</span>{% endif %}</td>
+  <td class="small">{{ (r.last or '')[:16] or _("Never") }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">{{ _("Nobody yet.") }}</td></tr>{% endfor %}</tbody></table></div>
+<p class="muted small">{{ _("Only an owner adds people, changes departments or switches a login off.") }}</p></section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Support") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<div class="row spread"><h1>{{ _("Support inbox") }}</h1>
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="import">
+    <button type="submit">{{ _("Bring in shared problem reports") }}</button></form></div>
+<p class="muted small">{{ _("Open:") }} {{ nums.open }} · {{ _("Late:") }} {{ nums.late }} · {{ _("Not yet assigned:") }} {{ nums.unassigned }} · {{ _("Solved this month:") }} {{ nums.solved_month }}</p>
+<nav class="tabs" aria-label="{{ _('Which tickets') }}">{% for k, label in [('open', _('All open')), ('mine', _('Mine')), ('unassigned', _('Not yet assigned')), ('done', _('Solved and closed'))] %}
+  <a href="{{ url_for('hq.support', which=k) }}" class="{{ 'on' if which == k }}">{{ label }}</a>{% endfor %}</nav>
+<section class="card"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>{{ _("About") }}</th><th>{{ _("Clinic") }}</th><th>{{ _("Priority") }}</th><th>{{ _("State") }}</th><th>{{ _("Who") }}</th><th>{{ _("Solve by") }}</th></tr></thead><tbody>
+{% for x in rows %}{% set t = x.t %}<tr><td>{{ t.id }}</td><td><a href="{{ url_for('hq.ticket_view', tid=t.id) }}">{{ t.subject }}</a><div class="small muted">{{ _(channels[t.channel]) }}</div></td>
+  <td>{{ t.clinic_name or '' }}</td><td><span class="pill {{ 'bad' if t.priority == 'urgent' else ('warn' if t.priority == 'high' else '') }}">{{ _(priorities[t.priority]) }}</span></td>
+  <td>{{ _(states[t.status]) }}</td><td>{{ t.assignee or '' }}</td>
+  <td class="small nw">{{ t.solve_due[:16] }} UTC{% if x.reply_late %} <span class="pill bad">{{ _("No answer yet") }}</span>{% elif x.solve_late %} <span class="pill bad">{{ _("Late") }}</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="new"><h2>{{ _("New ticket") }}</h2>
+  <p class="muted small">{{ _("Write about the clinic and the screen. Leave out patients' names, phone numbers and anything about their care.") }}</p>
+  <div class="grid two"><div>
+  <label for="clinic_id">{{ _("Clinic") }}</label><select id="clinic_id" name="clinic_id"><option value="">{{ _("Not a clinic on the service yet") }}</option>{% for c in clinics %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+  <label for="contact">{{ _("Who asked") }}</label><input id="contact" name="contact" maxlength="160">
+  <label for="channel">{{ _("How they got in touch") }}</label><select id="channel" name="channel">{% for k, v in channels.items() if k != 'problem_report' %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+  </div><div>
+  <label for="priority">{{ _("Priority") }}</label><select id="priority" name="priority">{% for k, v in priorities.items() %}<option value="{{ k }}"{% if k == 'normal' %} selected{% endif %}>{{ _(v) }} ({{ _("answer in %(a)s h, solve in %(s)s h", a=sla[k][0], s=sla[k][1]) }})</option>{% endfor %}</select>
+  <label for="assigned_to">{{ _("Who deals with it") }}</label><select id="assigned_to" name="assigned_to"><option value="">{{ _("Not yet") }}</option>{% for p in people %}<option value="{{ p.id }}">{{ p.display_name }}</option>{% endfor %}</select>
+  </div></div>
+  <label for="subject">{{ _("What it is about") }}</label><input id="subject" name="subject" maxlength="160" required>
+  <label for="body">{{ _("Details") }}</label><textarea id="body" name="body" rows="4" maxlength="4000"></textarea>
+  <p><button class="primary" type="submit">{{ _("Add") }}</button></p></form>
+{% endblock %}

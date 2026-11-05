@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Finance") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<div class="row spread"><h1>{{ _("Finance") }}</h1><a class="btn" href="{{ url_for('hq.vat') }}">{{ _("VAT report") }}</a></div>
+<div class="grid two">
+<section class="card"><dl class="facts"><dt>{{ _("Subscription income a month") }}</dt><dd>{% for cur, v in income.items() %}{{ v|money_in(cur) }}{% if not loop.last %}, {% endif %}{% else %}{{ _("None yet") }}{% endfor %}</dd>
+  <dt>{{ _("Owed to us") }}</dt><dd>{% for cur, v in owed.items() %}{{ v|money_in(cur) }}{% if not loop.last %}, {% endif %}{% else %}{{ _("Nothing") }}{% endfor %}</dd></dl></section>
+<section class="card"><h2>{{ _("Bills overdue") }}</h2>
+  {% for x in late %}<p><a href="{{ url_for('operator.clinic', cid=x.i.clinic_id) }}">{{ x.i.clinic_name }}</a>: {{ _("bill") }} {{ x.i.number }}, {{ x.i.amount_p|money_in(x.i.currency) }} <span class="pill {{ 'bad' if x.days > 14 else 'warn' }}">{{ _("%(n)s days late", n=x.days) }}</span></p>
+  {% else %}<p class="muted">{{ _("No bill is overdue.") }}</p>{% endfor %}
+  <p class="muted small">{{ _("Record a payment, or pause a clinic that has not paid, on the clinic's own page.") }}</p></section>
+</div>
+<section class="card"><h2>{{ _("Subscriptions") }}</h2><div class="tbl-wrap"><table><thead><tr><th>{{ _("Clinic") }}</th><th>{{ _("State") }}</th><th>{{ _("Plan") }}</th><th>{{ _("Price a month") }}</th><th>{{ _("Paid up to") }}</th><th>{{ _("Owed") }}</th></tr></thead><tbody>
+{% for s in subs %}<tr><td><a href="{{ url_for('operator.clinic', cid=s.c.id) }}">{{ s.c.name }}</a></td><td>{{ _(states[s.state]) }}</td><td>{{ s.c.plan_name or '' }}</td>
+  <td>{{ s.price|money_in(s.c.currency) if s.price else '' }}</td><td>{{ s.c.paid_until|date if s.c.paid_until else '' }}</td><td>{{ s.owed|money_in(s.c.currency) if s.owed else '' }}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="card"><h2>{{ _("Bills") }}</h2>
+  <nav class="tabs" aria-label="{{ _('Which bills') }}">{% for k, label in [('', _('All')), ('open', _('Open')), ('paid', _('Paid')), ('void', _('Cancelled'))] %}<a href="{{ url_for('hq.finance', status=k or None) }}" class="{{ 'on' if (status or '') == k }}">{{ label }}</a>{% endfor %}</nav>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Number") }}</th><th>{{ _("Clinic") }}</th><th>{{ _("Period") }}</th><th>{{ _("Amount") }}</th><th>{{ _("Due") }}</th><th>{{ _("State") }}</th></tr></thead><tbody>
+  {% for b in bills %}<tr><td>{{ b.number }}</td><td>{{ b.clinic_name }}</td><td class="small">{{ b.period_from|date }} – {{ b.period_to|date }}</td><td>{{ b.amount_p|money_in(b.currency) }}</td><td>{{ b.due_on|date }}</td>
+    <td>{% if b.status == 'paid' %}<span class="pill ok">{{ _("Paid") }}</span> <span class="small muted">{{ b.paid_on|date if b.paid_on }}</span>{% elif b.status == 'void' %}{{ _("Cancelled") }}{% else %}<span class="pill warn">{{ _("Open") }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

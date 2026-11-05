@@ -3,27 +3,44 @@
 {% block body %}
 {% include "_op_nav.html" %}
 <h1>{{ _("Team") }}</h1>
-<p class="muted">{{ _("The people who run the service. Each role reaches only the part of this area its job needs. Software engineers work on the code in GitHub and on the server, each with its own access; here they only need the error list.") }}</p>
+<p class="muted">{{ _("Everyone has their own login. Departments decide what each person reaches; owners make up Leadership and reach everything. A head of department sees their team's list. Only owners add people or change logins.") }}</p>
 
 {% if shown %}<section class="card" role="status"><p class="flash ok">{{ _("Give this one-time password to %(name)s in person. It works once: they choose their own password and set up two-step login when they sign in. It will not be shown again.", name=shown.name) }}</p>
   <p><code>{{ shown.temp }}</code></p></section>{% endif %}
 
-<section class="card"><h2>{{ _("The roles") }}</h2>
-  <dl class="facts">{% for k, label in roles.items() %}<dt>{{ _(label) }}</dt><dd>{{ _(about[k]) }}</dd>{% endfor %}</dl></section>
+<section class="card"><h2>{{ _("The departments") }}</h2>
+  <dl class="facts"><dt>{{ _("Leadership (owners)") }}</dt><dd>{{ _(about['owner']) }}</dd>{% for k, label in depts.items() %}<dt>{{ _(label) }}</dt><dd>{{ _(dept_about[k]) }}</dd>{% endfor %}</dl></section>
 
 <section class="card"><h2>{{ _("Everyone") }}</h2>
-<div class="tbl-wrap"><table><thead><tr><th>{{ _("Name") }}</th><th>{{ _("Role") }}</th><th>{{ _("Two-step login") }}</th><th>{{ _("Last sign-in") }}</th><th></th></tr></thead><tbody>
 {% for r in rows %}{% set o = r.o %}
-<tr><td>{{ o.display_name }}<br><span class="small muted">{{ o.username }}{% if not o.active %} · {{ _("switched off") }}{% endif %}{% if o.must_change %} · {{ _("has not signed in yet") }}{% endif %}</span></td>
-  <td>{% if o.id != g.operator.id %}<form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="role"><input type="hidden" name="id" value="{{ o.id }}">
-      <label for="role{{ o.id }}" class="sr-only">{{ _("Role") }}</label><select id="role{{ o.id }}" name="role">{% for k, label in roles.items() %}<option value="{{ k }}"{% if k == o.role %} selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select>
-      <button type="submit" class="small">{{ _("Change") }}</button></form>{% else %}{{ _(roles[o.role]) }}{% endif %}</td>
-  <td>{% if r.two_step %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill bad">{{ _("Off") }}</span>{% endif %}</td>
-  <td class="small">{{ (r.last or '')[:16] or _("Never") }}</td>
-  <td>{% if o.id != g.operator.id %}<div class="row">
+<div class="card" style="margin:0 0 10px">
+  <div class="row spread"><div><strong>{{ o.display_name }}</strong> <span class="small muted">{{ o.username }}{% if o.email %} · {{ o.email }}{% endif %}</span>
+    {% if not o.active %}<span class="pill bad">{{ _("switched off") }}</span>{% elif not r.in_dates %}<span class="pill warn">{{ _("outside its dates") }}</span>{% endif %}
+    {% if o.must_change %}<span class="small muted"> · {{ _("has not signed in yet") }}</span>{% endif %}</div>
+    <div class="small">{{ _("Two-step login") }}: {% if r.two_step %}<span class="pill ok">{{ _("On") }}</span>{% else %}<span class="pill bad">{{ _("Off") }}</span>{% endif %} · {{ _("Last sign-in") }}: {{ (r.last or '')[:16] or _("Never") }}</div></div>
+  <p class="small">{% if r.owner %}<span class="pill ok">{{ _("Owner") }}</span> {% endif %}{% for d, head in r.depts.items() %}{{ _(depts[d]) }}{% if head %} ({{ _("head") }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+  {% if o.id != g.operator.id %}
+  <details><summary>{{ _("Change") }}</summary>
+  <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="depts"><input type="hidden" name="id" value="{{ o.id }}">
+    <fieldset><legend>{{ _("Departments") }}</legend>
+      <label class="check"><input type="checkbox" name="owner" value="1"{% if r.owner %} checked{% endif %}> {{ _("Owner (Leadership: everything, and the team)") }}</label>
+      <div class="tbl-wrap"><table><thead><tr><th>{{ _("Department") }}</th><th>{{ _("In it") }}</th><th>{{ _("Head") }}</th></tr></thead><tbody>
+      {% for k, label in depts.items() %}<tr><td>{{ _(label) }}</td>
+        <td><label class="check"><input type="checkbox" name="depts" value="{{ k }}"{% if k in r.depts %} checked{% endif %}><span class="sr-only">{{ _("In it") }}: {{ _(label) }}</span></label></td>
+        <td><label class="check"><input type="checkbox" name="heads" value="{{ k }}"{% if r.depts.get(k) %} checked{% endif %}><span class="sr-only">{{ _("Head") }}: {{ _(label) }}</span></label></td></tr>{% endfor %}</tbody></table></div></fieldset>
+    <p><button type="submit" class="small">{{ _("Save departments") }}</button></p></form>
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="dates"><input type="hidden" name="id" value="{{ o.id }}">
+    <div><label for="starts{{ o.id }}">{{ _("Login works from") }}</label><input id="starts{{ o.id }}" type="date" name="starts_on" value="{{ o.starts_on or '' }}"></div>
+    <div><label for="ends{{ o.id }}">{{ _("Until (for a contract or someone leaving)") }}</label><input id="ends{{ o.id }}" type="date" name="ends_on" value="{{ o.ends_on or '' }}"></div>
+    <div><label for="email{{ o.id }}">{{ _("Work email") }}</label><input id="email{{ o.id }}" type="email" name="email" maxlength="120" value="{{ o.email or '' }}"></div>
+    <button type="submit" class="small">{{ _("Save dates") }}</button></form>
+  <div class="row">
     {% for what, label in [('reset_password', _('New one-time password')), ('reset_2fa', _('Reset two-step login')), ('off' if o.active else 'on', _('Switch off') if o.active else _('Switch on'))] %}
-    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="{{ what }}"><input type="hidden" name="id" value="{{ o.id }}"><button type="submit" class="small">{{ label }}</button></form>{% endfor %}</div>{% endif %}</td></tr>
-{% endfor %}</tbody></table></div>
+    <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="{{ what }}"><input type="hidden" name="id" value="{{ o.id }}"><button type="submit" class="small">{{ label }}</button></form>{% endfor %}</div>
+  </details>
+  {% endif %}
+</div>
+{% endfor %}
 <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="review">
   <button type="submit">{{ _("Confirm the team is right") }}</button>
   <span class="small muted">{% if last_review %}{{ _("Last confirmed %(when)s UTC by %(who)s.", when=last_review.at[:16], who=last_review.display_name) }}{% else %}{{ _("Never confirmed. Do it every 90 days, and whenever someone leaves.") }}{% endif %}</span></form>
@@ -32,7 +49,8 @@
 <form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="add"><h2>{{ _("Add a person") }}</h2>
   <label for="display_name">{{ _("Full name") }}</label><input id="display_name" name="display_name" maxlength="80" required>
   <label for="username">{{ _("Username") }}</label><input id="username" name="username" maxlength="40" required autocomplete="off">
-  <label for="role">{{ _("Role") }}</label><select id="role" name="role">{% for k, label in roles.items() if k != 'owner' %}<option value="{{ k }}">{{ _(label) }}</option>{% endfor %}<option value="owner">{{ _("Owner") }}</option></select>
+  <label for="role">{{ _("Main department") }}</label><select id="role" name="role">{% for k, label in depts.items() %}<option value="{{ k }}">{{ _(label) }}</option>{% endfor %}<option value="owner">{{ _("Owner") }}</option></select>
+  <fieldset><legend>{{ _("Also works in") }}</legend><div class="row wrap">{% for k, label in depts.items() %}<label class="check"><input type="checkbox" name="depts" value="{{ k }}"> {{ _(label) }}</label>{% endfor %}</div></fieldset>
   <p class="muted small">{{ _("You get a one-time password to give them in person. They choose their own at the first sign-in.") }}{% if require %} {{ _("They also set up two-step login then.") }}{% endif %}</p>
   <p><button class="primary" type="submit">{{ _("Add") }}</button></p></form>
 {% endblock %}

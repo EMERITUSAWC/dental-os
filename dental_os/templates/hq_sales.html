@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Sales") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Sales") }}</h1>
+<section class="card"><h2>{{ _("By stage") }}</h2><div class="row wrap">{% for s in pipe %}<a class="btn {{ 'primary' if stage == s.key }}" href="{{ url_for('hq.sales', stage=s.key) }}">{{ _(s.label) }}: {{ s.n }}{% for cur, v in s.value.items() if v %} · {{ v|money_in(cur) }}{% endfor %}</a>{% endfor %}
+  <a class="btn {{ 'primary' if stage == 'open' }}" href="{{ url_for('hq.sales', stage='open') }}">{{ _("All open") }}</a></div>
+  <p class="muted small">{{ _("The amounts are what each clinic would pay a month if won.") }}</p></section>
+<section class="card"><div class="row spread"><h2>{{ _("Clinics") }}</h2><a href="{{ url_for('hq.sales', stage=stage, mine=None if mine else '1') }}">{{ _("Everyone's") if mine else _("Only mine") }}</a></div>
+<div class="tbl-wrap"><table><thead><tr><th>{{ _("Clinic") }}</th><th>{{ _("Where") }}</th><th>{{ _("Stage") }}</th><th>{{ _("A month") }}</th><th>{{ _("Who") }}</th><th>{{ _("Next step") }}</th></tr></thead><tbody>
+{% for l in rows %}<tr><td><a href="{{ url_for('hq.lead_view', lid=l.id) }}">{{ l.name }}</a></td><td>{{ l.city or '' }}{% if l.country %}, {{ l.country }}{% endif %}</td><td>{{ _(stages[l.stage]) }}</td>
+  <td>{{ l.value_p|money_in(l.currency) if l.value_p else '' }}</td><td>{{ l.owner_name or '' }}</td><td class="small">{{ l.next_step or '' }}{% if l.next_on %} · {{ l.next_on|date }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="card"><h2>{{ _("Each salesperson") }}</h2><div class="tbl-wrap"><table><thead><tr><th>{{ _("Name") }}</th><th>{{ _("Open") }}</th><th>{{ _("Won this month") }}</th><th>{{ _("Lost this month") }}</th><th>{{ _("Next steps late") }}</th></tr></thead><tbody>
+{% for f in figures %}<tr><td>{{ f.o.display_name }}</td><td>{{ f.open }}</td><td>{{ f.won }}</td><td>{{ f.lost }}</td><td>{% if f.late %}<span class="pill bad">{{ f.late }}</span>{% else %}0{% endif %}</td></tr>{% endfor %}</tbody></table></div></section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("Add a clinic we are talking to") }}</h2>
+  {% set l = {} %}{% include "_hq_lead_fields.html" %}
+  <p><button class="primary" type="submit">{{ _("Add") }}</button></p></form>
+{% endblock %}

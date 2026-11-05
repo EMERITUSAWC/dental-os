@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Help library") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ row.title if row else _("New article") }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <label for="title">{{ _("Title") }}</label><input id="title" name="title" maxlength="160" required value="{{ form.title or '' }}">
+  <label for="audience">{{ _("For") }}</label><select id="audience" name="audience"><option value="clinic">{{ _("Clinics") }}</option><option value="team"{% if form.audience == 'team' %} selected{% endif %}>{{ _("Team only") }}</option></select>
+  <label for="body">{{ _("Text") }}</label><textarea id="body" name="body" rows="14" maxlength="20000" required>{{ form.body or '' }}</textarea>
+  <p class="muted small">{{ _("Plain text. Leave an empty line between paragraphs.") }}</p>
+  <label class="check"><input type="checkbox" name="published" value="1"{% if form.published %} checked{% endif %}> {{ _("Published") }}</label>
+  <p class="row"><button class="primary" type="submit">{{ _("Save") }}</button><a class="btn" href="{{ url_for('hq.help_list') }}">{{ _("Back") }}</a></p></form>
+{% endblock %}

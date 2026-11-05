@@ -1,4 +1,4 @@
-# Dental OS, version 0.70
+# Dental OS, version 0.71
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,31 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.71: Dental OS HQ, the company's own departments
+
+- The company's side now has its own home, HQ (`/hq`), apart from the clinics. Everyone has their own login and two-step login.
+  Each person belongs to one or more departments; owners make up Leadership and reach everything:
+  - Leadership: the company on one page. Clinics by state, trials ending, clinics that left, subscription income a month,
+    money owed, support load, the sales pipeline, go-lives coming up and logins without two-step login.
+  - Customer support: one inbox for every clinic's questions and faults, from shared problem reports (brought in with one
+    button), WhatsApp, calls, email or visits. Each ticket gets an answer-by and a solve-by time from its priority (urgent: 1 and
+    8 hours; high: 4 and 24; normal: 8 and 72; low: 24 and 120), shows late ones, and keeps answers to the clinic apart from team
+    notes. Phone numbers are refused in ticket text so a patient's details are not typed in by mistake. A help library: articles
+    for clinics show inside the app under Help (a new link at the foot of every page) once published; team articles stay in HQ.
+  - Finance: subscriptions, every bill, money owed, bills overdue with days late, and a VAT report for any dates. The VAT rate is
+    typed in each time (from your accountant or the tax office), with prices that include VAT or are before it, and downloads
+    for a spreadsheet.
+  - Sales: clinics we are talking to, by stage (new, contacted, demo booked, demo done, trial, won, lost), with the monthly
+    value, who looks after each, the next step and its date, notes, a reason for every loss, and each salesperson's figures.
+    A won clinic is handed to onboarding with one button.
+  - Onboarding: an eleven-step checklist for each new clinic (first call to the two-week check), training sessions, the go-live
+    day, and how far the clinic's own go-live checklist in the app has got.
+- Heads of department see their own team's list (two-step login, last sign-in). Only owners add people, place them in
+  departments, set a login's start and end days (a contract, a leaver) or switch logins off. A login outside its days stops at once.
+- `HQ_HOST` (for example `hq.example.com`): with it set, HQ and the operator pages answer only on that address, and that address
+  shows nothing else. Point a second DNS name at the same server and add it to the Caddyfile.
+- Logins from version 0.69 keep working: a person with a role and no departments counts as being in that role's department.
 
 ### Added in version 0.70: a tidier menu and a drawn tooth chart
 

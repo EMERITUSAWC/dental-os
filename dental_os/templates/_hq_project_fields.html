@@ -1,0 +1,9 @@
+<div class="grid two"><div>
+  <label for="name">{{ _("Clinic name") }}</label><input id="name" name="name" maxlength="120" required value="{{ p.name or '' }}">
+  <label for="clinic_id">{{ _("Their clinic on the service") }}</label><select id="clinic_id" name="clinic_id"><option value="">{{ _("Not yet") }}</option>{% for c in clinics %}<option value="{{ c.id }}"{% if c.id == p.clinic_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <label for="old_system">{{ _("System they use now") }}</label><input id="old_system" name="old_system" maxlength="80" value="{{ p.old_system or '' }}">
+</div><div>
+  <label for="owner_id">{{ _("Who leads it") }}</label><select id="owner_id" name="owner_id"><option value="">{{ _("Nobody yet") }}</option>{% for o in people %}<option value="{{ o.id }}"{% if o.id == p.owner_id %} selected{% endif %}>{{ o.display_name }}</option>{% endfor %}</select>
+  <label for="go_live_on">{{ _("Go-live day") }}</label><input id="go_live_on" name="go_live_on" type="date" value="{{ p.go_live_on or '' }}">
+  <label for="status">{{ _("State") }}</label><select id="status" name="status">{% for k, v in states.items() %}<option value="{{ k }}"{% if k == (p.status or 'planned') %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+</div></div>

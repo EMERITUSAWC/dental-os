@@ -3,7 +3,7 @@
 {% block body %}
 {% if not step %}{% include "_op_nav.html" %}{% endif %}
 <h1>{{ _("My security") }}</h1>
-<p class="muted">{{ g.operator.display_name }} · {{ _(role) }}</p>
+<p class="muted">{{ g.operator.display_name }} · {% if role %}{{ _(role) }}{% else %}{% for d in depts %}{{ _(d) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</p>
 
 {% if step == 'password' %}<p class="flash warn" role="status">{{ _("You signed in with a one-time password. Choose your own to carry on.") }}</p>{% endif %}
 <form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="password"><h2>{{ _("Password") }}</h2>
