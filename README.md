@@ -1,4 +1,4 @@
-# Dental OS, version 0.69
+# Dental OS, version 0.70
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,19 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.70: a tidier menu and a drawn tooth chart
+
+- The top menu is grouped so it fits on one line for every role: Today, Diary and Patients stay as they were; Inbox
+  (Messages, Team, Tasks, Recalls, with one number for what needs attention), Clinic (Ortho, Lab, Sterilisation, Stock),
+  Money (Claims, NHS, Plans, Memberships), and for managers Reports and Admin (All clinics, Staff, Tools, Settings, Activity).
+  A group only shows when the person can use something in it, and it is underlined when you are on one of its pages. It works
+  with a keyboard and without scripts; on a phone the groups open inside the menu.
+- The tooth chart now draws each tooth: the crown and roots from the side and the biting surface from above, shaped for
+  incisors, canines, premolars and molars (three roots on upper molars, two on lower), and for baby teeth. Upper roots point up
+  and lower roots down, so the biting surfaces face each other. A crown or bridge has a thick outline, a root canal a red line
+  in each root, an implant a grey screw in place of the root, a false tooth no root, a crack a jagged line, a missing tooth a
+  cross, and a tooth not yet through a dashed outline. Surfaces still colour by what is there, planned or done.
 
 ### Added in version 0.69: your company's own team and roles
 

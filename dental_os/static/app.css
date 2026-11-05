@@ -2,11 +2,12 @@
   --bg: #f6f8fa; --card: #ffffff; --ink: #14212b; --muted: #5b6b78; --line: #dde4ea;
   --brand: #0b6e8a; --brand-ink: #ffffff; --ok: #1d7a46; --warn: #935700; --bad: #b3261e;
   --ok-bg: #e5f4ea; --warn-bg: #fff3dc; --bad-bg: #fde8e6; --info-bg: #e3f1f6;
+  --tooth: #fbf8f1; --tooth-root: #efe6d2;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #0f1a21; --card: #17252e; --ink: #e8eef2; --muted: #9db0bd; --line: #2a3b46;
     --brand: #4cb7d4; --brand-ink: #06232d; --ok: #6fd39b; --warn: #f0b45a; --bad: #ff8a80;
-    --ok-bg: #153524; --warn-bg: #3a2c10; --bad-bg: #3f1a17; --info-bg: #14323d; }
+    --ok-bg: #153524; --warn-bg: #3a2c10; --bad-bg: #3f1a17; --info-bg: #14323d; --tooth: #dcd6c8; --tooth-root: #a89f8b; }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -16,6 +17,19 @@ header.top { background: var(--card); border-bottom: 1px solid var(--line); posi
 .brand { font-weight: 700; margin-inline-end: auto; color: var(--ink); text-decoration: none; }
 nav a { display: inline-block; padding: 8px 6px; text-decoration: none; color: var(--ink); border-bottom: 2px solid transparent; }
 nav a.on { border-color: var(--brand); font-weight: 600; }
+/* v0.70 grouped top menu: a few headings that open a short list, so the menu stays on one line */
+#mainnav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 2px; }
+.navgroup { position: relative; display: inline-block; }
+.navgroup > summary { list-style: none; cursor: pointer; padding: 8px 6px; border-bottom: 2px solid transparent; white-space: nowrap; }
+.navgroup > summary::-webkit-details-marker { display: none; }
+.navgroup > summary::after { content: ""; display: inline-block; margin-inline-start: 5px; vertical-align: 2px; border: 4px solid transparent; border-top-color: currentColor; border-bottom: 0; }
+.navgroup[open] > summary::after { border-top: 0; border-bottom: 4px solid currentColor; }
+.navgroup.on > summary { border-color: var(--brand); font-weight: 600; }
+.navgroup > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.navdrop { position: absolute; top: 100%; inset-inline-start: 0; z-index: 20; min-width: 190px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); padding: 4px; }
+.navdrop a { display: block; padding: 8px 10px; border-bottom: 0; border-inline-start: 3px solid transparent; border-radius: 4px; white-space: nowrap; }
+.navdrop a:hover { background: var(--bg); }
+.navdrop a.on { border-color: var(--brand); background: var(--bg); }
 main { max-width: 1100px; margin: 0 auto; padding: 16px; }
 h1 { font-size: 1.5rem; margin: 8px 0 16px; } h2 { font-size: 1.1rem; margin: 0 0 8px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
@@ -76,15 +90,24 @@ nav.tabs a.on { border-color: var(--brand); font-weight: 600; }
 
 /* tooth chart */
 .arch-wrap { overflow-x: auto; padding-bottom: 6px; }
-.arch { display: flex; gap: 3px; min-width: 700px; justify-content: center; margin: 6px 0; }
+.arch { display: flex; gap: 2px; min-width: 900px; justify-content: center; margin: 6px 0; }
 .arch .gap { width: 10px; border-inline-start: 1px dashed var(--line); margin: 0 3px; }
-.tooth { display: flex; flex-direction: column; align-items: center; width: 44px; text-decoration: none; color: var(--ink); border-radius: 6px; padding: 2px 0; position: relative; }
-.tooth svg { width: 38px; height: 38px; }
-.tooth polygon { fill: var(--card); stroke: var(--muted); stroke-width: 1; }
-.tooth polygon.s-cond { fill: #e4a0a0; } .tooth polygon.s-planned { fill: #f2c46b; } .tooth polygon.s-done { fill: #7fc79a; }
-.tooth .x { stroke: var(--bad); stroke-width: 3; fill: none; }
-.tooth.w-missing svg { opacity: .45; }
+.tooth { display: flex; flex-direction: column; align-items: center; width: 54px; text-decoration: none; color: var(--ink); border-radius: 6px; padding: 3px 0; position: relative; }
+.tooth svg { width: 48px; height: 110px; overflow: visible; }
+.tooth .root { fill: var(--tooth-root, #efe6d2); stroke: var(--muted); stroke-width: .8; }
+.tooth .crown { fill: var(--tooth, #fbf8f1); stroke: var(--muted); stroke-width: .9; }
+.tooth .crown.capped { stroke: var(--ink); stroke-width: 2.2; }
+.tooth .imp { fill: #c9ced6; stroke: #5b6472; stroke-width: .9; }
+.tooth .canal { stroke: #c0504d; stroke-width: 2.2; stroke-linecap: round; fill: none; }
+.tooth .crack { stroke: var(--bad); stroke-width: 1.6; fill: none; }
+.tooth .outline { fill: none; stroke: var(--muted); stroke-width: 1; }
+.tooth polygon { fill: var(--tooth, #fbf8f1); stroke: var(--muted); stroke-width: .6; }
+.tooth .s-cond { fill: #e4a0a0; } .tooth .s-planned { fill: #f2c46b; } .tooth .s-done { fill: #7fc79a; }
+.tooth .x { stroke: var(--bad); stroke-width: 2.6; fill: none; stroke-linecap: round; }
+.tooth.gone .root, .tooth.gone .crown, .tooth.gone polygon, .tooth.gone .outline { opacity: .35; }
+.tooth.under .root, .tooth.under .crown { stroke-dasharray: 2 2; opacity: .7; }
 .tooth.sel { outline: 2px solid var(--brand); background: var(--info-bg); }
+.tooth:hover { background: var(--bg); }
 .tooth .num { font-size: .75rem; color: var(--muted); }
 .tooth:focus-visible { outline: 2px solid var(--brand); }
 .dots { position: absolute; top: 0; inset-inline-end: 2px; display: flex; gap: 1px; }
@@ -106,8 +129,6 @@ table.perio td.miss { background: repeating-linear-gradient(45deg, var(--bg), va
 table.perio .bl { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--bad); margin-inline-start: 2px; }
 table.perio.ro td { min-width: 22px; height: 26px; }
 
-.tooth.w-crown polygon, .tooth.w-root_canal polygon, .tooth.w-implant polygon, .tooth.w-veneer polygon, .tooth.w-bridge_pontic polygon,
-.tooth.w-bridge_abutment polygon, .tooth.w-fracture polygon, .tooth.w-impacted polygon, .tooth.w-unerupted polygon, .tooth.w-watch polygon { fill: #e4a0a0; }
 table.perio.ro td { min-width: 20px; }
 
 /* v0.7 messages, public pages */
@@ -216,6 +237,9 @@ pre.x12 { white-space: pre-wrap; word-break: break-all; font-size: .78rem; max-h
   .js header.top nav { display: none; width: 100%; order: 3; }
   .js header.top.open nav { display: flex; flex-direction: column; max-height: 70vh; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 6px; }
   header.top nav a { padding: 10px 6px; border-bottom: 1px solid var(--line); }
+  .js header.top.open nav .navgroup { display: block; border-bottom: 1px solid var(--line); }
+  header.top nav .navgroup > summary { padding: 10px 6px; }
+  header.top nav .navdrop { position: static; box-shadow: none; border: 0; padding: 0 0 4px 12px; min-width: 0; }
   header.top form.row { order: 2; }
   nav.tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
   nav.tabs a { white-space: nowrap; flex: 0 0 auto; }

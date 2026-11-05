@@ -24,25 +24,38 @@
     {% if user.role in ('dentist', 'assistant') and can('clinical') %}<a href="{{ url_for('chair.home') }}" class="{{ 'on' if ep.startswith('chair.') }}">{{ _("Chairside") }}</a>{% endif %}
     {% if can('diary') %}<a href="{{ url_for('views.diary') }}" class="{{ 'on' if ep == 'views.diary' or ep.startswith('diary.') and ep != 'diary.family_book' }}">{{ _("Diary") }}</a>{% endif %}
     <a href="{{ url_for('views.patients') }}" class="{{ 'on' if (ep.startswith('views.patient') or ep in ('clinical.treatment','clinical.account') or ep.startswith('commercial.patient') or ep.startswith('commercial.plan_') or ep in ('finance.patient_insurance','finance.cover_benefits','payments.patient_links','payments.link_show','finance.patient_invoices','finance.statement','comms.patient_messages','ops.patient_lab','privacy.patient_privacy','privacy.record_copy') or ep == 'diary.family_book' or ep == 'steri.patient_instruments' or ep == 'nhs.patient' or ep == 'ortho.patient' or ep == 'cforms.patient_forms' or ep == 'implants.patient' or ep == 'aftercare.patient' or (ep.startswith('care.') and ep not in ('care.drugs', 'care.letter_templates', 'care.referrers', 'care.referrals_open', 'care.imaging_setup'))) }}">{{ _("Patients") }}</a>
-    {% if can('messages') %}<a href="{{ url_for('clinical.recall_list') }}" class="{{ 'on' if ep == 'clinical.recall_list' or ep.startswith('react.') }}">{{ _("Recalls") }}</a>{% endif %}
-    <a href="{{ url_for('practice.tasks') }}" class="{{ 'on' if ep.startswith('practice.task') }}">{{ _("Tasks") }}{% if task_due %} <span class="badge">{{ task_due }}</span>{% endif %}</a>
-    <a href="{{ url_for('team.inbox') }}" class="{{ 'on' if ep == 'team.inbox' }}">{{ _("Team") }}{% if team_unread %} <span class="badge">{{ team_unread }}</span>{% endif %}</a>
-    {% if can('messages') %}<a href="{{ url_for('comms.queue') }}" class="{{ 'on' if (ep.startswith('comms.') and ep != 'comms.patient_messages') or ep == 'voice.calls' }}">{{ _("Messages") }}{% if attn_total %} <span class="badge">{{ attn_total }}</span>{% endif %}</a>{% endif %}
-    {% if can('clinical') %}{% if user.role != 'front_desk' %}<a href="{{ url_for('ortho.board') }}" class="{{ 'on' if ep == 'ortho.board' }}">{{ _("Ortho") }}</a>{% endif %}{% endif %}
-    {% if can('lab') %}<a href="{{ url_for('ops.lab_board') }}" class="{{ 'on' if ep in ('ops.lab_board', 'ops.lab_case', 'ops.lab_new', 'ops.lab_sheet', 'ops.lab_labs') }}">{{ _("Lab") }}</a>{% endif %}
-    {% if can('sterilisation') %}{% if user.role != 'front_desk' %}<a href="{{ url_for('steri.home') }}" class="{{ 'on' if ep.startswith('steri.') and ep != 'steri.patient_instruments' }}">{{ _("Sterilisation") }}</a>{% endif %}{% endif %}
-    {% if can('stock') %}{% if user.role != 'front_desk' %}<a href="{{ url_for('ops.stock_list') }}" class="{{ 'on' if ep.startswith('ops.stock') or ep.startswith('kits.') }}">{{ _("Stock") }}</a>{% endif %}{% endif %}
-    {% if can('nhs') %}{% if nhs_on %}<a href="{{ url_for('nhs.home') }}" class="{{ 'on' if ep in ('nhs.home', 'nhs.setup', 'nhs.fp17') }}">{{ _("NHS") }}</a>{% endif %}{% endif %}
-    {% if can('insurance') %}<a href="{{ url_for('finance.claims_list') }}" class="{{ 'on' if ep.startswith('finance.claim') or ep.startswith('finance.payer_payment') or ep.startswith('edi.') or ep.startswith('statements.') }}">{{ _("Claims") }}</a>{% endif %}
-    {% if can('plans') %}<a href="{{ url_for('commercial.plans_board') }}" class="{{ 'on' if ep == 'commercial.plans_board' }}">{{ _("Plans") }}</a>{% endif %}
-    {% if can('memberships') %}<a href="{{ url_for('commercial.memberships_home') }}" class="{{ 'on' if ep == 'commercial.memberships_home' or ep == 'commercial.membership_plans' }}">{{ _("Memberships") }}</a>{% endif %}
+    {% set talk_badge = (task_due or 0) + (team_unread or 0) + (attn_total or 0) %}
+    {% set g_talk %}
+      {% if can('messages') %}<a href="{{ url_for('comms.queue') }}" class="{{ 'on' if (ep.startswith('comms.') and ep != 'comms.patient_messages') or ep == 'voice.calls' }}">{{ _("Messages") }}{% if attn_total %} <span class="badge">{{ attn_total }}</span>{% endif %}</a>{% endif %}
+      <a href="{{ url_for('team.inbox') }}" class="{{ 'on' if ep == 'team.inbox' }}">{{ _("Team") }}{% if team_unread %} <span class="badge">{{ team_unread }}</span>{% endif %}</a>
+      <a href="{{ url_for('practice.tasks') }}" class="{{ 'on' if ep.startswith('practice.task') }}">{{ _("Tasks") }}{% if task_due %} <span class="badge">{{ task_due }}</span>{% endif %}</a>
+      {% if can('messages') %}<a href="{{ url_for('clinical.recall_list') }}" class="{{ 'on' if ep == 'clinical.recall_list' or ep.startswith('react.') }}">{{ _("Recalls") }}</a>{% endif %}
+    {% endset %}
+    {% if g_talk|trim %}<details class="navgroup{{ ' on' if 'class="on"' in g_talk }}" data-navgroup><summary>{{ _("Inbox") }}{% if talk_badge %} <span class="badge">{{ talk_badge }}</span>{% endif %}</summary><div class="navdrop">{{ g_talk }}</div></details>{% endif %}
+    {% set g_clinic %}
+      {% if can('clinical') %}{% if user.role != 'front_desk' %}<a href="{{ url_for('ortho.board') }}" class="{{ 'on' if ep == 'ortho.board' }}">{{ _("Ortho") }}</a>{% endif %}{% endif %}
+      {% if can('lab') %}<a href="{{ url_for('ops.lab_board') }}" class="{{ 'on' if ep in ('ops.lab_board', 'ops.lab_case', 'ops.lab_new', 'ops.lab_sheet', 'ops.lab_labs') }}">{{ _("Lab") }}</a>{% endif %}
+      {% if can('sterilisation') %}{% if user.role != 'front_desk' %}<a href="{{ url_for('steri.home') }}" class="{{ 'on' if ep.startswith('steri.') and ep != 'steri.patient_instruments' }}">{{ _("Sterilisation") }}</a>{% endif %}{% endif %}
+      {% if can('stock') %}{% if user.role != 'front_desk' %}<a href="{{ url_for('ops.stock_list') }}" class="{{ 'on' if ep.startswith('ops.stock') or ep.startswith('kits.') }}">{{ _("Stock") }}</a>{% endif %}{% endif %}
+    {% endset %}
+    {% if g_clinic|trim %}<details class="navgroup{{ ' on' if 'class="on"' in g_clinic }}" data-navgroup><summary>{{ _("Clinic") }}</summary><div class="navdrop">{{ g_clinic }}</div></details>{% endif %}
+    {% set g_money %}
+      {% if can('insurance') %}<a href="{{ url_for('finance.claims_list') }}" class="{{ 'on' if ep.startswith('finance.claim') or ep.startswith('finance.payer_payment') or ep.startswith('edi.') or ep.startswith('statements.') }}">{{ _("Claims") }}</a>{% endif %}
+      {% if can('nhs') %}{% if nhs_on %}<a href="{{ url_for('nhs.home') }}" class="{{ 'on' if ep in ('nhs.home', 'nhs.setup', 'nhs.fp17') }}">{{ _("NHS") }}</a>{% endif %}{% endif %}
+      {% if can('plans') %}<a href="{{ url_for('commercial.plans_board') }}" class="{{ 'on' if ep == 'commercial.plans_board' }}">{{ _("Plans") }}</a>{% endif %}
+      {% if can('memberships') %}<a href="{{ url_for('commercial.memberships_home') }}" class="{{ 'on' if ep == 'commercial.memberships_home' or ep == 'commercial.membership_plans' }}">{{ _("Memberships") }}</a>{% endif %}
+    {% endset %}
+    {% if g_money|trim %}<details class="navgroup{{ ' on' if 'class="on"' in g_money }}" data-navgroup><summary>{{ _("Money") }}</summary><div class="navdrop">{{ g_money }}</div></details>{% endif %}
     {% if user.role == 'manager' %}
     {% if can('reports') %}<a href="{{ url_for('clinical.report_view') }}" class="{{ 'on' if ep.startswith('clinical.report') or ep.startswith('reports.') or ep.startswith('pay.') or ep == 'clinical.takings' or ep in ('ops.kpi_view', 'ops.group_view') }}">{{ _("Reports") }}</a>{% endif %}
-    {% if group %}<a href="{{ url_for('ops.group_view') }}" class="{{ 'on' if ep == 'ops.group_view' }}">{{ _("All clinics") }}</a>{% endif %}
-    <a href="{{ url_for('views.staff') }}" class="{{ 'on' if ep == 'views.staff' }}">{{ _("Staff") }}</a>
-    <a href="{{ url_for('record.tools') }}" class="{{ 'on' if ep.startswith('record.tools') or ep.startswith('record.import') or ep == 'record.consent_forms' or ep.startswith('ops.integr') or ep == 'ops.api_docs' or ep in ('care.drugs', 'care.letter_templates', 'care.referrers', 'care.referrals_open', 'care.imaging_setup') or ep.startswith('team.equipment') or (ep.startswith('privacy.') and ep not in ('privacy.patient_privacy', 'privacy.record_copy')) }}">{{ _("Tools") }}</a>
-    <a href="{{ url_for('views.settings') }}" class="{{ 'on' if ep == 'views.settings' or ep == 'payments.setup' or ep == 'voice.setup' or ep == 'sms.setup' or ep == 'mail.setup' }}">{{ _("Settings") }}</a>
-    <a href="{{ url_for('views.audit_view') }}" class="{{ 'on' if ep == 'views.audit_view' }}">{{ _("Activity") }}</a>
+    {% set g_admin %}
+      {% if group %}<a href="{{ url_for('ops.group_view') }}" class="{{ 'on' if ep == 'ops.group_view' }}">{{ _("All clinics") }}</a>{% endif %}
+      <a href="{{ url_for('views.staff') }}" class="{{ 'on' if ep == 'views.staff' }}">{{ _("Staff") }}</a>
+      <a href="{{ url_for('record.tools') }}" class="{{ 'on' if ep.startswith('record.tools') or ep.startswith('record.import') or ep == 'record.consent_forms' or ep.startswith('ops.integr') or ep == 'ops.api_docs' or ep in ('care.drugs', 'care.letter_templates', 'care.referrers', 'care.referrals_open', 'care.imaging_setup') or ep.startswith('team.equipment') or (ep.startswith('privacy.') and ep not in ('privacy.patient_privacy', 'privacy.record_copy')) }}">{{ _("Tools") }}</a>
+      <a href="{{ url_for('views.settings') }}" class="{{ 'on' if ep == 'views.settings' or ep == 'payments.setup' or ep == 'voice.setup' or ep == 'sms.setup' or ep == 'mail.setup' }}">{{ _("Settings") }}</a>
+      <a href="{{ url_for('views.audit_view') }}" class="{{ 'on' if ep == 'views.audit_view' }}">{{ _("Activity") }}</a>
+    {% endset %}
+    {% if g_admin|trim %}<details class="navgroup{{ ' on' if 'class="on"' in g_admin }}" data-navgroup><summary>{{ _("Admin") }}</summary><div class="navdrop">{{ g_admin }}</div></details>{% endif %}
     {% endif %}
   </nav>
   <form method="post" action="{{ url_for('auth.logout') }}" class="row">

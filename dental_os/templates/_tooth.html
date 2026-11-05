@@ -1,16 +1,38 @@
+{# v0.70: each tooth is drawn from the side (crown and roots) and from above (five surfaces).
+   Upper teeth have their roots at the top, lower teeth at the bottom, so the biting surfaces face the middle. #}
 {% macro tooth(t, pid, child, selected) %}
 {% set s = t.surf %}
 {% set centre = s.get('I') or s.get('O') %}
 {% set right_is_m = (t.side == 'right') %}
-<a class="tooth {{ 'sel' if selected == t.n }} w-{{ t.whole or 'none' }}" aria-label="{{ _('Tooth') }} {{ t.n|tooth }}{% if t.whole == 'missing' %}, missing{% endif %}"
+{% set w = t.whole if t.whole in ('cond', 'planned', 'done') else 'none' %}
+{% set m = t.marks %}
+{% set gone = t.whole == 'missing' %}
+{% set side = 'translate(0,0)' if t.upper else 'translate(0,92) scale(1,-1)' %}
+{% set top = 'translate(0,56)' if t.upper else 'translate(0,0)' %}
+<a class="tooth k-{{ t.kind }} {{ 'sel' if selected == t.n }} w-{{ t.whole or 'none' }}{% if gone %} gone{% endif %}{% if 'unerupted' in m or 'impacted' in m %} under{% endif %}"
+   aria-label="{{ _('Tooth') }} {{ t.n|tooth }}{% if gone %}, {{ _('missing') }}{% endif %}"
    href="{{ url_for('record.chart_view', pid=pid, tooth=t.n, dentition='child' if child else None) }}#tooth">
-  <svg viewBox="0 0 40 40" role="img" aria-hidden="true">
-    <polygon class="s-{{ s.get('B', 'none') }}" points="2,2 38,2 30,12 10,12"/>
-    <polygon class="s-{{ s.get('L', 'none') }}" points="10,28 30,28 38,38 2,38"/>
-    <polygon class="s-{{ s.get('D' if right_is_m else 'M', 'none') }}" points="2,2 10,12 10,28 2,38"/>
-    <polygon class="s-{{ s.get('M' if right_is_m else 'D', 'none') }}" points="38,2 30,12 30,28 38,38"/>
-    <polygon class="s-{{ centre or 'none' }}" points="10,12 30,12 30,28 10,28"/>
-    {% if t.whole == 'missing' %}<path class="x" d="M4 4 L36 36 M36 4 L4 36"/>{% endif %}
+  <svg viewBox="0 0 40 92" aria-hidden="true">
+    <defs><clipPath id="top{{ t.n }}"><path d="{{ t.shape.top }}"/></clipPath></defs>
+    <g transform="{{ side }}">
+      {% if 'implant' in m %}<path class="imp s-{{ w }}" d="{{ t.implant }}"/>
+      {% elif 'bridge_pontic' not in m %}{% for r in t.shape.roots %}<path class="root" d="{{ r }}"/>{% endfor %}{% endif %}
+      {% if 'root_canal' in m %}{% for c in t.shape.canals %}<path class="canal" d="{{ c }}"/>{% endfor %}{% endif %}
+      <path class="crown s-{{ w }}{% if 'crown' in m or 'bridge_abutment' in m or 'bridge_pontic' in m %} capped{% endif %}" d="{{ t.shape.crown }}"/>
+      {% if 'fracture' in m %}<path class="crack" d="M10 40 L16 36 L20 42 L25 37 L30 41"/>{% endif %}
+      {% if gone %}<path class="x" d="M6 4 L34 50 M34 4 L6 50"/>{% endif %}
+    </g>
+    <g transform="{{ top }}">
+      <g clip-path="url(#top{{ t.n }})">
+        <polygon class="s-{{ s.get('B' if t.upper else 'L', 'none') }}" points="0,0 40,0 {{ t.centre.split(' ')[1] }} {{ t.centre.split(' ')[0] }}"/>
+        <polygon class="s-{{ s.get('L' if t.upper else 'B', 'none') }}" points="{{ t.centre.split(' ')[3] }} {{ t.centre.split(' ')[2] }} 40,36 0,36"/>
+        <polygon class="s-{{ s.get('D' if right_is_m else 'M', 'none') }}" points="0,0 {{ t.centre.split(' ')[0] }} {{ t.centre.split(' ')[3] }} 0,36"/>
+        <polygon class="s-{{ s.get('M' if right_is_m else 'D', 'none') }}" points="40,0 {{ t.centre.split(' ')[1] }} {{ t.centre.split(' ')[2] }} 40,36"/>
+        <polygon class="s-{{ centre or 'none' }}" points="{{ t.centre }}"/>
+      </g>
+      <path class="outline" d="{{ t.shape.top }}"/>
+      {% if gone %}<path class="x" d="M8 6 L32 30 M32 6 L8 30"/>{% endif %}
+    </g>
   </svg>
   <span class="num">{{ t.n|tooth }}</span>
   {% if t.entry %}<span class="dots">{% if t.entry.planned %}<i class="d planned"></i>{% endif %}{% if t.entry.done %}<i class="d done"></i>{% endif %}{% if t.entry.conditions %}<i class="d cond"></i>{% endif %}</span>{% endif %}

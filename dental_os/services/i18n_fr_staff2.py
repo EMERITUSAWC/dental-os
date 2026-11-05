@@ -8,8 +8,6 @@ STAFF2 = {
     "Adult teeth": "Dents définitives",
     "Child teeth": "Dents de lait",
     "Already in the mouth": "Déjà en bouche",
-    "Cross: missing. Tap a tooth for details. The patient's right is on the left of the chart.":
-        "Croix : dent absente. Touchez une dent pour les détails. La droite du patient est à gauche du schéma.",
     "On the chart": "Sur le schéma",
     "Remove": "Retirer",
     "Nothing recorded.": "Rien d’enregistré.",

@@ -7,6 +7,23 @@ document.addEventListener("click", function (e) {
     var open = top.classList.toggle("open");
     m.setAttribute("aria-expanded", open ? "true" : "false");
   }
+  // Grouped top menu (v0.70): a click outside an open group closes it.
+  document.querySelectorAll("details[data-navgroup][open]").forEach(function (d) {
+    if (!d.contains(e.target)) { d.open = false; }
+  });
+});
+document.addEventListener("toggle", function (e) {
+  // Only one group open at a time.
+  var d = e.target;
+  if (!d.matches || !d.matches("details[data-navgroup]") || !d.open) { return; }
+  document.querySelectorAll("details[data-navgroup][open]").forEach(function (o) { if (o !== d) { o.open = false; } });
+}, true);
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") { return; }
+  document.querySelectorAll("details[data-navgroup][open]").forEach(function (d) {
+    d.open = false;
+    var s = d.querySelector("summary"); if (s && d.contains(document.activeElement)) { s.focus(); }
+  });
 });
 
 (function () {

@@ -67,7 +67,10 @@ def _arch(teeth, data):
     for n in teeth:
         entry = data.get(n)
         surf, whole = chart.surface_states(entry)
-        out.append({"n": n, "side": chart.side_of(n), "surf": surf, "whole": whole, "entry": entry})
+        kind = chart.tooth_kind(n)
+        out.append({"n": n, "side": chart.side_of(n), "surf": surf, "whole": whole, "entry": entry,
+                    "upper": chart.is_upper(n), "kind": kind, "shape": chart.SHAPES[kind],
+                    "centre": chart.CENTRE.get(kind, chart.CENTRE_DEFAULT), "marks": chart.whole_marks(entry), "implant": chart.IMPLANT})
     return out
 
 

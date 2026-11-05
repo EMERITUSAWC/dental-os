@@ -12,7 +12,7 @@ Stages are build order. A stage ships as its own version. Stage 1 (clinical reco
 | Feature | Seen in | Our version | Stage |
 |---|---|---|---|
 | Medical history and allergy alerts that show wherever the patient appears | all major systems | A history form per patient, plus alerts (allergy, medical, medication, behaviour) with a severity. Critical alerts show in red on the patient, the diary and the appointment. | 1 |
-| Tooth chart (odontogram) | Dentrix, Eaglesoft, R4, CareStack | FDI chart for adult and child teeth. Each tooth shows existing conditions, planned work and finished work. | 1 |
+| Tooth chart (odontogram) | Dentrix, Eaglesoft, R4, CareStack | FDI chart for adult and child teeth, drawn as real tooth shapes (crown, roots, biting surface) since 0.70. Each tooth shows existing conditions, planned work and finished work. | 1 |
 | Periodontal charting with six probing points | Eaglesoft, Dentrix, Curve, voice-charting tools | Full-mouth grid for pocket depth, recession and bleeding. Summary of bleeding, deep pockets and a simple score per sextant. Compare with the last chart. | 1 |
 | Clinical notes from templates, locked once signed | Kiroku, Dentally, Dentrix | Templates by treatment type. Draft, sign, lock. Corrections are added as dated addenda, never by editing. | 1 |
 | Digital consent forms and signatures | Denticon, Curve, Practice-Web | Consent templates the clinic edits. Recorded with typed name, time and who recorded it. Paper consents can be marked as scanned. | 1 |

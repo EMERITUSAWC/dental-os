@@ -12,10 +12,10 @@
 </div>
 {{ tabs(p, 'chart') }}
 <section class="card">
-  <p class="muted small legend"><span><i class="sw cond"></i> {{ _("Already in the mouth") }}</span><span><i class="sw planned"></i> {{ _("Planned") }}</span><span><i class="sw done"></i> {{ _("Done") }}</span><span>{{ _("Cross: missing. Tap a tooth for details. The patient's right is on the left of the chart.") }}</span></p>
+  <p class="muted small legend"><span><i class="sw cond"></i> {{ _("Already in the mouth") }}</span><span><i class="sw planned"></i> {{ _("Planned") }}</span><span><i class="sw done"></i> {{ _("Done") }}</span><span>{{ _("Cross: missing. Thick outline: crown or bridge. Red line in the root: root canal. Grey screw: implant. Dashed: not yet through.") }}</span><span>{{ _("Tap a tooth for details. The patient's right is on the left of the chart.") }}</span></p>
   <div class="arch-wrap">
-    <div class="arch">{% for t in upper %}{{ tooth(t, p.id, child, selected) }}{% endfor %}</div>
-    <div class="arch">{% for t in lower %}{{ tooth(t, p.id, child, selected) }}{% endfor %}</div>
+    <div class="arch">{% for t in upper %}{% if loop.index0 == upper|length // 2 %}<span class="gap" aria-hidden="true"></span>{% endif %}{{ tooth(t, p.id, child, selected) }}{% endfor %}</div>
+    <div class="arch">{% for t in lower %}{% if loop.index0 == lower|length // 2 %}<span class="gap" aria-hidden="true"></span>{% endif %}{{ tooth(t, p.id, child, selected) }}{% endfor %}</div>
   </div>
 </section>
 

@@ -20,6 +20,64 @@ CHILD_UPPER = list(range(55, 50, -1)) + list(range(61, 66))
 CHILD_LOWER = list(range(85, 80, -1)) + list(range(71, 76))
 
 
+# ---- v0.70 drawn teeth -------------------------------------------------------------------
+# Each tooth is drawn from the side (crown and roots) and from above (the biting surface, split into
+# its five surfaces). Paths are for an upper tooth, roots up, crown down, in a 40 x 52 box; lower teeth
+# are the same drawing turned upside down. Only the outline changes with the kind of tooth.
+_ROOT_1 = "M13 30 C14 18 17 6 20 2 C23 6 26 18 27 30 Z"
+SHAPES = {
+    "incisor": {"crown": "M12 30 C11 38 11 45 12 51 C17 53 23 53 28 51 C29 45 29 38 28 30 Z",
+                "roots": [_ROOT_1], "canals": ["M20 30 L20 7"], "top": "M7 18 C7 11 33 11 33 18 C33 25 7 25 7 18 Z"},
+    "canine": {"crown": "M11 30 C9 38 11 45 20 53 C29 45 31 38 29 30 Z",
+               "roots": ["M12 30 C13 15 17 2 20 0 C23 2 27 15 28 30 Z"], "canals": ["M20 30 L20 4"],
+               "top": "M9 18 C9 9 31 9 31 18 C31 27 9 27 9 18 Z"},
+    "premolar": {"crown": "M10 30 C8 38 9 46 12 50 C16 53 24 53 28 50 C31 46 32 38 30 30 Z",
+                 "roots": [_ROOT_1], "canals": ["M20 30 L20 6"], "top": "M8 18 C8 7 32 7 32 18 C32 29 8 29 8 18 Z"},
+    "molar_upper": {"crown": "M6 30 C4 38 4 46 8 50 C14 53 26 53 32 50 C36 46 36 38 34 30 Z",
+                    "roots": ["M7 30 C6 20 7 10 10 3 C13 9 15 19 16 30 Z", "M16 30 C17 21 18 13 20 7 C22 13 23 21 24 30 Z",
+                              "M24 30 C25 19 27 9 30 3 C33 10 34 20 33 30 Z"],
+                    "canals": ["M11 30 L10 9", "M20 30 L20 11", "M29 30 L30 9"],
+                    "top": "M5 12 C5 6 9 4 14 4 L26 4 C31 4 35 6 35 12 L35 24 C35 30 31 32 26 32 L14 32 C9 32 5 30 5 24 Z"},
+    "molar_lower": {"crown": "M6 30 C4 38 4 46 8 50 C14 53 26 53 32 50 C36 46 36 38 34 30 Z",
+                    "roots": ["M7 30 C6 20 7 10 11 3 C14 10 16 20 17 30 Z", "M23 30 C24 20 26 10 29 3 C33 10 34 20 33 30 Z"],
+                    "canals": ["M12 30 L11 9", "M28 30 L29 9"],
+                    "top": "M5 12 C5 6 9 4 14 4 L26 4 C31 4 35 6 35 12 L35 24 C35 30 31 32 26 32 L14 32 C9 32 5 30 5 24 Z"},
+    "child_molar": {"crown": "M6 32 C4 40 5 47 9 50 C15 52 25 52 31 50 C35 47 36 40 34 32 Z",
+                    "roots": ["M7 32 C5 25 4 19 3 13 C8 17 11 24 14 32 Z", "M26 32 C29 24 32 17 37 13 C36 19 35 25 33 32 Z"],
+                    "canals": ["M10 32 L6 17", "M30 32 L34 17"],
+                    "top": "M6 13 C6 8 10 6 15 6 L25 6 C30 6 34 8 34 13 L34 23 C34 28 30 30 25 30 L15 30 C10 30 6 28 6 23 Z"},
+}
+# Biting-surface split: four sides and a centre, cut to the outline above. The incisor centre is a thin edge.
+CENTRE = {"incisor": "14,15 26,15 26,21 14,21", "canine": "15,13 25,13 25,23 15,23"}
+CENTRE_DEFAULT = "13,11 27,11 27,25 13,25"
+IMPLANT = "M15 30 L16 7 L24 7 L25 30 Z M14.5 25 H25.5 M15 19 H25 M15.5 13 H24.5"
+
+
+def is_upper(n):
+    return int(n) // 10 in (1, 2, 5, 6)
+
+
+def tooth_kind(n):
+    """incisor, canine, premolar, molar_upper, molar_lower or child_molar, from the FDI number."""
+    q, pos = divmod(int(n), 10)
+    if pos in (1, 2):
+        return "incisor"
+    if pos == 3:
+        return "canine"
+    if q >= 5:
+        return "child_molar"
+    if pos in (4, 5):
+        return "premolar"
+    return "molar_upper" if is_upper(n) else "molar_lower"
+
+
+def whole_marks(entry):
+    """Whole-tooth things recorded on a tooth (crown, implant, root canal and so on), for the drawing."""
+    if not entry:
+        return set()
+    return {c["condition"] for c in entry["conditions"] if c["condition"] in WHOLE_TOOTH and not c["surfaces"]}
+
+
 class ChartError(Exception):
     pass
 
