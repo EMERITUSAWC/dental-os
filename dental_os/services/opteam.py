@@ -52,6 +52,9 @@ CAN = {
     "hq.finance": {"finance"},
     "hq.sales": {"sales"},
     "hq.onboarding": {"onboarding"},
+    "hq.engineering": {"engineering"},                       # 0.72: server health, clinic servers, releases
+    "hq.requests": {"engineering", "support", "sales"},      # features clinics ask for
+    "hq.compliance": {"compliance"},
 }
 TEMP_LENGTH = 12
 

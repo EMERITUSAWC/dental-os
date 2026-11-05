@@ -5,7 +5,7 @@ patient data, which control does what, and how to prove each claim yourself rath
 Nothing here says that a clinic, a host or the product meets ISO/IEC 27001, HIPAA, the GDPR or Ghana's Data Protection Act. Those
 depend on the clinic and the host as much as on the software, and only an auditor or a lawyer can say so.
 
-Version 0.71. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
+Version 0.72. The privacy side (what is stored, who receives it, data rights) is in `docs/PRIVACY.md`.
 
 ## 1. How it is built
 
@@ -40,7 +40,8 @@ its database; each outside service.
 | A stolen operator password | Operators need a code from an authenticator app as well | `test_v68` OperatorTwoStepTests |
 | The service's own staff see more than their job needs | Each person in HQ belongs to departments (support, finance, sales, onboarding, engineering, compliance) that reach only their part; owners run the team, with a 90-day review in the log | `test_v69` TeamTests, `test_v71` Departments |
 | A leaver or contractor keeps access | Logins have start and end days; outside them sign-in is refused and an open session stops | `test_v71` LoginDates |
-| HQ staff type a patient's details into a ticket | Phone numbers are refused in ticket text; HQ tables have no patient columns | `test_v71` Support, Checks |
+| HQ staff type a patient's details into a ticket or register | Phone numbers are refused in ticket, request and incident text; HQ tables have no patient columns | `test_v71` Support, Checks; `test_v72` Compliance |
+| A fake clinic server reports to HQ | Each server has its own key, shown once, kept only as a hash, switchable off; only version, copy and disk fields are kept | `test_v72` Engineering |
 | Someone covers their tracks in the activity log | The database refuses to change or delete log rows; daily seals show a change made around the database | `test_v67` LockTests and SealTests |
 | A login nobody needs any more | Quarterly access review; remove switches the login off at once | `test_v67` ReviewTests |
 | A disk, laptop or backup is lost | Off-site copies are locked with a passphrase before they leave; monthly restore drill. Disk encryption is the host's job | `test_v50`, `test_v58` |

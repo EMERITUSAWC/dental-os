@@ -602,4 +602,11 @@ def my_work(conn, op, depts, today=None):
         out["projects"] = [x for x in projects(conn) if owner or x["p"]["owner_id"] in (op["id"], None)]
     if owner or "finance" in depts:
         out["overdue"] = overdue(conn)
+    from . import hqtech
+    if owner or "engineering" in depts:
+        out["servers"] = [x for x in hqtech.installs(conn) if x["flags"]]
+    if owner or "compliance" in depts:
+        out["compliance"] = {"incidents": [x for x in hqtech.incidents(conn) if not x["r"]["closed_at"]],
+                             "requests": [x for x in hqtech.data_requests(conn) if x["r"]["status"] == "open"],
+                             "renewals": [x for x in hqtech.registrations(conn) if x["soon"]]}
     return out

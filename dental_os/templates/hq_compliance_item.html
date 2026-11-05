@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_hq_comp_fields.html" import fields %}
+{% block title %}{{ _("Compliance") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<p class="small"><a href="{{ url_for('hq.compliance') }}">{{ _("Compliance") }}</a></p>
+<h1>{{ item.title or item.summary or item.name }}</h1>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}">{{ fields(kind, item, sev, kinds, dstates, clinics) }}
+  <p><button class="primary" type="submit">{{ _("Save") }}</button></p></form>
+{% endblock %}

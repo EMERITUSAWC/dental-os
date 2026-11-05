@@ -5,7 +5,7 @@ from flask import Blueprint, Response, abort, flash, g, redirect, render_templat
 
 from .db import get_db
 from .platformviews import operator_can, operator_required
-from .services import hq as H, opteam as OT, platform as PF, regions
+from .services import hq as H, hqtech as T, opteam as OT, platform as PF, regions
 
 bp = Blueprint("hq", __name__)
 clinic_bp = Blueprint("help", __name__)        # the help library as clinic staff see it
@@ -38,7 +38,8 @@ def _failed(exc, endpoint, **kw):
 def home():
     db = get_db()
     return render_template("hq_home.html", work=H.my_work(db, g.operator, g.op_depts), depts=OT.DEPTS, about=OT.DEPT_ABOUT,
-                           mine=g.op_depts, owner=OT.is_owner(g.operator), states=H.TICKET_STATES, stages=H.STAGES)
+                           mine=g.op_depts, owner=OT.is_owner(g.operator), states=H.TICKET_STATES, stages=H.STAGES,
+                           server_flags=T.INSTALL_FLAGS)
 
 
 @bp.get("/hq/leadership")
@@ -294,3 +295,150 @@ def project_view(pid):
     app_ticks = db.execute("SELECT COUNT(*) FROM golive_ticks WHERE clinic_id = ?", (row["clinic_id"],)).fetchone()[0] if row["clinic_id"] else None
     return render_template("hq_project.html", p=row, steps=H.STEPS, done=H.steps_done(db, pid), trainings=H.trainings(db, pid),
                            states=H.PROJECT_STATES, clinics=_clinic_names(db), people=H.people_in(db, "onboarding"), app_ticks=app_ticks)
+
+
+# ------------------------------------------------------------------------------------------------------- 0.72: engineering
+from flask import current_app, jsonify  # noqa: E402
+
+check_bp = Blueprint("hqcheck", __name__)
+
+
+@bp.route("/hq/engineering", methods=["GET", "POST"])
+@operator_required
+@operator_can("hq.engineering")
+def engineering():
+    db = get_db()
+    shown = None
+    if request.method == "POST":
+        f = request.form
+        try:
+            if f.get("what") == "install":
+                iid, key = T.add_install(db, g.operator["id"], f.get("label"), _int("clinic_id"))
+                db.commit()
+                shown = {"label": (f.get("label") or "").strip(), "key": key}
+            elif f.get("what") in ("on", "off"):
+                T.switch_install(db, g.operator["id"], _int("id"), f.get("what") == "on")
+                return _done("hq.engineering")
+            elif f.get("what") == "release":
+                T.save_release(db, g.operator["id"], f.get("version"), f.get("released_on"), f.get("notes"), f.get("published") == "1")
+                return _done("hq.engineering")
+            else:
+                abort(400)
+        except H.HQError as exc:
+            return _failed(exc, "hq.engineering")
+    return render_template("hq_engineering.html", h=T.server_health(db), installs=T.installs(db), flags=T.INSTALL_FLAGS, shown=shown,
+                           clinics=_clinic_names(db), releases=T.releases(db), version=T.VERSION, drill_days=T.offsite.DRILL_EVERY_DAYS)
+
+
+@bp.route("/hq/requests", methods=["GET", "POST"])
+@operator_required
+@operator_can("hq.requests")
+def requests_list():
+    db = get_db()
+    if request.method == "POST":
+        try:
+            rid = T.save_request(db, g.operator["id"], None, request.form.get("title"), request.form.get("detail"))
+            if _int("clinic_id"):
+                T.want(db, g.operator["id"], rid, _int("clinic_id"), _int("ticket_id"))
+            return _done("hq.request_view", rid=rid)
+        except H.HQError as exc:
+            return _failed(exc, "hq.requests_list")
+    which = request.args.get("which", "open")
+    return render_template("hq_requests.html", rows=T.requests(db, which), which=which, states=T.REQUEST_STATES, clinics=_clinic_names(db))
+
+
+@bp.route("/hq/requests/<int:rid>", methods=["GET", "POST"])
+@operator_required
+@operator_can("hq.requests")
+def request_view(rid):
+    db = get_db()
+    row = db.execute("SELECT * FROM hq_requests WHERE id = ?", (rid,)).fetchone()
+    if not row:
+        abort(404)
+    if request.method == "POST":
+        f = request.form
+        try:
+            if f.get("what") == "want":
+                added = T.want(db, g.operator["id"], rid, _int("clinic_id"), _int("ticket_id"))
+                db.commit()
+                flash("Saved." if added else "That clinic is already counted.", "ok")
+                return redirect(url_for("hq.request_view", rid=rid))
+            if f.get("what") == "save":
+                if not g.op_can["hq.engineering"]:
+                    abort(403)                                 # support and sales add clinics; engineering decides
+                T.save_request(db, g.operator["id"], rid, f.get("title"), f.get("detail"), f.get("status"), f.get("version"))
+                return _done("hq.request_view", rid=rid)
+            abort(400)
+        except H.HQError as exc:
+            return _failed(exc, "hq.request_view", rid=rid)
+    return render_template("hq_request.html", r=row, wanted=T.request_clinics(db, rid), states=T.REQUEST_STATES, clinics=_clinic_names(db),
+                           can_decide=g.op_can["hq.engineering"])
+
+
+@check_bp.post("/hq/checkin")
+def checkin():
+    """A clinic server reports its version, copies and free disk. Bearer install key; JSON body; never records."""
+    db = get_db()
+    auth = request.headers.get("Authorization", "")
+    key = auth[7:].strip() if auth.startswith("Bearer ") else ""
+    try:
+        T.checkin(db, key, request.get_json(silent=True) or {})
+        db.commit()
+    except H.HQError:
+        db.rollback()
+        return jsonify({"ok": False}), 401
+    return jsonify({"ok": True, "latest": current_app.config.get("HQ_LATEST_VERSION") or T.VERSION})
+
+
+@clinic_bp.get("/help/whats-new")
+def clinic_whats_new():
+    return render_template("help_whats_new.html", rows=T.releases(get_db(), True), paras=H.paragraphs)
+
+
+# -------------------------------------------------------------------------------------------------------- 0.72: compliance
+EDIT = {
+    "incident": ("hq_incidents", T.save_incident),
+    "datareq": ("hq_data_requests", T.save_data_request),
+    "outside": ("hq_subprocessors", T.save_subprocessor),
+    "registration": ("hq_registrations", T.save_registration),
+}
+
+
+@bp.route("/hq/compliance", methods=["GET", "POST"])
+@operator_required
+@operator_can("hq.compliance")
+def compliance():
+    db = get_db()
+    if request.method == "POST":
+        kind = request.form.get("register")
+        if kind not in EDIT:
+            abort(400)
+        try:
+            EDIT[kind][1](db, g.operator["id"], None, request.form)
+            return _done("hq.compliance")
+        except H.HQError as exc:
+            return _failed(exc, "hq.compliance")
+    return render_template("hq_compliance.html", access=T.access_check(db), issues=T.ACCESS_ISSUES, incidents=T.incidents(db),
+                           datareqs=T.data_requests(db), subs=T.subprocessors(db), regs=T.registrations(db), sev=T.SEVERITIES,
+                           kinds=T.DATA_KINDS, dstates=T.DATA_STATES, clinics=_clinic_names(db), report_hours=T.REPORT_HOURS,
+                           data_days=T.DATA_DAYS, review_days=T.REVIEW_DAYS, item=None)
+
+
+@bp.route("/hq/compliance/<kind>/<int:item_id>", methods=["GET", "POST"])
+@operator_required
+@operator_can("hq.compliance")
+def compliance_item(kind, item_id):
+    if kind not in EDIT:
+        abort(404)
+    db = get_db()
+    row = db.execute(f"SELECT * FROM {EDIT[kind][0]} WHERE id = ?", (item_id,)).fetchone()
+    if not row:
+        abort(404)
+    if request.method == "POST":
+        try:
+            EDIT[kind][1](db, g.operator["id"], item_id, request.form)
+            return _done("hq.compliance_item", kind=kind, item_id=item_id)
+        except H.HQError as exc:
+            return _failed(exc, "hq.compliance_item", kind=kind, item_id=item_id)
+    return render_template("hq_compliance_item.html", kind=kind, item=row, sev=T.SEVERITIES, kinds=T.DATA_KINDS, dstates=T.DATA_STATES,
+                           clinics=_clinic_names(db))

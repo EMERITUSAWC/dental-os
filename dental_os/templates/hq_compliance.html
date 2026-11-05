@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_hq_comp_fields.html" import fields %}
+{% block title %}{{ _("Compliance") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Compliance") }}</h1>
+<section class="card"><h2>{{ _("Who has access to HQ") }}</h2>
+  <p>{% if access.last %}{{ _("Team last confirmed %(when)s UTC by %(who)s.", when=access.last.at[:16], who=access.last.display_name) }}{% else %}{{ _("The team has never been confirmed.") }}{% endif %}
+    {% if access.review_due %}<span class="pill bad">{{ _("Due: every %(n)s days", n=review_days) }}</span>{% endif %} <a href="{{ url_for('operator.team') }}">{{ _("Team") }}</a></p>
+  {% for x in access.people %}<p>{{ x.o.display_name }}: {% for i in x.issues %}<span class="pill bad">{{ _(issues[i]) }}</span> {% endfor %}</p>{% else %}<p class="muted">{{ _("Every login has two-step login, is in use and is within its dates.") }}</p>{% endfor %}
+  <h3>{{ _("Support opened a clinic (last 90 days)") }}</h3>
+  {% for s in access.support %}<p class="small">{{ s.name }}: {{ s.n }}</p>{% else %}<p class="muted small">{{ _("Never.") }}</p>{% endfor %}</section>
+
+<section class="card"><h2>{{ _("Incidents in the service") }}</h2>
+  <p class="muted small">{{ _("A security or data incident in Dental OS itself. UK and EU law say the regulator must be told within %(h)s hours of finding a personal data breach unless it is unlikely to harm anyone; check Ghana's rules and each clinic's country with your lawyer.", h=report_hours) }}</p>
+  {% for x in incidents %}{% set r = x.r %}<p><a href="{{ url_for('hq.compliance_item', kind='incident', item_id=r.id) }}">{{ r.title }}</a> <span class="pill {{ 'bad' if r.severity == 'high' else '' }}">{{ _(sev[r.severity]) }}</span>
+    {% if r.closed_at %}<span class="pill ok">{{ _("Closed") }}</span>{% elif x.hours_left is not none %}<span class="pill {{ 'bad' if x.hours_left < 24 else 'warn' }}">{{ _("%(h)s hours left to tell the regulator", h=x.hours_left) if x.hours_left >= 0 else _("Regulator not told and the time has passed") }}</span>{% endif %}
+    <span class="small muted">{{ r.found_at[:16] }} UTC</span></p>
+  {% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}
+  <details><summary>{{ _("Record an incident") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="register" value="incident">{{ fields('incident', {}, sev, kinds, dstates, clinics) }}<p><button class="primary" type="submit">{{ _("Add") }}</button></p></form></details></section>
+
+<section class="card"><h2>{{ _("Requests from clinics about their data") }}</h2>
+  <p class="muted small">{{ _("Clinics own their patients' data; we hold it for them. When they need our help, answer within %(n)s days so they can meet their own deadline.", n=data_days) }}</p>
+  {% for x in datareqs %}{% set r = x.r %}<p><a href="{{ url_for('hq.compliance_item', kind='datareq', item_id=r.id) }}">{{ r.summary }}</a> <span class="small muted">{{ r.clinic_name or '' }} · {{ _(kinds[r.kind]) }}</span>
+    {% if r.status == 'open' %}<span class="pill {{ 'bad' if x.late else 'warn' }}">{{ _("Answer by") }} {{ r.due_on|date }}</span>{% else %}<span class="pill ok">{{ _(dstates[r.status]) }}</span>{% endif %}</p>
+  {% else %}<p class="muted">{{ _("None.") }}</p>{% endfor %}
+  <details><summary>{{ _("Record a request") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="register" value="datareq">{{ fields('datareq', {}, sev, kinds, dstates, clinics) }}<p><button class="primary" type="submit">{{ _("Add") }}</button></p></form></details></section>
+
+<section class="card"><h2>{{ _("Outside companies that touch clinic data") }}</h2>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Company") }}</th><th>{{ _("What for") }}</th><th>{{ _("Data") }}</th><th>{{ _("Country") }}</th><th>{{ _("Agreement") }}</th></tr></thead><tbody>
+  {% for x in subs %}{% set s = x.s %}<tr><td><a href="{{ url_for('hq.compliance_item', kind='outside', item_id=s.id) }}">{{ s.name }}</a>{% if not s.active %} <span class="small muted">{{ _("not in use") }}</span>{% endif %}</td><td>{{ s.purpose }}</td><td>{{ s.data }}</td><td>{{ s.country }}</td>
+    <td>{% if x.no_agreement %}<span class="pill bad">{{ _("None signed") }}</span>{% else %}{{ s.agreement_on|date }}{% endif %}{% if x.review_due %} <span class="pill warn">{{ _("Check due") }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">{{ _("None recorded yet. Start with the host (for example AWS), the payment companies and the message services.") }}</td></tr>{% endfor %}</tbody></table></div>
+  <details><summary>{{ _("Add a company") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="register" value="outside">{{ fields('outside', {}, sev, kinds, dstates, clinics) }}<p><button class="primary" type="submit">{{ _("Add") }}</button></p></form></details></section>
+
+<section class="card"><h2>{{ _("Registrations and renewals") }}</h2>
+  {% for x in regs %}{% set r = x.r %}<p><a href="{{ url_for('hq.compliance_item', kind='registration', item_id=r.id) }}">{{ r.name }}</a> <span class="small muted">{{ r.body or '' }}{% if r.reference %} · {{ r.reference }}{% endif %}</span>
+    {% if r.renews_on %}<span class="pill {{ 'bad' if x.late else ('warn' if x.soon else '') }}">{{ _("Renew by") }} {{ r.renews_on|date }}</span>{% endif %}</p>
+  {% else %}<p class="muted">{{ _("None recorded yet. For example: Data Protection Commission registration, VAT registration, business registration.") }}</p>{% endfor %}
+  <details><summary>{{ _("Add one") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="register" value="registration">{{ fields('registration', {}, sev, kinds, dstates, clinics) }}<p><button class="primary" type="submit">{{ _("Add") }}</button></p></form></details></section>
+{% endblock %}

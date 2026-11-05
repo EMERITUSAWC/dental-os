@@ -1,0 +1,38 @@
+{# 0.72: the fields for each compliance register; x is the row being changed, or an empty dict for a new one. #}
+{% macro fields(kind, x, sev, kinds, dstates, clinics) %}
+{% set p = kind ~ '-' ~ (x.id or 'new') %}
+{% if kind == 'incident' %}
+  <label for="{{ p }}-title">{{ _("What happened, in a line") }}</label><input id="{{ p }}-title" name="title" maxlength="160" required value="{{ x.title or '' }}">
+  <div class="row"><div><label for="{{ p }}-found">{{ _("Found (UTC)") }}</label><input id="{{ p }}-found" name="found_at" type="datetime-local" value="{{ (x.found_at or '')[:16]|replace(' ', 'T') }}"></div>
+  <div><label for="{{ p }}-sev">{{ _("How serious") }}</label><select id="{{ p }}-sev" name="severity">{% for k, v in sev.items() %}<option value="{{ k }}"{% if k == (x.severity or 'medium') %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div><label for="{{ p }}-n">{{ _("Clinics affected") }}</label><input id="{{ p }}-n" name="clinics_affected" inputmode="numeric" maxlength="6" value="{{ x.clinics_affected if x.clinics_affected is not none and x.clinics_affected is defined else '' }}"></div></div>
+  <label for="{{ p }}-what">{{ _("What happened, what data, what we did") }}</label><textarea id="{{ p }}-what" name="what" rows="4" maxlength="4000" required>{{ x.what or '' }}</textarea>
+  <div class="row"><div><label for="{{ p }}-reg">{{ _("Regulator told (UTC)") }}</label><input id="{{ p }}-reg" name="regulator_told_at" type="datetime-local" value="{{ (x.regulator_told_at or '')[:16]|replace(' ', 'T') }}"></div>
+  <div><label for="{{ p }}-cl">{{ _("Clinics told (UTC)") }}</label><input id="{{ p }}-cl" name="clinics_told_at" type="datetime-local" value="{{ (x.clinics_told_at or '')[:16]|replace(' ', 'T') }}"></div>
+  <div><label for="{{ p }}-closed">{{ _("Closed (UTC)") }}</label><input id="{{ p }}-closed" name="closed_at" type="datetime-local" value="{{ (x.closed_at or '')[:16]|replace(' ', 'T') }}"></div></div>
+  <label for="{{ p }}-lessons">{{ _("What we changed so it does not happen again") }}</label><textarea id="{{ p }}-lessons" name="lessons" rows="2" maxlength="4000">{{ x.lessons or '' }}</textarea>
+{% elif kind == 'datareq' %}
+  <div class="row"><div><label for="{{ p }}-clinic">{{ _("Clinic") }}</label><select id="{{ p }}-clinic" name="clinic_id"><option value="">{{ _("Not a clinic on the service yet") }}</option>{% for c in clinics %}<option value="{{ c.id }}"{% if c.id == x.clinic_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+  <div><label for="{{ p }}-kind">{{ _("Kind") }}</label><select id="{{ p }}-kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}"{% if k == x.kind %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select></div></div>
+  <label for="{{ p }}-summary">{{ _("What they asked for (no patient's name or details)") }}</label><input id="{{ p }}-summary" name="summary" maxlength="400" required value="{{ x.summary or '' }}">
+  <div class="row"><div><label for="{{ p }}-rec">{{ _("Received") }}</label><input id="{{ p }}-rec" name="received_on" type="date" value="{{ x.received_on or '' }}"></div>
+  <div><label for="{{ p }}-due">{{ _("Answer by (leave empty for 30 days)") }}</label><input id="{{ p }}-due" name="due_on" type="date" value="{{ x.due_on or '' }}"></div>
+  <div><label for="{{ p }}-st">{{ _("State") }}</label><select id="{{ p }}-st" name="status">{% for k, v in dstates.items() %}<option value="{{ k }}"{% if k == (x.status or 'open') %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select></div></div>
+  <label for="{{ p }}-out">{{ _("What we did") }}</label><textarea id="{{ p }}-out" name="outcome" rows="2" maxlength="2000">{{ x.outcome or '' }}</textarea>
+{% elif kind == 'outside' %}
+  <div class="row"><div><label for="{{ p }}-name">{{ _("Company") }}</label><input id="{{ p }}-name" name="name" maxlength="160" required value="{{ x.name or '' }}"></div>
+  <div><label for="{{ p }}-country">{{ _("Country where the data is") }}</label><input id="{{ p }}-country" name="country" maxlength="160" required value="{{ x.country or '' }}"></div></div>
+  <label for="{{ p }}-purpose">{{ _("What it does for us") }}</label><input id="{{ p }}-purpose" name="purpose" maxlength="160" required value="{{ x.purpose or '' }}">
+  <label for="{{ p }}-data">{{ _("What data reaches it") }}</label><input id="{{ p }}-data" name="data" maxlength="160" required value="{{ x.data or '' }}">
+  <label for="{{ p }}-safe">{{ _("Legal basis for sending data there") }}</label><input id="{{ p }}-safe" name="safeguard" maxlength="300" value="{{ x.safeguard or '' }}">
+  <div class="row"><div><label for="{{ p }}-agr">{{ _("Agreement signed") }}</label><input id="{{ p }}-agr" name="agreement_on" type="date" value="{{ x.agreement_on or '' }}"></div>
+  <div><label for="{{ p }}-rev">{{ _("Check again by") }}</label><input id="{{ p }}-rev" name="review_on" type="date" value="{{ x.review_on or '' }}"></div>
+  <div><label for="{{ p }}-act">{{ _("In use") }}</label><select id="{{ p }}-act" name="active"><option value="1">{{ _("Yes") }}</option><option value="0"{% if x.active == 0 %} selected{% endif %}>{{ _("No") }}</option></select></div></div>
+{% elif kind == 'registration' %}
+  <label for="{{ p }}-name">{{ _("Registration, licence or filing") }}</label><input id="{{ p }}-name" name="name" maxlength="160" required value="{{ x.name or '' }}">
+  <div class="row"><div><label for="{{ p }}-body">{{ _("With") }}</label><input id="{{ p }}-body" name="body" maxlength="160" value="{{ x.body or '' }}"></div>
+  <div><label for="{{ p }}-ref">{{ _("Reference") }}</label><input id="{{ p }}-ref" name="reference" maxlength="80" value="{{ x.reference or '' }}"></div>
+  <div><label for="{{ p }}-ren">{{ _("Renew by") }}</label><input id="{{ p }}-ren" name="renews_on" type="date" value="{{ x.renews_on or '' }}"></div></div>
+  <label for="{{ p }}-note">{{ _("Note") }}</label><input id="{{ p }}-note" name="note" maxlength="400" value="{{ x.note or '' }}">
+{% endif %}
+{% endmacro %}

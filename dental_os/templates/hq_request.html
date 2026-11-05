@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ r.title }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ r.title }}</h1>
+<div class="grid two">
+<section class="card"><h2>{{ _("Clinics that want it") }}: {{ wanted|length }}</h2>
+  {% for w in wanted %}<p>{{ w.clinic_name }} <span class="small muted">{{ w.added_at[:10]|date }}{% if w.ticket_id %} · <a href="{{ url_for('hq.ticket_view', tid=w.ticket_id) }}">#{{ w.ticket_id }}</a>{% endif %}</span></p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="want">
+    <div><label for="clinic_id">{{ _("Clinic") }}</label><select id="clinic_id" name="clinic_id" required>{% for c in clinics %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+    <div><label for="ticket_id">{{ _("Ticket number (if any)") }}</label><input id="ticket_id" name="ticket_id" inputmode="numeric" maxlength="9" style="width:7em"></div>
+    <button type="submit">{{ _("Add clinic") }}</button></form></section>
+<section class="card">{% if can_decide %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="save"><h2>{{ _("Decision") }}</h2>
+  <label for="title">{{ _("Title") }}</label><input id="title" name="title" maxlength="160" required value="{{ r.title }}">
+  <label for="detail">{{ _("Details") }}</label><textarea id="detail" name="detail" rows="4" maxlength="4000">{{ r.detail or '' }}</textarea>
+  <label for="status">{{ _("State") }}</label><select id="status" name="status">{% for k, v in states.items() %}<option value="{{ k }}"{% if k == r.status %} selected{% endif %}>{{ _(v) }}</option>{% endfor %}</select>
+  <label for="version">{{ _("Shipped in version") }}</label><input id="version" name="version" maxlength="20" value="{{ r.version or '' }}">
+  <p><button type="submit" class="primary">{{ _("Save") }}</button></p></form>
+  {% else %}<h2>{{ _("Decision") }}</h2><p>{{ _(states[r.status]) }}{% if r.version %} ({{ r.version }}){% endif %}</p>{% if r.detail %}<p style="white-space:pre-wrap">{{ r.detail }}</p>{% endif %}{% endif %}</section>
+</div>
+{% endblock %}

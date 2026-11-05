@@ -2692,3 +2692,98 @@ CREATE TABLE IF NOT EXISTS hq_trainings (
   done INTEGER NOT NULL DEFAULT 0,
   trainer_id INTEGER REFERENCES operators(id)
 );
+
+-- ---- v0.72: HQ engineering and compliance -------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS hq_requests (                 -- features clinics ask for, ranked by how many clinics want them
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  detail TEXT,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','planned','building','done','declined')),
+  version TEXT,                                          -- the version it shipped in
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_request_clinics (          -- one row per clinic that wants it
+  id INTEGER PRIMARY KEY,
+  request_id INTEGER NOT NULL REFERENCES hq_requests(id),
+  clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+  ticket_id INTEGER REFERENCES hq_tickets(id),
+  added_by INTEGER REFERENCES operators(id),
+  added_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (request_id, clinic_id)
+);
+CREATE TABLE IF NOT EXISTS hq_releases (                 -- what changed in each version; published notes show to clinics under Help
+  id INTEGER PRIMARY KEY,
+  version TEXT NOT NULL UNIQUE,
+  released_on TEXT NOT NULL,
+  notes TEXT NOT NULL,
+  published INTEGER NOT NULL DEFAULT 0,
+  created_by INTEGER REFERENCES operators(id)
+);
+CREATE TABLE IF NOT EXISTS hq_installs (                 -- clinic servers that report in: version, copies and disk, never records
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER REFERENCES clinics(id),
+  label TEXT NOT NULL,
+  key_hash TEXT NOT NULL UNIQUE,                         -- SHA-256 of the install key; the key itself is shown once
+  active INTEGER NOT NULL DEFAULT 1,
+  version TEXT,
+  checked_in_at TEXT,
+  last_copy_at TEXT,                                     -- the last off-site copy that worked, as the server reports it
+  last_copy_failed_at TEXT,
+  last_drill_at TEXT,
+  disk_free_pct INTEGER,
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_incidents (                -- a security or data incident in the service itself
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  found_at TEXT NOT NULL,                                -- UTC
+  what TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'medium' CHECK (severity IN ('low','medium','high')),
+  clinics_affected INTEGER,
+  regulator_told_at TEXT,
+  clinics_told_at TEXT,
+  closed_at TEXT,
+  lessons TEXT,
+  owner_id INTEGER REFERENCES operators(id),
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_data_requests (            -- a clinic asks us, as the company holding its data, for something
+  id INTEGER PRIMARY KEY,
+  clinic_id INTEGER REFERENCES clinics(id),
+  kind TEXT NOT NULL CHECK (kind IN ('patient_request','agreement','audit','end_of_contract','other')),
+  summary TEXT NOT NULL,
+  received_on TEXT NOT NULL,
+  due_on TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','done','refused')),
+  outcome TEXT,
+  owner_id INTEGER REFERENCES operators(id),
+  closed_on TEXT,
+  created_by INTEGER REFERENCES operators(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_subprocessors (            -- outside companies that touch clinic data for us
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  data TEXT NOT NULL,                                    -- what kind of data reaches them
+  country TEXT NOT NULL,
+  safeguard TEXT,                                        -- the legal basis for sending data there
+  agreement_on TEXT,                                     -- when the data processing agreement was signed
+  review_on TEXT,                                        -- next check
+  active INTEGER NOT NULL DEFAULT 1,
+  updated_by INTEGER REFERENCES operators(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS hq_registrations (            -- registrations, licences and filings the company must keep up
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  body TEXT,                                             -- who it is with
+  reference TEXT,
+  renews_on TEXT,
+  note TEXT,
+  updated_by INTEGER REFERENCES operators(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

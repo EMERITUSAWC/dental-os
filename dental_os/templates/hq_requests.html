@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Feature requests") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Feature requests") }}</h1>
+<p class="muted">{{ _("Ranked by how many clinics want each one. Support and sales add clinics; engineering decides and ships.") }}</p>
+<nav class="tabs" aria-label="{{ _('Which requests') }}"><a href="{{ url_for('hq.requests_list') }}" class="{{ 'on' if which == 'open' }}">{{ _("Open") }}</a><a href="{{ url_for('hq.requests_list', which='all') }}" class="{{ 'on' if which == 'all' }}">{{ _("All") }}</a></nav>
+<section class="card"><div class="tbl-wrap"><table><thead><tr><th>{{ _("Request") }}</th><th>{{ _("Clinics") }}</th><th>{{ _("Paying clinics") }}</th><th>{{ _("State") }}</th></tr></thead><tbody>
+{% for r in rows %}<tr><td><a href="{{ url_for('hq.request_view', rid=r.id) }}">{{ r.title }}</a></td><td>{{ r.clinics }}</td><td>{{ r.paying }}</td><td>{{ _(states[r.status]) }}{% if r.version %} ({{ r.version }}){% endif %}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">{{ _("None.") }}</td></tr>{% endfor %}</tbody></table></div></section>
+<form method="post" class="card"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><h2>{{ _("New request") }}</h2>
+  <label for="title">{{ _("What the clinic wants") }}</label><input id="title" name="title" maxlength="160" required>
+  <label for="detail">{{ _("Why, and how they would use it") }}</label><textarea id="detail" name="detail" rows="3" maxlength="4000"></textarea>
+  <label for="clinic_id">{{ _("First clinic asking") }}</label><select id="clinic_id" name="clinic_id"><option value="">{{ _("None yet") }}</option>{% for c in clinics %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+  <p><button class="primary" type="submit">{{ _("Add") }}</button></p></form>
+{% endblock %}

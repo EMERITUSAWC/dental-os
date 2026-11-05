@@ -1,4 +1,4 @@
-# Dental OS, version 0.71
+# Dental OS, version 0.72
 
 A web-first practice management system for dental clinics. It is built to be sold to clinics in many countries,
 starting with Ghana and West Africa, then the rest of Africa, then Europe and the US. It is not built for one clinic.
@@ -145,6 +145,22 @@ Ireland, Germany, France, United States, Canada. Adding one is a line in `dental
 - Webhooks: signed messages to an https address when a patient, appointment, payment, invoice, plan or online-booking event
   happens. Private networks are refused (checked again when sending). Failures retry five times, then can be retried by hand.
   Run `flask deliver-webhooks` every minute or two. The how-to page is under Tools, API and webhooks.
+
+### Added in version 0.72: HQ engineering and compliance
+
+- Engineering: this server's version, last off-site copy, last restore drill and pages that broke (the screens that broke most).
+  Clinic servers: make an install key in HQ (shown once, only its hash kept), put it on the clinic's server as `HQ_INSTALL_KEY`
+  with `HQ_URL`, and `flask hq-report` (hourly in the cron file) sends the version, last copy, last drill and free disk. Never a
+  patient or a record. HQ flags servers not heard from in a day, on an older version, without a copy in a day, with a drill due
+  or with under 15% disk free. Release notes: written in HQ, and once published clinics see them under Help, What's new.
+- Feature requests: what clinics ask for, ranked by how many clinics (and how many paying clinics) want each one. Support and
+  sales add clinics; engineering decides the state and the version it shipped in.
+- Compliance: incidents in the service itself with a 72-hour clock to tell the regulator (the UK and EU rule; check Ghana's and each
+  clinic's country with a lawyer), requests clinics make of us about their data with a 30-day answer-by date, the outside
+  companies that touch clinic data (purpose, data, country, legal basis, agreement date, next check), registrations and renewals
+  (for example the Data Protection Commission and VAT), and a check of HQ's own access: the last team review (every 90 days),
+  logins without two-step login, unused for 60 days or past their end day, and how often support opened each clinic.
+- The HQ home shows each person the work waiting in each of their departments.
 
 ### Added in version 0.71: Dental OS HQ, the company's own departments
 

@@ -81,7 +81,9 @@ def create_app(test_config=None):
         SECURITY_POLICY_URL=os.environ.get("SECURITY_POLICY_URL") or None,
         # 0.68: operators (who run the service for every clinic) must use two-step login. Set up with `flask operator-2fa`.
         OPERATOR_REQUIRE_2FA=os.environ.get("OPERATOR_REQUIRE_2FA", "1") == "1",
-        HQ_HOST=(os.environ.get("HQ_HOST") or "").strip().lower() or None,   # 0.71: e.g. hq.example.com; HQ then only answers there
+        HQ_HOST=(os.environ.get("HQ_HOST") or "").strip().lower() or None,
+        HQ_URL=os.environ.get("HQ_URL") or None,                   # 0.72: a clinic server reports to this HQ address
+        HQ_INSTALL_KEY=os.environ.get("HQ_INSTALL_KEY") or None,   # 0.72: the key HQ gave this server, shown once   # 0.71: e.g. hq.example.com; HQ then only answers there
     )
     if test_config:
         app.config.update(test_config)
@@ -228,8 +230,8 @@ def create_app(test_config=None):
                 "auth.login", "auth.login_code", "auth.logout", "static"):
             abort(403, "This is a read-only copy. Changes are made at the clinic.")
         is_api = request.path.startswith("/api/")            # only the API blueprint lives under /api/
-        hook = request.blueprint in ("wahook", "voicehook") or request.endpoint == "paypub.hook"   # Meta and the payment company call these: a signature is required
-        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health", "security_txt") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "hq", "signup") or is_api
+        hook = request.blueprint in ("wahook", "voicehook", "hqcheck") or request.endpoint == "paypub.hook"   # Meta and the payment company call these: a signature is required
+        public = request.endpoint in ("auth.login", "auth.login_code", "static", "health", "security_txt") or request.blueprint in ("public", "api", "wahook", "paypub", "voicehook", "formpub", "rxpub", "operator", "hq", "hqcheck", "signup") or is_api
         idle = app.config["SESSION_IDLE_MINUTES"]
         if g.user and not is_api and request.endpoint != "static":
             now = int(time.time())
@@ -431,6 +433,7 @@ def create_app(test_config=None):
     app.register_blueprint(complianceviews.bp)
     app.register_blueprint(hqviews.bp)
     app.register_blueprint(hqviews.clinic_bp)
+    app.register_blueprint(hqviews.check_bp)
 
     @app.before_request
     def _hq_only_on_its_own_address():
@@ -900,6 +903,23 @@ def create_app(test_config=None):
         twofactor.disable(conn, row["id"], None, row["clinic_id"], "2fa.reset.cli")
         conn.commit()
         click.echo(f"Two-step login is off for {username}. They can set it up again after signing in.")
+
+    @app.cli.command("hq-report")
+    def hq_report():
+        """0.72: a clinic server tells Dental OS HQ its version, last off-site copy, last restore drill and free disk. Never records.
+        Needs HQ_URL and HQ_INSTALL_KEY. The cron file runs it every hour."""
+        from .services import hq as _H, hqtech as _T
+        if not app.config.get("HQ_URL"):
+            click.echo("HQ_URL is not set on this server, so nothing was sent.")
+            return
+        conn = dbmod.connect(app.config["DATABASE"])
+        try:
+            status = _T.send_report(app.config, conn)
+        except (_H.HQError, OSError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        finally:
+            conn.close()
+        click.echo(f"Reported to HQ ({status}).")
 
     @app.cli.command("audit-seal")
     def audit_seal():

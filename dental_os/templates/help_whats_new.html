@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ _("What's new") }}{% endblock %}
+{% block body %}
+<p class="small"><a href="{{ url_for('help.clinic_help') }}">{{ _("Help") }}</a></p>
+<h1>{{ _("What's new") }}</h1>
+{% for r in rows %}<section class="card"><h2>{{ _("Version") }} {{ r.version }} <span class="small muted">{{ r.released_on|date }}</span></h2>
+  {% for p in paras(r.notes) %}<p style="white-space:pre-wrap">{{ p }}</p>{% endfor %}</section>
+{% else %}<section class="card"><p class="muted">{{ _("No release notes yet.") }}</p></section>{% endfor %}
+{% endblock %}

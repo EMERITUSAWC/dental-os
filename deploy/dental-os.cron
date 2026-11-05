@@ -15,3 +15,4 @@ PATH=/usr/local/bin:/usr/bin:/bin
 5 2 * * *     dentalos  /opt/dental-os/deploy/dos audit-seal           >> /var/log/dental-os/jobs.log 2>&1
 10 2 * * *    dentalos  /opt/dental-os/deploy/dos offsite-copy         >> /var/log/dental-os/jobs.log 2>&1
 30 3 1 * *    dentalos  /opt/dental-os/deploy/dos offsite-drill        >> /var/log/dental-os/jobs.log 2>&1
+17 * * * *    dentalos  /opt/dental-os/deploy/dos hq-report            >> /var/log/dental-os/jobs.log 2>&1

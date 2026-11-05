@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Engineering") }}{% endblock %}
+{% block body %}
+{% include "_op_nav.html" %}
+<h1>{{ _("Engineering") }}</h1>
+{% if shown %}<section class="card" role="status"><p class="flash ok">{{ _("Put this key on %(label)s as HQ_INSTALL_KEY, with HQ_URL set to this address. It will not be shown again.", label=shown.label) }}</p><p><code>{{ shown.key }}</code></p></section>{% endif %}
+<div class="grid two">
+<section class="card"><h2>{{ _("This server") }}</h2><dl class="facts">
+  <dt>{{ _("Version") }}</dt><dd>{{ h.version }}</dd>
+  <dt>{{ _("Last off-site copy") }}</dt><dd>{% if h.copy_ok_at %}{{ h.copy_ok_at[:16] }} UTC{% else %}{{ _("Never") }}{% endif %} {% if h.copy_stale %}<span class="pill bad">{{ _("Over a day old") }}</span>{% endif %}</dd>
+  {% if h.copy_failed_at %}<dt>{{ _("Last failed copy") }}</dt><dd><span class="pill bad">{{ h.copy_failed_at[:16] }} UTC</span></dd>{% endif %}
+  <dt>{{ _("Last restore drill") }}</dt><dd>{% if h.drill %}{{ h.drill.created_at[:16] }} UTC {% if h.drill.ok %}<span class="pill ok">{{ _("Passed") }}</span>{% else %}<span class="pill bad">{{ _("Failed") }}</span>{% endif %}{% else %}{{ _("Never") }}{% endif %} {% if h.drill_due %}<span class="pill warn">{{ _("Due") }}</span>{% endif %}</dd>
+  <dt>{{ _("Pages that broke") }}</dt><dd>{{ _("%(a)s in a day, %(b)s in two weeks", a=h.errors_day, b=h.errors_fortnight) }} · <a href="{{ url_for('operator.health') }}">{{ _("Errors and problems") }}</a></dd></dl>
+  {% if h.top %}<h3>{{ _("Screens that broke most (two weeks)") }}</h3>{% for t in h.top %}<p class="small">{{ t.endpoint }}: {{ t.n }}</p>{% endfor %}{% endif %}</section>
+<section class="card"><h2>{{ _("Release notes") }}</h2>
+  {% for r in releases[:5] %}<p><strong>{{ r.version }}</strong> <span class="small muted">{{ r.released_on|date }}</span> {% if r.published %}<span class="pill ok">{{ _("Clinics see it") }}</span>{% else %}{{ _("Draft") }}{% endif %}</p>{% else %}<p class="muted">{{ _("None yet.") }}</p>{% endfor %}
+  <details><summary>{{ _("Write release notes") }}</summary><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="release">
+    <div class="row"><div><label for="version">{{ _("Version") }}</label><input id="version" name="version" maxlength="20" value="{{ version }}" required></div>
+    <div><label for="released_on">{{ _("Released on") }}</label><input id="released_on" name="released_on" type="date"></div></div>
+    <label for="notes">{{ _("What changed, in words a clinic understands") }}</label><textarea id="notes" name="notes" rows="6" maxlength="8000" required></textarea>
+    <label class="check"><input type="checkbox" name="published" value="1"> {{ _("Show to clinics under Help") }}</label>
+    <p><button type="submit" class="primary">{{ _("Save") }}</button></p></form></details></section>
+</div>
+<section class="card"><h2>{{ _("Clinic servers") }}</h2>
+  <p class="muted small">{{ _("Clinics that run Dental OS on their own server report here every hour: version, last off-site copy, last restore drill and free disk. Never a patient or a record.") }}</p>
+  <div class="tbl-wrap"><table><thead><tr><th>{{ _("Server") }}</th><th>{{ _("Version") }}</th><th>{{ _("Last report") }}</th><th>{{ _("Last copy") }}</th><th>{{ _("Free disk") }}</th><th>{{ _("Needs a look") }}</th><th></th></tr></thead><tbody>
+  {% for x in installs %}{% set i = x.i %}<tr><td>{{ i.label }}<div class="small muted">{{ i.clinic_name or '' }}</div></td><td>{{ i.version or '' }}</td><td class="small">{{ (i.checked_in_at or '')[:16] or _("Never") }}</td>
+    <td class="small">{{ (i.last_copy_at or '')[:16] }}</td><td>{{ (i.disk_free_pct|string + '%') if i.disk_free_pct is not none else '' }}</td>
+    <td>{% if not i.active %}{{ _("switched off") }}{% endif %}{% for f in x.flags %}<span class="pill bad">{{ _(flags[f]) }}</span> {% endfor %}</td>
+    <td><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="{{ 'off' if i.active else 'on' }}"><input type="hidden" name="id" value="{{ i.id }}"><button type="submit" class="small">{{ _("Switch off") if i.active else _("Switch on") }}</button></form></td></tr>
+  {% else %}<tr><td colspan="7" class="muted">{{ _("None yet.") }}</td></tr>{% endfor %}</tbody></table></div>
+  <form method="post" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><input type="hidden" name="what" value="install">
+    <div><label for="label">{{ _("Name for the server") }}</label><input id="label" name="label" maxlength="80" required></div>
+    <div><label for="clinic_id">{{ _("Clinic") }}</label><select id="clinic_id" name="clinic_id"><option value="">{{ _("Not linked") }}</option>{% for c in clinics %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+    <button type="submit">{{ _("Make an install key") }}</button></form></section>
+{% endblock %}

@@ -76,6 +76,9 @@ monthly price. The steps are the same as above, with these differences:
    static IP. Add the `hq.example.com` block from `deploy/Caddyfile.cloud.example` with your name, and set `HQ_HOST=hq.yourdomain.com`.
    Then sign in at `https://hq.yourdomain.com/operator/login`. Make the first owner with `dos create-operator` and add everyone
    else from HQ, Team.
+8. A clinic that runs its own server (0.72): in HQ, Engineering, make an install key for it. On that server set
+   `HQ_URL=https://hq.yourdomain.com` and `HQ_INSTALL_KEY=` the key. The cron file sends a short report every hour (version,
+   last copy, last drill, free disk; never records).
 
 Real patient data on a server outside the clinic's own country needs a legal basis first (in Ghana, the Data Protection Act,
 2012). Start with made-up patients (`dos seed-demo`) until that is settled.

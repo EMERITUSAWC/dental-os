@@ -18,7 +18,14 @@ header.top { background: var(--card); border-bottom: 1px solid var(--line); posi
 nav a { display: inline-block; padding: 8px 6px; text-decoration: none; color: var(--ink); border-bottom: 2px solid transparent; }
 nav a.on { border-color: var(--brand); font-weight: 600; }
 /* v0.70 grouped top menu: a few headings that open a short list, so the menu stays on one line */
-#mainnav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 2px; }
+#mainnav, #hqnav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 2px; }
+#hqnav { flex: 1; }
+.hqbar { margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+#hqnav > a { display: inline-block; padding: 8px 6px; text-decoration: none; color: var(--ink); border-bottom: 2px solid transparent; }
+#hqnav > a.on { border-color: var(--brand); font-weight: 600; }
+#hqnav > .navgroup:last-child { margin-inline-start: auto; }
+#hqnav > .navgroup:last-child .navdrop { inset-inline-start: auto; inset-inline-end: 0; }
+.navdrop form { margin: 0; } .navdrop button.link { display: block; width: 100%; text-align: start; padding: 8px 10px; }
 .navgroup { position: relative; display: inline-block; }
 .navgroup > summary { list-style: none; cursor: pointer; padding: 8px 6px; border-bottom: 2px solid transparent; white-space: nowrap; }
 .navgroup > summary::-webkit-details-marker { display: none; }

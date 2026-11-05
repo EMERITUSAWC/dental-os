@@ -1,19 +1,35 @@
-{# 0.71: Dental OS HQ menu. Each link shows only for the departments that use it. #}
+{# 0.71: Dental OS HQ menu. Each link shows only for the departments that use it; related links are grouped so the menu
+   stays on one line even for an owner, who sees all of them. A group with one link left shows as a plain link. #}
 {% set c = g.op_can or {} %}
-<div class="row spread no-print hqbar"><nav class="tabs" aria-label="{{ _('HQ menu') }}">{% if g.operator %}
-  {% set ep = request.endpoint or '' %}
-  <a href="{{ url_for('hq.home') }}" class="{{ 'on' if ep == 'hq.home' }}">{{ _("HQ") }}</a>
-  {% if c['hq.leadership'] %}<a href="{{ url_for('hq.leadership') }}" class="{{ 'on' if ep == 'hq.leadership' }}">{{ _("Leadership") }}</a>{% endif %}
-  {% if c['hq.support'] %}<a href="{{ url_for('hq.support') }}" class="{{ 'on' if ep in ('hq.support', 'hq.ticket_view') }}">{{ _("Support") }}</a>{% endif %}
-  {% if c['hq.articles'] %}<a href="{{ url_for('hq.help_list') }}" class="{{ 'on' if ep.startswith('hq.help') }}">{{ _("Help library") }}</a>{% endif %}
-  {% if c['hq.sales'] %}<a href="{{ url_for('hq.sales') }}" class="{{ 'on' if ep in ('hq.sales', 'hq.lead_view') }}">{{ _("Sales") }}</a>{% endif %}
-  {% if c['hq.onboarding'] %}<a href="{{ url_for('hq.onboarding') }}" class="{{ 'on' if ep in ('hq.onboarding', 'hq.project_view') }}">{{ _("Onboarding") }}</a>{% endif %}
-  {% if c['hq.finance'] %}<a href="{{ url_for('hq.finance') }}" class="{{ 'on' if ep.startswith('hq.finance') or ep == 'hq.vat' }}">{{ _("Finance") }}</a>{% endif %}
-  {% if c['clinics'] %}<a href="{{ url_for('operator.home') }}" class="{{ 'on' if ep in ('operator.home', 'operator.clinic') }}">{{ _("Clinics") }}</a>{% endif %}
-  {% if c['plans.view'] %}<a href="{{ url_for('operator.plans') }}" class="{{ 'on' if ep == 'operator.plans' }}">{{ _("Plans") }}</a>{% endif %}
-  {% if c['health'] %}<a href="{{ url_for('operator.health') }}" class="{{ 'on' if ep == 'operator.health' }}">{{ _("Errors and problems") }}</a>{% endif %}
-  {% if c['team'] %}<a href="{{ url_for('operator.team') }}" class="{{ 'on' if ep == 'operator.team' }}">{{ _("Team") }}</a>
-  {% else %}{% for d in (g.op_heads or [])|sort %}<a href="{{ url_for('hq.department', dept=d) }}" class="{{ 'on' if request.view_args and request.view_args.get('dept') == d }}">{{ _("My team:") }} {{ _(g.op_dept_labels[d]) }}</a>{% endfor %}{% endif %}
-  <a href="{{ url_for('operator.security') }}" class="{{ 'on' if ep == 'operator.security' }}">{{ _("My security") }}</a>
-{% endif %}</nav>
-  <form method="post" action="{{ url_for('operator.logout') }}" class="row"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><span class="small muted">{{ g.operator.display_name if g.operator }}</span> <button type="submit" class="small">{{ _("Log out") }}</button></form></div>
+{% set ep = request.endpoint or '' %}
+{% set va = request.view_args or {} %}
+{% set groups = [
+  (None, [(true, 'hq.home', {}, _("HQ"), ep == 'hq.home'),
+          (c['hq.leadership'], 'hq.leadership', {}, _("Leadership"), ep == 'hq.leadership')]),
+  (_("Support"), [(c['hq.support'], 'hq.support', {}, _("Support inbox"), ep in ('hq.support', 'hq.ticket_view')),
+                  (c['hq.articles'], 'hq.help_list', {}, _("Help library"), ep.startswith('hq.help')),
+                  (c['hq.requests'], 'hq.requests_list', {}, _("Feature requests"), ep in ('hq.requests_list', 'hq.request_view'))]),
+  (_("Sales"), [(c['hq.sales'], 'hq.sales', {}, _("Sales"), ep in ('hq.sales', 'hq.lead_view')),
+                (c['hq.onboarding'], 'hq.onboarding', {}, _("Onboarding"), ep in ('hq.onboarding', 'hq.project_view'))]),
+  (_("Money"), [(c['hq.finance'], 'hq.finance', {}, _("Finance"), ep.startswith('hq.finance') or ep == 'hq.vat'),
+                (c['plans.view'], 'operator.plans', {}, _("Plans"), ep == 'operator.plans')]),
+  (_("Engineering"), [(c['hq.engineering'], 'hq.engineering', {}, _("Engineering"), ep == 'hq.engineering'),
+                      (c['health'], 'operator.health', {}, _("Errors and problems"), ep == 'operator.health')]),
+  (None, [(c['hq.compliance'], 'hq.compliance', {}, _("Compliance"), ep.startswith('hq.compliance')),
+          (c['clinics'], 'operator.home', {}, _("Clinics"), ep in ('operator.home', 'operator.clinic'))]),
+] %}
+<div class="row spread no-print hqbar">{% if g.operator %}<nav id="hqnav" aria-label="{{ _('HQ menu') }}">
+  {% for label, items in groups %}{% set shown = items|selectattr(0)|list %}
+    {% if label and shown|length > 1 %}{% set on = shown|selectattr(4)|list %}
+      <details class="navgroup{{ ' on' if on }}" data-navgroup><summary>{{ label }}</summary><div class="navdrop">
+        {% for _ok, end, args, text, active in shown %}<a href="{{ url_for(end, **args) }}" class="{{ 'on' if active }}">{{ text }}</a>{% endfor %}</div></details>
+    {% else %}{% for _ok, end, args, text, active in shown %}<a href="{{ url_for(end, **args) }}" class="{{ 'on' if active }}">{{ text }}</a>{% endfor %}{% endif %}
+  {% endfor %}
+  {% set mine = [] %}
+  {% if c['team'] %}{% if mine.append(('operator.team', {}, _("Team"), ep == 'operator.team')) %}{% endif %}
+  {% else %}{% for d in (g.op_heads or [])|sort %}{% if mine.append(('hq.department', {'dept': d}, _("My team:") ~ ' ' ~ _(g.op_dept_labels[d]), va.get('dept') == d)) %}{% endif %}{% endfor %}{% endif %}
+  {% if mine.append(('operator.security', {}, _("My security"), ep == 'operator.security')) %}{% endif %}
+  <details class="navgroup{{ ' on' if mine|selectattr(3)|list }}" data-navgroup><summary>{{ g.operator.display_name }}</summary><div class="navdrop">
+    {% for end, args, text, active in mine %}<a href="{{ url_for(end, **args) }}" class="{{ 'on' if active }}">{{ text }}</a>{% endfor %}
+    <form method="post" action="{{ url_for('operator.logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token }}"><button type="submit" class="link">{{ _("Log out") }}</button></form></div></details>
+</nav>{% endif %}</div>

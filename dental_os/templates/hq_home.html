@@ -31,6 +31,18 @@
   {% else %}<p class="muted">{{ _("No bill is overdue.") }}</p>{% endfor %}
   {% if work.overdue|length > 10 %}<p><a href="{{ url_for('hq.finance') }}">{{ _("All of them") }}</a></p>{% endif %}</section>
 {% endif %}
+{% if work.servers is defined %}
+<section class="card"><h2>{{ _("Engineering: clinic servers that need a look") }}</h2>
+  {% for x in work.servers %}<p>{{ x.i.label }} <span class="small muted">{{ x.i.clinic_name or '' }}</span> {% for f in x.flags %}<span class="pill bad">{{ _(server_flags[f]) }}</span> {% endfor %}</p>
+  {% else %}<p class="muted">{{ _("Every clinic server is fine.") }}</p>{% endfor %}</section>
+{% endif %}
+{% if work.compliance is defined %}
+<section class="card"><h2>{{ _("Compliance: open items") }}</h2>
+  {% for x in work.compliance.incidents %}<p><a href="{{ url_for('hq.compliance_item', kind='incident', item_id=x.r.id) }}">{{ x.r.title }}</a>{% if x.hours_left is not none %} <span class="pill bad">{{ _("Regulator not told") }}</span>{% endif %}</p>{% endfor %}
+  {% for x in work.compliance.requests %}<p><a href="{{ url_for('hq.compliance_item', kind='datareq', item_id=x.r.id) }}">{{ x.r.summary }}</a> <span class="pill {{ 'bad' if x.late else 'warn' }}">{{ _("Answer by") }} {{ x.r.due_on|date }}</span></p>{% endfor %}
+  {% for x in work.compliance.renewals %}<p>{{ x.r.name }} <span class="pill {{ 'bad' if x.late else 'warn' }}">{{ _("Renew by") }} {{ x.r.renews_on|date }}</span></p>{% endfor %}
+  {% if not (work.compliance.incidents or work.compliance.requests or work.compliance.renewals) %}<p class="muted">{{ _("Nothing open.") }}</p>{% endif %}</section>
+{% endif %}
 </div>
 
 <section class="card"><h2>{{ _("The departments") }}</h2>
